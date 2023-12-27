@@ -1,0 +1,23 @@
+[workspace]
+members = [
+    "zerodb",
+    "zerodb-cli",
+    "zeroql",
+    # "zerofs",
+    # "zerochrono",
+    # "zeromodels",
+    # "zerobuild",
+    # "zerobrowser",
+    # "zeroindex",
+    # "zeroregistry",
+    # "examples/*",
+]
+
+[workspace.package]
+version = "0.1.0"
+license = "Apache-2.0"
+repository = "https://github.com/zerocore-ai/zeroengine-services"
+authors = ["Stephen Akinyemi <appcypher@outlook.com>"]
+edition = "2021"
+
+[workspace.dependencies]

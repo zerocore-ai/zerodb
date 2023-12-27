@@ -1,0 +1,13 @@
+[package]
+name = "zerodb"
+description = "A multi-model database query engine for multi-tenant applications"
+keywords = []
+categories = []
+documentation = "https://docs.rs/zerodb"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
