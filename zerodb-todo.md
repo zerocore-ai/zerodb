@@ -5,6 +5,10 @@
     - [ ] Parser
     - [ ] AST
 
+- [ ] Backing Key-Value Store
+    - [ ] RocksDB
+    - [ ] TiKV
+
 - [ ] Models
     - [ ] Relational
     - [ ] Key-Value
@@ -44,25 +48,56 @@
 
 ## Design
 
-### Consistency
+### Strong Consistency
 
-#### Strong Consistency via Transactions
 - Isolated handling replica selection
-    - Coordinator sends a transaction to one of concerned replicas randomly
-    - Replica passes transaction along the replica ring all the way back to itself. Each replica setting its state to transaction handling
-    - Replica selects the last replica with the latest target records to handle the transaction
-    - The handling replica handles the transaction and passes the result along the replica ring back to itself
-    - The handling replica sends the result back to the coordinator
+    - We use a fan-out approach for communication with replicas
+
+        ## Fetch & Lock
+    - Main coordinator requests for target data from randomly selected replicas in replica set
+    - Main coordinator waits for all replica set to respond
+    - Each selected replica acts as a sub-coordinator fetching the latest data from the replica set
+    - Each sub-coordinator waits for all replica set to respond
+    - Each sub-coordinator sends the latest data to the coordinator
+    - Main coordinator waits for all sub-coordinators to respond
+    - Main coordinator applies the transaction to the latest data and requests for more as necessary using the same process
+
+        ## Coordinated Commit
+    - Main coordinator sends the transaction updates to sub-coordinators that need to commit
+    - ???
+    - Sub-coordinators send commit successful to main coordinator
+
+
     - Problems:
-        - What if a replica in the replica ring is down?: The replica will try to connect to the next replica in the ring
-        - What if the replica with the latest target records is down?: Lost data!
-        - What if another transaction is sent to the same replica ring?: If the new transaction gets to a replica in transaction handling state, it return an error to the coordinator.
-        - It is sequential and slow
+        - This may not be performant
+        - What if another transaction is issued to coordinator or replica set?:
+            - Once the first transaction recieved, the participating replica will enter a lock state for the set of data involved, rejecting any other transaction that involves the same data.
+            - The rejected transaction initiator can wait for the lock to be released
+        - What about deadlocks?:
+            - ???
+            - One yields to one that started first. This is achieved by:
+                - ???
+        - What if majority of a replica set holding the latest data were down during txn, but came back online eventually?:
+            - ???
+            - I guess they are not representative of the latest data anymore. So they have to fetch the latest data from the minority.
+        - What if majority gave the coordinator data but majority didn't take the final transaction?:
+            - It doesn't matter. The majority will be in locked state for that data. So whenever they are back online, they fetch the latest data from the minority.
+            - What if one of the replica set didn't take the final transaction but others did?:
+                - Same as above.
+            - What if they a replica set is dead?:
+                - The main coordinator cancels the transaction.
+                - But what happens to the replica set with the committed transaction?:
+                    - ???
+        - What if any of the replica set is down or takes long to respond?:
+            - There has to be a timeout period for each participating replica expected response.
+    - vs Paxos:
+        - Has a promise phase
 
 - Self-repair
+    - For every read request, the coordinator asks the replica set for the latest data
+    - Problems:
+        - This may not be performant
 
-
-#### Eventual Consistency
 
 ### Design
 
