@@ -143,6 +143,15 @@
 - What if another write with the same write count for target data is issued to the same replica set?:
   - The replica set will reject the write.
 
+---
+
+## Last Write Wins (LWW)
+
+- Latest data is determined by a logical clock
+- Time is attached to a data down to its scalar value. (This should truly prevent lost writes for LWW methods)
+
+---
+
 ## Self-repair
 
 ### Partial Repair on Read
