@@ -132,6 +132,12 @@
 
 - The client (or some initial node) selects a new coordinator from the replica set; ideally randomly.
 
+#### Read
+
+- The coordinator sends a read request to its replica set
+- The coordinator expects a quorum read ack
+- The coordinator determines what the latest data is
+
 #### Write
 
 - The coordinator sends a write request to its replica set
@@ -148,6 +154,7 @@
 ## Last Write Wins (LWW)
 
 - Latest data is determined by a logical clock
+- Logical clock could be a mixture of counter and random number (for tie breaking)
 - Time is attached to a data down to its scalar value. (This should truly prevent lost writes for LWW methods)
 
 ---
