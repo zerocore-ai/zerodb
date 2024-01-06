@@ -1,13 +1,9 @@
-#![warn(missing_docs)]
-//! `zeroengine-cli` is a command-line interface for the zeroengine serverless engine.
+//! # Utility module
 
-mod args;
-mod error;
-mod styles;
+mod connection;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use args::*;
-pub use error::*;
+pub use connection::*;

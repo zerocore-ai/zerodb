@@ -11,3 +11,20 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+futures.workspace = true
+http-body-util = "0.1.0"
+hyper = "1.1.0"
+hyper-tungstenite = "0.13.0"
+hyper-util = { version = "0.1.2", features = ["full", "tokio"] }
+serde.workspace = true
+structstruck.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-tungstenite = "0.21.0"
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+typed-builder.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true

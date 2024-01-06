@@ -1,13 +1,11 @@
-#![warn(missing_docs)]
-//! `zeroengine-cli` is a command-line interface for the zeroengine serverless engine.
+//! Defines the different configuration used by zerodb.
 
-mod args;
-mod error;
-mod styles;
+mod config_zerodb;
+mod defaults;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use args::*;
-pub use error::*;
+pub use config_zerodb::*;
+pub use defaults::*;

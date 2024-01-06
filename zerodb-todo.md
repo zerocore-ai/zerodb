@@ -1,3 +1,8 @@
+- [ ] Basic cluster communication
+
+  - [x] Websocket hyper tungstenite
+  - [x] Establishing connection between nodes
+
 - [ ] Query Language
 
   - [ ] Language - https://gist.github.com/appcypher/6032834df3f835b611139c56d2b5a8d3
