@@ -1,5 +1,7 @@
 //! Error types of the zerodb crate.
 
+use crate::client::ClientRequest;
+use std::{collections::TryReserveError, convert::Infallible};
 use thiserror::Error;
 
 //--------------------------------------------------------------------------------------------------
@@ -24,18 +26,6 @@ pub enum ZerodbError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    /// Cannot upgrade to websocket connection for peer connection.
-    #[error("cannot upgrade to websocket connection for peer connection")]
-    CannotUpgradePeerConnection,
-
-    /// Error from hyper_tungstenite.
-    #[error(transparent)]
-    WebsocketError(#[from] hyper_tungstenite::tungstenite::Error),
-
-    /// Protocol error from tungstenite.
-    #[error(transparent)]
-    ProtocolError(#[from] hyper_tungstenite::tungstenite::error::ProtocolError),
-
     /// A TOML error.
     #[error(transparent)]
     TomlDe(#[from] toml::de::Error),
@@ -47,4 +37,20 @@ pub enum ZerodbError {
     /// Tokio join error.
     #[error(transparent)]
     TokioJoinError(#[from] tokio::task::JoinError),
+
+    /// Tokio Client Request channel error.
+    #[error(transparent)]
+    TokioChannelError(#[from] tokio::sync::mpsc::error::SendError<ClientRequest>),
+
+    /// Tokio Raft Request channel error.
+    #[error(transparent)]
+    TokioRaftChannelError(#[from] tokio::sync::mpsc::error::SendError<crate::raft::RaftRequest>),
+
+    /// CBOR decode error.
+    #[error(transparent)]
+    DecoderError(#[from] cbor4ii::serde::DecodeError<Infallible>),
+
+    /// CBOR encode error.
+    #[error(transparent)]
+    EncoderError(#[from] cbor4ii::serde::EncodeError<TryReserveError>),
 }

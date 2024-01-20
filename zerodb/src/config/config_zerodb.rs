@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::{fs, net::SocketAddr, path::Path};
 
 use crate::{
     config::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
@@ -48,6 +48,11 @@ strike! {
                 #[builder(default)]
                 #[serde(default)]
                 pub seeds: Vec<String>,
+
+                // /// A passive node does not partake in consensus.
+                // #[builder(default)]
+                // #[serde(default)]
+                // pub passive: bool,
             }
     }
 }
@@ -84,6 +89,22 @@ impl NetworkConfig {
         }
 
         Ok(())
+    }
+
+    /// Gets the peer address.
+    pub fn get_peer_address(&self) -> Result<SocketAddr> {
+        Self::parse_address(&self.host, self.peer_port)
+    }
+
+    /// Gets the client address.
+    pub fn get_client_address(&self) -> Result<SocketAddr> {
+        Self::parse_address(&self.host, self.client_port)
+    }
+
+    /// Parses a host and port into a `SocketAddr`.
+    pub fn parse_address(host: &str, port: u16) -> Result<SocketAddr> {
+        let addr = format!("{}:{}", host, port);
+        Ok(addr.parse()?)
     }
 }
 

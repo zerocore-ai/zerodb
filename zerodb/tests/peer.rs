@@ -1,6 +1,6 @@
 use zerodb::{
     config::{NetworkConfig, ZerodbConfig},
-    Zerodb,
+    ZerodbNode,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -35,8 +35,8 @@ async fn pinging_nodes() -> anyhow::Result<()> {
         .build();
 
     // Starting the nodes.
-    let _alice_db = Zerodb::new(alice_conf)?.start().await?;
-    let _bob_db = Zerodb::new(bob_conf)?.start().await?;
+    let _alice_db = ZerodbNode::new(alice_conf)?.start().await?;
+    let _bob_db = ZerodbNode::new(bob_conf)?.start().await?;
 
     Ok(())
 }

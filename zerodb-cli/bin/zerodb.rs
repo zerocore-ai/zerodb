@@ -1,7 +1,7 @@
 use clap::{CommandFactory, Parser};
 use zerodb::{
     config::{NetworkConfig, ZerodbConfig},
-    Zerodb,
+    ZerodbNode,
 };
 use zerodb_cli::{SubCommand, ZerodbArgs};
 
@@ -42,7 +42,7 @@ async fn main() -> zerodb_cli::Result<()> {
                     )
                     .build()
             };
-            Zerodb::new(config)?.start().await?;
+            ZerodbNode::new(config)?.start().await?;
         }
         None => ZerodbArgs::command().print_help()?,
     }

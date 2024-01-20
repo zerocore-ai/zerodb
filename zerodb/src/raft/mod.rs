@@ -1,9 +1,14 @@
-//! # Client
+//! # Raft
 
-mod manager;
+mod node;
+mod request;
+mod rpc;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub(crate) use manager::*;
+pub use node::*;
+pub(crate) mod timeouts;
+pub use request::*;
+pub use rpc::*;
