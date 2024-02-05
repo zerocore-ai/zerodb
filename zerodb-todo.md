@@ -1,7 +1,21 @@
-- [ ] Basic cluster communication
+- [x] Basic cluster communication
 
   - [x] Websocket hyper tungstenite
   - [x] Establishing connection between nodes
+
+- [ ] Distributed Consensus
+  - [ ] Raft
+    - [ ] State transitions
+      - [ ] Follower
+        - [ ] Election timeout
+        - [ ] Vote request
+      - [ ] Leader
+      - [ ] Candidate
+
+    - [ ] Client comms
+    - [ ] Peer RPC comms
+    - [ ] Timeouts
+  - [ ]
 
 - [ ] Query Language
 

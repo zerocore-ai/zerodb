@@ -1,11 +1,12 @@
-//! Defines the different configuration used by zerodb.
+#![cfg(test)]
+#![allow(dead_code)]
 
-mod config_zerodb;
-mod default;
+mod cluster;
+mod server;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use config_zerodb::*;
-pub use default::*;
+pub use cluster::*;
+pub use server::*;

@@ -1,6 +1,12 @@
-use crate::styles;
+use std::net::SocketAddr;
+
 use clap::Parser;
-use zerodb::config::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT};
+use zerodb::config::{
+    DEFAULT_CLIENT_PORT, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL, DEFAULT_HOST,
+    DEFAULT_PEER_PORT,
+};
+
+use crate::styles;
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -42,6 +48,24 @@ pub enum SubCommand {
 
         /// The list of seed nodes to connect to.
         #[arg(short, long, use_value_delimiter = true, value_delimiter = ',')]
-        seeds: Vec<String>,
+        peers: Vec<SocketAddr>,
+
+        /// The interval between heartbeats.
+        #[arg(long, default_value_t = DEFAULT_HEARTBEAT_INTERVAL)]
+        heartbeat_interval: u64,
+
+        /// The minimum election timeout range.
+        #[arg(long, default_value_t = DEFAULT_ELECTION_TIMEOUT_RANGE.0)]
+        election_timeout_min: u64,
+
+        /// The maximum election timeout range.
+        #[arg(long, default_value_t = DEFAULT_ELECTION_TIMEOUT_RANGE.1)]
+        election_timeout_max: u64,
     },
+    // /// Starts the zerodb interactive shell.
+    // Shell {
+    //     /// The url of the zerodb server.
+    //     #[arg(short, long, default_value_t = DEFAULT_URL.to_string())]
+    //     url: String,
+    // },
 }

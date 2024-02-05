@@ -1,12 +1,15 @@
 use std::{fs, net::SocketAddr, path::Path};
 
+use serde::{Deserialize, Serialize};
+use structstruck::strike;
+use typed_builder::TypedBuilder;
+
 use crate::{
     config::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
     Result, ZerodbError,
 };
-use serde::{Deserialize, Serialize};
-use structstruck::strike;
-use typed_builder::TypedBuilder;
+
+use super::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -44,15 +47,31 @@ strike! {
                 #[serde(default = "super::serde::default_client_port")]
                 pub client_port: u16,
 
-                /// The seeds to connect to.
+                /// The peers to connect to.
                 #[builder(default)]
                 #[serde(default)]
-                pub seeds: Vec<String>,
+                pub peers: Vec<SocketAddr>,
 
                 // /// A passive node does not partake in consensus.
                 // #[builder(default)]
                 // #[serde(default)]
                 // pub passive: bool,
+
+                /// The consensus configuration.
+                pub consensus:
+                    /// The consensus configuration.
+                    #[derive(TypedBuilder)]
+                    pub struct ConsensusConfig {
+                        /// The interval at which heartbeats are sent.
+                        #[builder(default)]
+                        #[serde(default = "super::serde::default_heartbeat_interval")]
+                        pub heartbeat_interval: u64,
+
+                        /// The range of election timeouts.
+                        #[builder(default)]
+                        #[serde(default = "super::serde::default_election_timeout_range")]
+                        pub election_timeout_range: (u64, u64),
+                    }
             }
     }
 }
@@ -119,7 +138,17 @@ impl Default for NetworkConfig {
             host: DEFAULT_HOST.to_string(),
             peer_port: DEFAULT_PEER_PORT,
             client_port: DEFAULT_CLIENT_PORT,
-            seeds: vec![],
+            peers: vec![],
+            consensus: ConsensusConfig::default(),
+        }
+    }
+}
+
+impl Default for ConsensusConfig {
+    fn default() -> Self {
+        Self {
+            heartbeat_interval: DEFAULT_HEARTBEAT_INTERVAL,
+            election_timeout_range: DEFAULT_ELECTION_TIMEOUT_RANGE,
         }
     }
 }
@@ -130,6 +159,8 @@ impl Default for NetworkConfig {
 
 #[cfg(test)]
 mod tests {
+    use std::net::Ipv4Addr;
+
     use super::*;
 
     #[test]
@@ -139,15 +170,9 @@ mod tests {
         assert_eq!(config.network.host, DEFAULT_HOST);
         assert_eq!(config.network.peer_port, DEFAULT_PEER_PORT);
         assert_eq!(config.network.client_port, DEFAULT_CLIENT_PORT);
-    }
-
-    #[test]
-    fn test_default_network_config() {
-        let config = NetworkConfig::default();
-
-        assert_eq!(config.host, DEFAULT_HOST);
-        assert_eq!(config.peer_port, DEFAULT_PEER_PORT);
-        assert_eq!(config.client_port, DEFAULT_CLIENT_PORT);
+        assert_eq!(config.network.peers, Vec::<SocketAddr>::new());
+        assert_eq!(config.network.consensus.heartbeat_interval, 100);
+        assert_eq!(config.network.consensus.election_timeout_range, (150, 300));
     }
 
     #[test]
@@ -158,7 +183,11 @@ mod tests {
             host = "127.0.0.1"
             peer_port = 7700
             client_port = 7711
-            seeds = ["127.0.0.1:7800", "127.0.0.1:7900"]
+            peers = ["127.0.0.1:7800", "127.0.0.1:7900"]
+
+            [network.consensus]
+            heartbeat_interval = 1000
+            election_timeout_range = [150, 300]
         "#;
 
         let config: ZerodbConfig = toml::from_str(toml)?;
@@ -167,9 +196,14 @@ mod tests {
         assert_eq!(config.network.peer_port, 7700);
         assert_eq!(config.network.client_port, 7711);
         assert_eq!(
-            config.network.seeds,
-            vec!["127.0.0.1:7800", "127.0.0.1:7900"]
+            config.network.peers,
+            vec![
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 7800),
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 7900),
+            ]
         );
+        assert_eq!(config.network.consensus.heartbeat_interval, 1000);
+        assert_eq!(config.network.consensus.election_timeout_range, (150, 300));
 
         Ok(())
     }

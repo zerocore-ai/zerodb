@@ -1,11 +1,15 @@
-//! Defines the different configuration used by zerodb.
+//! # Task
 
-mod config_zerodb;
-mod default;
+mod candidate;
+mod follower;
+mod leader;
+mod state;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use config_zerodb::*;
-pub use default::*;
+pub(crate) use candidate::*;
+pub(crate) use follower::*;
+pub(crate) use leader::*;
+pub(crate) use state::*;

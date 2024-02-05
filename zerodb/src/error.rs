@@ -1,7 +1,7 @@
 //! Error types of the zerodb crate.
 
-use crate::client::ClientRequest;
 use std::{collections::TryReserveError, convert::Infallible};
+
 use thiserror::Error;
 
 //--------------------------------------------------------------------------------------------------
@@ -38,14 +38,6 @@ pub enum ZerodbError {
     #[error(transparent)]
     TokioJoinError(#[from] tokio::task::JoinError),
 
-    /// Tokio Client Request channel error.
-    #[error(transparent)]
-    TokioChannelError(#[from] tokio::sync::mpsc::error::SendError<ClientRequest>),
-
-    /// Tokio Raft Request channel error.
-    #[error(transparent)]
-    TokioRaftChannelError(#[from] tokio::sync::mpsc::error::SendError<crate::raft::RaftRequest>),
-
     /// CBOR decode error.
     #[error(transparent)]
     DecoderError(#[from] cbor4ii::serde::DecodeError<Infallible>),
@@ -53,4 +45,32 @@ pub enum ZerodbError {
     /// CBOR encode error.
     #[error(transparent)]
     EncoderError(#[from] cbor4ii::serde::EncodeError<TryReserveError>),
+
+    /// Tokio channel send error.
+    #[error("tokio channel send error: {0}")]
+    TokioSendError(String),
+
+    /// TODO
+    #[error("TODO")]
+    Todo,
+}
+
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
+
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for ZerodbError {
+    fn from(err: tokio::sync::mpsc::error::SendError<T>) -> Self {
+        Self::TokioSendError(err.to_string())
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Functions
+//--------------------------------------------------------------------------------------------------
+
+/// Creates a new `Ok` result.
+#[allow(non_snake_case)]
+pub fn Ok<T>(value: T) -> Result<T> {
+    Result::Ok(value)
 }

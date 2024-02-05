@@ -1,6 +1,6 @@
 use clap::{CommandFactory, Parser};
 use zerodb::{
-    config::{NetworkConfig, ZerodbConfig},
+    config::{ConsensusConfig, NetworkConfig, ZerodbConfig},
     ZerodbNode,
 };
 use zerodb_cli::{SubCommand, ZerodbArgs};
@@ -25,7 +25,10 @@ async fn main() -> zerodb_cli::Result<()> {
             host,
             peer_port,
             client_port,
-            seeds,
+            peers,
+            heartbeat_interval,
+            election_timeout_min,
+            election_timeout_max,
         }) => {
             let config = if let Some(file) = file {
                 toml::from_str(&std::fs::read_to_string(file)?)?
@@ -37,7 +40,16 @@ async fn main() -> zerodb_cli::Result<()> {
                             .host(host)
                             .peer_port(peer_port)
                             .client_port(client_port)
-                            .seeds(seeds)
+                            .peers(peers)
+                            .consensus(
+                                ConsensusConfig::builder()
+                                    .heartbeat_interval(heartbeat_interval)
+                                    .election_timeout_range((
+                                        election_timeout_min,
+                                        election_timeout_max,
+                                    ))
+                                    .build(),
+                            )
                             .build(),
                     )
                     .build()

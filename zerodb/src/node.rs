@@ -1,6 +1,6 @@
-use crate::{client::ClientServer, config::ZerodbConfig, raft::RaftNode, Result};
-use std::time::Duration;
-use tokio::time;
+use crate::{
+    channels, config::ZerodbConfig, MemRaftNode, OutsideChannels, Query, QueryResponse, Result,
+};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -9,6 +9,7 @@ use tokio::time;
 /// Represents a ZerodbNode instance.
 pub struct ZerodbNode {
     config: ZerodbConfig,
+    outside_channels: Option<OutsideChannels<Query, QueryResponse>>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -19,38 +20,42 @@ impl ZerodbNode {
     /// Creates a new ZerodbNode instance.
     pub fn new(config: ZerodbConfig) -> Result<Self> {
         config.validate()?;
-        Ok(Self { config })
+        Ok(Self {
+            config,
+            outside_channels: None,
+        })
     }
 
     /// Starts the ZerodbNode instance.
-    pub async fn start(&self) -> Result<()> {
-        let (handle, rx) =
-            ClientServer::default().start(self.config.network.get_client_address()?)?;
+    pub async fn start(&mut self) -> Result<()> {
+        // Create channels.
+        let (raft_channels, outside_channels) = channels::create();
 
-        let (result,) = tokio::join!(handle);
-        result??;
+        // Create Raft Node.
+        let raft_node = MemRaftNode::<Query, QueryResponse>::builder()
+            .channels(raft_channels)
+            .build();
 
-        // let (_, client_rx) =
-        //     ClientServer::default().start(self.config.network.get_client_address()?)?;
+        // Save other channels.
+        self.outside_channels = Some(outside_channels);
 
-        // let raft_service_handle =
-        //     RaftNode::default().start(self.config.network.get_peer_address()?, client_rx);
-
-        // tokio::select! {
-        //     _ = raft_service_handle => (),
-        //     _ = Self::shutdown_signal() => ()
-        // }
+        // Start Raft Node.
+        raft_node.start().await??;
 
         Ok(())
-    }
-
-    /// Sets up shutdown signal for the ZerodbNode instance.
-    async fn shutdown_signal() {
-        time::sleep(Duration::from_secs(120)).await;
     }
 
     /// Returns the configuration of the ZerodbNode instance.
     pub fn get_config(&self) -> &ZerodbConfig {
         &self.config
+    }
+
+    /// Shuts down the ZerodbNode instance.
+    pub async fn shutdown(&self) -> Result<()> {
+        if let Some(outside_channels) = &self.outside_channels {
+            outside_channels.shutdown_tx.send(()).await?;
+        }
+
+        Ok(())
     }
 }
