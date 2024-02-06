@@ -16,12 +16,9 @@ path = "src/lib.rs"
 [dependencies]
 cbor4ii = { version = "0.3.2", features = ["serde1"] }
 futures.workspace = true
-http-body-util = "0.1.0"
 hyper = "1.1.0"
-hyper-util = { version = "0.1.2", features = ["full", "tokio"] }
 rand.workspace = true
 serde.workspace = true
-static_init = "1.0.3"
 structstruck.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -35,5 +32,3 @@ zeroraft.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-proptest.workspace = true
-rstest.workspace = true
