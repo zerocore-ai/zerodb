@@ -7,7 +7,7 @@ use std::{
 use anyhow::Ok;
 use futures::channel::oneshot;
 use tokio::task::JoinHandle;
-use zerodb::NodeId;
+use zeroraft::NodeId;
 
 use super::RaftNodeServer;
 

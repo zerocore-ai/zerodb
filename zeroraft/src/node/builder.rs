@@ -10,8 +10,8 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{
-    config::DEFAULT_ELECTION_TIMEOUT_RANGE, raft::node::task::TaskState, Log, NodeId, RaftNode,
-    RaftNodeInner, RaftSideChannels, Request, Response,
+    node::task::TaskState, Log, NodeId, RaftNode, RaftNodeInner, RaftSideChannels, Request,
+    Response, DEFAULT_ELECTION_TIMEOUT_RANGE,
 };
 
 //--------------------------------------------------------------------------------------------------

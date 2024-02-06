@@ -1,15 +1,21 @@
-mod builder;
-mod countdown;
+//! # Zeroraft
+
+mod command;
+mod default;
+mod error;
+mod log;
 mod node;
-mod task;
+mod request;
+mod response;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub mod channels;
-
-pub use builder::*;
-pub use channels::*;
-pub use countdown::*;
+pub use command::*;
+pub use default::*;
+pub use error::*;
+pub use log::*;
 pub use node::*;
+pub use request::*;
+pub use response::*;

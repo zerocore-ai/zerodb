@@ -143,7 +143,7 @@ impl CandidateTasks {
             for peer in valid_peers.iter() {
                 let vote_tx = vote_tx.clone();
                 let node = Arc::clone(&node);
-                let peer = (*peer).clone();
+                let peer = **peer;
 
                 // Send the RequestVote RPC in a separate task.
                 tokio::spawn(async move {
@@ -158,6 +158,7 @@ impl CandidateTasks {
             // Wait for all the vote responses.
             let mut votes_granted = 1;
             while let Some(vote) = vote_rx.recv().await {
+                tracing::debug!(">> Received vote response: {:?}", vote);
                 votes_granted += if vote.vote_granted { 1 } else { 0 };
 
                 // We short-circuit if we have enough votes to become the leader.

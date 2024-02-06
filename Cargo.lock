@@ -1577,6 +1577,7 @@ dependencies = [
  "tracing-test",
  "typed-builder",
  "uuid",
+ "zeroraft",
 ]
 
 [[package]]
@@ -1588,4 +1589,19 @@ dependencies = [
  "tokio",
  "toml",
  "zerodb",
+]
+
+[[package]]
+name = "zeroraft"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rand",
+ "serde",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-test",
+ "uuid",
 ]

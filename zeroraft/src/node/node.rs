@@ -14,9 +14,8 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
-    raft::node::task::TaskState, Countdown, Log, MemoryLog, PeerRpc, RaftNodeBuilder,
-    RaftSideChannels, Request, RequestVoteRequest, RequestVoteResponse, Response, Result,
-    ZerodbError,
+    node::task::TaskState, Countdown, Log, MemoryLog, PeerRpc, RaftNodeBuilder, RaftSideChannels,
+    Request, RequestVoteRequest, RequestVoteResponse, Response, Result, ZeroraftError,
 };
 
 use super::task::{CandidateTasks, FollowerTasks, LeaderTasks};
@@ -246,7 +245,7 @@ where
             .send((peer, PeerRpc::RequestVote(request, response_tx)))?;
 
         // Wait for response
-        let response = response_rx.recv().await.ok_or(ZerodbError::Todo)?;
+        let response = response_rx.recv().await.ok_or(ZeroraftError::Todo)?;
 
         // Send response
         vote_tx.send(response).await?;
@@ -289,7 +288,7 @@ mod tests {
     use tokio::time;
     use tracing_test::traced_test;
 
-    use crate::{config::DEFAULT_ELECTION_TIMEOUT_RANGE, raft::node::channels};
+    use crate::{node::channels, DEFAULT_ELECTION_TIMEOUT_RANGE};
 
     use super::*;
 

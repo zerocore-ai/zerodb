@@ -50,9 +50,9 @@ pub enum ZerodbError {
     #[error("tokio channel send error: {0}")]
     TokioSendError(String),
 
-    /// TODO
-    #[error("TODO")]
-    Todo,
+    /// Error from zeroraft crate
+    #[error(transparent)]
+    ZeroraftError(#[from] zeroraft::ZeroraftError),
 }
 
 //--------------------------------------------------------------------------------------------------

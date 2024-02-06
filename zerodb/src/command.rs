@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-use crate::{raft::Request, Response};
+use zeroraft::{Request, Response};
 
 //--------------------------------------------------------------------------------------------------
 // Types

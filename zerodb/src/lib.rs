@@ -5,7 +5,6 @@ mod command;
 mod error;
 mod init;
 mod node;
-mod raft;
 mod server;
 
 //--------------------------------------------------------------------------------------------------
@@ -19,5 +18,4 @@ pub use command::*;
 pub use error::*;
 pub use init::*;
 pub use node::*;
-pub use raft::*;
 pub use server::*;

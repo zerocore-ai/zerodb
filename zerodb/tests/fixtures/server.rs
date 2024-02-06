@@ -12,9 +12,10 @@ use tokio::{
     sync::{mpsc, Mutex},
     task::JoinHandle,
 };
-use zerodb::{
+use zerodb::{Query, QueryResponse};
+use zeroraft::{
     channels, AppendEntriesRequest, AppendEntriesResponse, ClientRequest, ClientResponse,
-    MemRaftNode, NodeId, PeerRpc, Query, QueryResponse, RequestVoteRequest, RequestVoteResponse,
+    MemRaftNode, NodeId, PeerRpc, RequestVoteRequest, RequestVoteResponse,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -62,7 +63,7 @@ impl RaftNodeServer {
     }
 
     /// Start the Raft server.
-    pub fn start(&self) -> JoinHandle<zerodb::Result<()>> {
+    pub fn start(&self) -> JoinHandle<zeroraft::Result<()>> {
         // Start the Raft node.
         let raft_handle = self.node.start();
 
