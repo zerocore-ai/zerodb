@@ -12,10 +12,12 @@ use tokio::{
     sync::{mpsc, Mutex},
     task::JoinHandle,
 };
-use zerodb::{Query, QueryResponse};
 use zeroraft::{
-    channels, AppendEntriesRequest, AppendEntriesResponse, ClientRequest, ClientResponse,
-    MemRaftNode, NodeId, PeerRpc, RequestVoteRequest, RequestVoteResponse,
+    channels,
+    utils::mock::{MockRequest, MockResponse},
+    AppendEntriesRequest, AppendEntriesResponse, ClientRequest, ClientResponse, MemRaftNode,
+    NodeId, PeerRpc, RequestVoteRequest, RequestVoteResponse, DEFAULT_ELECTION_TIMEOUT_RANGE,
+    DEFAULT_HEARTBEAT_INTERVAL,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -28,20 +30,22 @@ pub struct RaftNodeServer {
     id: NodeId,
     client_addr: SocketAddr,
     peer_addr: SocketAddr,
-    node: MemRaftNode<Query, QueryResponse>,
+    node: MemRaftNode<MockRequest, MockResponse>,
     in_rpc_tx: mpsc::UnboundedSender<PeerRpc>,
     out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc)>>>,
-    in_client_request_tx: mpsc::UnboundedSender<ClientRequest<Query, QueryResponse>>,
+    in_client_request_tx: mpsc::UnboundedSender<ClientRequest<MockRequest, MockResponse>>,
 }
 
 /// `RaftNodeServerBuilder` is a builder for `RaftNodeServer`.
 pub struct RaftNodeServerBuilder<N = (), C = ()> {
     peers: Arc<HashMap<NodeId, SocketAddr>>,
     id: NodeId,
+    election_timeout_range: (u64, u64),
+    heartbeat_interval: u64,
     client_addr: SocketAddr,
     peer_addr: SocketAddr,
     node: N,
-    other_channels: C,
+    outside_channels: C,
 }
 
 /// `Rpc` is an enum representing the different types of RPC requests that can be sent to a Raft node.
@@ -67,12 +71,16 @@ impl RaftNodeServer {
         // Start the Raft node.
         let raft_handle = self.node.start();
 
-        tracing::debug!("Started Raft Node.");
+        tracing::debug!(id = self.id.to_string(), "Started Raft node");
 
         // TCP server for client connections.x
         start_client_server(self.client_addr, self.in_client_request_tx.clone());
 
-        tracing::debug!("Started Client Server: {}", self.client_addr);
+        tracing::debug!(
+            id = self.id.to_string(),
+            "Started client server: {}",
+            self.client_addr
+        );
 
         // TCP server for peer connections.
         start_peer_server(self.peer_addr, self.in_rpc_tx.clone());
@@ -80,7 +88,11 @@ impl RaftNodeServer {
         // Forward outgoing requests.
         forward_outgoing_requests(Arc::clone(&self.peers), Arc::clone(&self.out_rpc_rx));
 
-        tracing::debug!("Started Peer Server: {}", self.peer_addr);
+        tracing::debug!(
+            id = self.id.to_string(),
+            "Started peer server: {}",
+            self.peer_addr
+        );
 
         // Return
         raft_handle
@@ -93,7 +105,7 @@ impl RaftNodeServer {
     }
 
     /// Returns the Raft node.
-    pub fn get_node(&self) -> &MemRaftNode<Query, QueryResponse> {
+    pub fn get_node(&self) -> &MemRaftNode<MockRequest, MockResponse> {
         &self.node
     }
 
@@ -112,6 +124,18 @@ impl RaftNodeServerBuilder {
     /// Set the ID of the Raft node.
     pub fn id(mut self, id: NodeId) -> Self {
         self.id = id;
+        self
+    }
+
+    /// Set the election timeout range of the Raft node.
+    pub fn election_timeout_range(mut self, election_timeout_range: (u64, u64)) -> Self {
+        self.election_timeout_range = election_timeout_range;
+        self
+    }
+
+    /// Set the heartbeat interval of the Raft node.
+    pub fn heartbeat_interval(mut self, heartbeat_interval: u64) -> Self {
+        self.heartbeat_interval = heartbeat_interval;
         self
     }
 
@@ -137,8 +161,10 @@ impl RaftNodeServerBuilder {
     pub fn build(self) -> RaftNodeServer {
         let (raft_channels, outside_channels) = channels::create();
 
-        let node = MemRaftNode::<Query, QueryResponse>::builder()
+        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
             .id(self.id)
+            .election_timeout_range(self.election_timeout_range)
+            .heartbeat_interval(self.heartbeat_interval)
             .peers(self.peers.keys().copied().collect())
             .channels(raft_channels)
             .build();
@@ -165,10 +191,12 @@ impl Default for RaftNodeServerBuilder {
         Self {
             peers: Default::default(),
             id: NodeId::new_v4(),
+            election_timeout_range: DEFAULT_ELECTION_TIMEOUT_RANGE,
+            heartbeat_interval: DEFAULT_HEARTBEAT_INTERVAL,
             peer_addr: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5550),
             client_addr: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5551),
             node: (),
-            other_channels: (),
+            outside_channels: (),
         }
     }
 }
@@ -180,7 +208,7 @@ impl Default for RaftNodeServerBuilder {
 /// Start the client server. // TODO(appcypher): refactor
 fn start_client_server(
     addr: SocketAddr,
-    in_client_request_tx: mpsc::UnboundedSender<ClientRequest<Query, QueryResponse>>,
+    in_client_request_tx: mpsc::UnboundedSender<ClientRequest<MockRequest, MockResponse>>,
 ) -> JoinHandle<anyhow::Result<()>> {
     // ClientServer::new(addr, in_client_request_tx)::start()
     tokio::spawn(async move {
@@ -195,9 +223,9 @@ fn start_client_server(
                 let mut buf = vec![];
                 read_stream.read_to_end(&mut buf).await?;
 
-                let request: Query = cbor4ii::serde::from_slice(&buf)?;
+                let request: MockRequest = cbor4ii::serde::from_slice(&buf)?;
                 let (response_tx, mut response_rx) =
-                    mpsc::channel::<ClientResponse<QueryResponse>>(1);
+                    mpsc::channel::<ClientResponse<MockResponse>>(1);
 
                 in_client_request_tx.send(ClientRequest(request, response_tx))?;
 
@@ -274,16 +302,13 @@ fn start_peer_server(
 /// Forward outgoing requests.
 fn forward_outgoing_requests(
     peers: Arc<HashMap<NodeId, SocketAddr>>,
-    out_request_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc)>>>,
+    out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc)>>>,
 ) -> JoinHandle<anyhow::Result<()>> {
     tokio::spawn(async move {
-        while let Some((peer, request)) = out_request_rx.lock().await.recv().await {
+        while let Some((peer, request)) = out_rpc_rx.lock().await.recv().await {
             let addr = peers
                 .get(&peer)
                 .ok_or(anyhow::anyhow!("Node ID not found."))?;
-
-            // TODO(appcypher): Remove this sleep.
-            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
             let mut stream = TcpStream::connect(addr).await?;
             let (mut read_stream, mut write_stream) = stream.split();

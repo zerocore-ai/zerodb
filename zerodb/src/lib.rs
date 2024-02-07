@@ -2,7 +2,7 @@
 //! `zerodb` is a multi-model database query engine for multi-tenant applications
 
 mod command;
-mod error;
+mod errors;
 mod init;
 mod node;
 mod server;
@@ -11,11 +11,11 @@ mod server;
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub mod config;
+pub mod configs;
 pub mod utils;
 
 pub use command::*;
-pub use error::*;
+pub use errors::*;
 pub use init::*;
 pub use node::*;
 pub use server::*;

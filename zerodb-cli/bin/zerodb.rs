@@ -1,6 +1,6 @@
 use clap::{CommandFactory, Parser};
 use zerodb::{
-    config::{ConsensusConfig, NetworkConfig, ZerodbConfig},
+    configs::{ConsensusConfig, NetworkConfig, ZerodbConfig},
     ZerodbNode,
 };
 use zerodb_cli::{SubCommand, ZerodbArgs};

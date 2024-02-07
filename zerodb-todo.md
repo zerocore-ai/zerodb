@@ -1,8 +1,3 @@
-- [x] Basic cluster communication
-
-  - [x] Websocket hyper tungstenite
-  - [x] Establishing connection between nodes
-
 - [ ] Distributed Consensus
   - [ ] Raft
     - [ ] State transitions

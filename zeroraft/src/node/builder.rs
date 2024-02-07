@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     sync::{
         atomic::{AtomicBool, AtomicU64},
         Arc,
@@ -11,7 +12,7 @@ use uuid::Uuid;
 
 use crate::{
     node::task::TaskState, Log, NodeId, RaftNode, RaftNodeInner, RaftSideChannels, Request,
-    Response, DEFAULT_ELECTION_TIMEOUT_RANGE,
+    Response, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -34,9 +35,10 @@ where
     pub(super) current_state: Mutex<TaskState>,
     pub(super) last_heartbeat: Option<Instant>,
     pub(super) election_timeout_range: (u64, u64),
+    pub(super) heartbeat_interval: u64,
     pub(super) running: AtomicBool,
     pub(super) channels: Channels,
-    pub(super) peers: Vec<NodeId>,
+    pub(super) peers: HashSet<NodeId>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -91,15 +93,23 @@ where
         }
     }
 
+    /// Sets the heartbeat interval of the Raft node.
+    pub fn heartbeat_interval(self, heartbeat_interval: u64) -> Self {
+        RaftNodeBuilder {
+            heartbeat_interval,
+            ..self
+        }
+    }
+
     /// Add a peer to the Raft node.
     pub fn add_peer(self, peer: NodeId) -> Self {
         let mut peers = self.peers;
-        peers.push(peer);
+        peers.insert(peer);
         RaftNodeBuilder { peers, ..self }
     }
 
     /// Add peers to the Raft node.
-    pub fn peers(self, peers: Vec<NodeId>) -> Self {
+    pub fn peers(self, peers: HashSet<NodeId>) -> Self {
         RaftNodeBuilder { peers, ..self }
     }
 
@@ -119,6 +129,7 @@ where
             current_state: self.current_state,
             last_heartbeat: self.last_heartbeat,
             election_timeout_range: self.election_timeout_range,
+            heartbeat_interval: self.heartbeat_interval,
             running: self.running,
             peers: self.peers,
             channels,
@@ -142,6 +153,7 @@ where
             current_state: self.current_state,
             last_heartbeat: self.last_heartbeat,
             election_timeout_range: self.election_timeout_range,
+            heartbeat_interval: self.heartbeat_interval,
             running: self.running,
             channels: self.channels,
             peers: self.peers,
@@ -173,6 +185,7 @@ where
             current_state: Default::default(),
             last_heartbeat: None,
             election_timeout_range: DEFAULT_ELECTION_TIMEOUT_RANGE,
+            heartbeat_interval: DEFAULT_HEARTBEAT_INTERVAL,
             running: Default::default(),
             channels: Default::default(),
             peers: Default::default(),

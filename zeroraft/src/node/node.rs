@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     ops::Deref,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -14,8 +15,9 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
-    node::task::TaskState, Countdown, Log, MemoryLog, PeerRpc, RaftNodeBuilder, RaftSideChannels,
-    Request, RequestVoteRequest, RequestVoteResponse, Response, Result, ZeroraftError,
+    node::task::TaskState, AppendEntriesRequest, AppendEntriesResponse, Countdown, Log, MemoryLog,
+    PeerRpc, RaftNodeBuilder, RaftSideChannels, Request, RequestVoteRequest, RequestVoteResponse,
+    Response, Result, ZeroraftError,
 };
 
 use super::task::{CandidateTasks, FollowerTasks, LeaderTasks};
@@ -27,6 +29,7 @@ use super::task::{CandidateTasks, FollowerTasks, LeaderTasks};
 /// Node ID.
 pub type NodeId = Uuid;
 
+// TODO(appcypher): RPC retries
 /// A `RaftNode` represents a single node in a Raft consensus cluster.
 ///
 /// Each node has a unique ID, a current term, a voted_for field to keep track of the node it has voted for, a log to store entries, and a role which can be either `Follower`, `Candidate`, or `Leader`. The role determines how the node responds to incoming requests.
@@ -39,7 +42,7 @@ where
     pub(super) inner: Arc<RaftNodeInner<L, R, P>>,
 }
 
-// TODO(appcypher): We need to persist node info to disk.
+// TODO(appcypher): We need to persist some fields to disk.
 /// The inner state of a Raft node.
 pub struct RaftNodeInner<L, R, P>
 where
@@ -68,6 +71,11 @@ where
     /// Election timeout range.
     pub(crate) election_timeout_range: (u64, u64),
 
+    // TODO(appcypher): Remove allow
+    /// Heartbeat interval.
+    #[allow(dead_code)]
+    pub(crate) heartbeat_interval: u64,
+
     /// Whether the node is running.
     pub(crate) running: AtomicBool,
 
@@ -75,7 +83,7 @@ where
     pub(crate) channels: RaftSideChannels<R, P>,
 
     /// Membership configuration.
-    pub(crate) peers: Vec<NodeId>,
+    pub(crate) peers: HashSet<NodeId>,
 }
 
 /// This is a convenience type alias for a Raft node with an in-memory log.
@@ -100,7 +108,10 @@ where
             loop {
                 let current_state = inner.current_state.lock().await.clone();
 
-                tracing::debug!("Current state: {current_state:?}");
+                tracing::debug!(
+                    id = inner.id.to_string(),
+                    "State changed: {current_state:?}"
+                );
 
                 let inner = Arc::clone(&inner);
 
@@ -135,34 +146,61 @@ where
     R: Request,
     P: Response + Send + 'static,
 {
+    /// Creates a new election countdown.
     pub(super) fn new_election_countdown(&self) -> Countdown {
-        Countdown::start_range(self.election_timeout_range)
+        let t = Countdown::start_range(self.election_timeout_range);
+        tracing::debug!(
+            id = self.id.to_string(),
+            "Starting election countdown: {:?}",
+            t.get_interval()
+        );
+
+        t
     }
 
+    /// Changes the state of the node to `Follower`.
     pub(super) async fn change_to_follower_state(&self) {
         *self.current_state.lock().await = TaskState::Follower;
     }
 
+    /// Changes the state of the node to `Candidate`.
     pub(super) async fn change_to_candidate_state(&self) {
         *self.current_state.lock().await = TaskState::Candidate;
     }
 
+    /// Changes the state of the node to `Leader`.
     pub(super) async fn change_to_leader_state(&self) {
         *self.current_state.lock().await = TaskState::Leader;
     }
 
+    /// Changes the state of the node to `Shutdown`.
     pub(super) async fn change_to_shutdown_state(&self) {
         *self.current_state.lock().await = TaskState::Shutdown;
     }
 
+    /// Increments the current term of the node.
     pub(super) async fn increment_term(&self) {
+        tracing::debug!(
+            id = self.id.to_string(),
+            "Incrementing term: {}",
+            self.current_term.load(Ordering::SeqCst),
+        );
+
         // TODO: We need to persist this to disk.
         self.current_term.fetch_add(1, Ordering::SeqCst);
     }
 
+    /// Votes for the current node.
     pub(super) async fn vote_for_self(&self) {
         // TODO(appcypher): We need to persist this to disk.
         self.voted_for.lock().await.replace(self.id);
+    }
+
+    /// Updates the current term and the ID of the node that the current node voted for in the current term.
+    pub(super) async fn update_term_and_voted_for(&self, term: u64, candidate_id: NodeId) {
+        // TODO(appcypher): We need to persist this to disk.
+        self.current_term.store(term, Ordering::SeqCst);
+        self.voted_for.lock().await.replace(candidate_id);
     }
 
     /// Checks if the current state of the node is `Follower`.
@@ -201,8 +239,14 @@ where
     }
 
     /// Returns the peers of the node.
-    pub fn get_peers(&self) -> &[NodeId] {
+    pub fn get_peers(&self) -> &HashSet<NodeId> {
         &self.peers
+    }
+
+    /// Returns the valid peers of the node.
+    pub fn get_valid_peers(&self) -> impl Iterator<Item = &NodeId> {
+        // TODO(appcypher): We should do this filtering at creation and update time.
+        self.peers.iter().filter(|peer| **peer != self.id)
     }
 
     /// Returns the log of the node.
@@ -215,6 +259,16 @@ where
         *self.voted_for.lock().await
     }
 
+    /// Returns the election timeout range.
+    pub fn get_election_timeout_range(&self) -> (u64, u64) {
+        self.election_timeout_range
+    }
+
+    /// Returns the heartbeat interval.
+    pub fn get_heartbeat_interval(&self) -> u64 {
+        self.heartbeat_interval
+    }
+
     /// Returns the last heartbeat.
     pub fn get_last_heartbeat(&self) -> Option<Instant> {
         self.last_heartbeat
@@ -225,6 +279,7 @@ where
         self.current_state.lock().await.clone()
     }
 
+    /// Returns whether the node is running.
     pub(super) async fn send_request_vote_rpc(
         &self,
         peer: NodeId,
@@ -239,6 +294,8 @@ where
         // Response channel.
         let (response_tx, mut response_rx) = mpsc::channel(1);
 
+        let start = Instant::now();
+
         // Send request
         self.channels
             .out_rpc_tx
@@ -247,8 +304,52 @@ where
         // Wait for response
         let response = response_rx.recv().await.ok_or(ZeroraftError::Todo)?;
 
+        tracing::debug!(
+            id = self.id.to_string(),
+            term = self.get_current_term(),
+            "Request Vote RPC took {:?} roundtrip to: {}, vote: ({}, {})",
+            start.elapsed(),
+            peer,
+            response.term,
+            response.vote_granted
+        );
+
         // Send response
         vote_tx.send(response).await?;
+
+        Ok(())
+    }
+
+    /// Sends an append entries RPC to a peer.
+    pub(super) async fn send_append_entries_rpc(
+        &self,
+        request: AppendEntriesRequest,
+        peer: NodeId,
+        append_entries_tx: mpsc::Sender<AppendEntriesResponse>,
+    ) -> Result<()> {
+        // Response channel.
+        let (response_tx, mut response_rx) = mpsc::channel(1);
+
+        let start = Instant::now();
+
+        // Send request
+        self.channels
+            .out_rpc_tx
+            .send((peer, PeerRpc::AppendEntries(request, response_tx)))?;
+
+        // Wait for response
+        let response = response_rx.recv().await.ok_or(ZeroraftError::Todo)?;
+
+        tracing::debug!(
+            id = self.id.to_string(),
+            term = self.get_current_term(),
+            "Append Entries RPC took {:?} roundtrip to: {}",
+            start.elapsed(),
+            peer
+        );
+
+        // Send response
+        append_entries_tx.send(response).await?;
 
         Ok(())
     }
@@ -286,44 +387,23 @@ mod tests {
     use std::time::Duration;
 
     use tokio::time;
-    use tracing_test::traced_test;
 
-    use crate::{node::channels, DEFAULT_ELECTION_TIMEOUT_RANGE};
+    use crate::{
+        node::channels,
+        utils::mock::{MockRequest, MockResponse},
+        DEFAULT_ELECTION_TIMEOUT_RANGE,
+    };
 
     use super::*;
 
-    /// Helper module for tests.
-    mod helper {
-        use serde::{Deserialize, Serialize};
-
-        use super::*;
-
-        //--------------------------------------------------------------------------------------------------
-        // Types
-        //--------------------------------------------------------------------------------------------------
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        pub(super) enum TestRequest {}
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        pub(super) enum TestResponse {}
-
-        //--------------------------------------------------------------------------------------------------
-        // Methods
-        //--------------------------------------------------------------------------------------------------
-
-        impl Request for TestRequest {}
-
-        impl Response for TestResponse {}
-    }
-
     #[tokio::test]
-    #[traced_test]
     async fn test_node_can_shut_down() -> anyhow::Result<()> {
+        tracing_subscriber::fmt::init();
+
         let (raft_channels, _) = channels::create();
 
         // Create a node.
-        let node = MemRaftNode::<helper::TestRequest, helper::TestResponse>::builder()
+        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
             .channels(raft_channels)
             .build();
 
@@ -343,12 +423,13 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_node_starts_as_follower() -> anyhow::Result<()> {
+        tracing_subscriber::fmt::init();
+
         let (raft_channels, _) = channels::create();
 
         // Create a node.
-        let node = MemRaftNode::<helper::TestRequest, helper::TestResponse>::builder()
+        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
             .channels(raft_channels)
             .build();
 
@@ -362,12 +443,13 @@ mod tests {
 
     // // TODO(appcypher): test_node_becomes_candidate_after_election_timeout
     // #[tokio::test]
-    // #[traced_test]
     // async fn test_node_becomes_candidate_after_election_timeout() -> anyhow::Result<()> {
+    //     tracing_subscriber::fmt::init();
+
     //     let (raft_channels, _) = channels::create();
 
     //     // Create a node.
-    //     let node = MemRaftNode::<helper::TestRequest, helper::TestResponse>::builder()
+    //     let node = MemRaftNode::<MockRequest, MockResponse>::builder()
     //         .election_timeout_range((100, 101))
     //         .channels(raft_channels)
     //         .build();
@@ -385,13 +467,14 @@ mod tests {
     // }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_node_becomes_leader_after_vote_request_with_no_peers() -> anyhow::Result<()> {
+        tracing_subscriber::fmt::init();
+
         let (raft_channels, _) = channels::create();
 
         // Create a node.
-        let node = MemRaftNode::<helper::TestRequest, helper::TestResponse>::builder()
-            .peers(vec![])
+        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
+            .peers(HashSet::new())
             .channels(raft_channels)
             .build();
 

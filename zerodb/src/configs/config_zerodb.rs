@@ -3,13 +3,12 @@ use std::{fs, net::SocketAddr, path::Path};
 use serde::{Deserialize, Serialize};
 use structstruck::strike;
 use typed_builder::TypedBuilder;
+use zeroraft::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
 
 use crate::{
-    config::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
+    configs::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
     Result, ZerodbError,
 };
-
-use super::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -171,7 +170,7 @@ mod tests {
         assert_eq!(config.network.peer_port, DEFAULT_PEER_PORT);
         assert_eq!(config.network.client_port, DEFAULT_CLIENT_PORT);
         assert_eq!(config.network.peers, Vec::<SocketAddr>::new());
-        assert_eq!(config.network.consensus.heartbeat_interval, 100);
+        assert_eq!(config.network.consensus.heartbeat_interval, 50);
         assert_eq!(config.network.consensus.election_timeout_range, (150, 300));
     }
 

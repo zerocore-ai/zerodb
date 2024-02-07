@@ -14,8 +14,6 @@ edition.workspace = true
 path = "src/lib.rs"
 
 [dependencies]
-cbor4ii = { version = "0.3.2", features = ["serde1"] }
-futures.workspace = true
 hyper = "1.1.0"
 rand.workspace = true
 serde.workspace = true

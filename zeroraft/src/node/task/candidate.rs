@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::{cmp::max, sync::Arc};
 
 use tokio::sync::mpsc;
 
 use crate::{
-    Log, PeerRpc, RaftNodeInner, Request, RequestVoteRequest, RequestVoteResponse, Response, Result,
+    AppendEntriesRequest, AppendEntriesResponse, Log, NodeId, PeerRpc, RaftNodeInner, Request,
+    RequestVoteRequest, RequestVoteResponse, Response, Result,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -14,6 +15,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct CandidateTasks;
 
+/// The result of a vote request.
 pub(crate) enum VoteResult {
     NoPeers,
     Granted,
@@ -52,43 +54,58 @@ impl CandidateTasks {
             tokio::select! {
                 Some(result) = vote_result_rx.recv() => match result {
                     VoteResult::NoPeers => {
-                        tracing::debug!(">> No peers to ask for votes so we become the leader.");
+                        tracing::debug!(id = node.id.to_string(), "No peers to ask for votes so we become the leader");
                         node.change_to_leader_state().await;
                     },
                     VoteResult::Granted => {
-                        tracing::debug!(">> Received enough votes to become leader.");
+                        tracing::debug!(id = node.id.to_string(), "Received enough votes to become leader");
                         node.change_to_leader_state().await;
                     },
                     VoteResult::NotGranted => {
-                        tracing::debug!(">> Did not receive enough votes to become leader.");
+                        tracing::debug!(id = node.id.to_string(), "Did not receive enough votes to become leader");
                         node.change_to_follower_state().await;
                     }
                 },
                 Some(request) = in_rpc_rx.recv() => match request {
-                    PeerRpc::AppendEntries(_, _) => {
-                        tracing::debug!(">> Received AppendEntries RPC.");
-                    },
-                    PeerRpc::RequestVote(RequestVoteRequest { term, ..}, response_tx) => {
-                        // TODO(appcypher): Check if we can vote for the candidate. For now, we always vote for the candidate.
-                        if term > node.get_current_term() {
-                            node.change_to_follower_state().await;
+                    PeerRpc::AppendEntries(AppendEntriesRequest { term, .. }, response_tx) => {
+                        // TODO(appcypher): ...
 
-                            // Send the response.
+                        // Send ok response.
+                        response_tx.send(AppendEntriesResponse {
+                            term, // TODO(appcypher): should we return our term instead?
+                            success: true,
+                            id: node.get_id(),
+                        }).await?;
+
+                        node.change_to_follower_state().await;
+                        election_countdown.reset();
+                    },
+                    PeerRpc::RequestVote(RequestVoteRequest { term, candidate_id }, response_tx) => {
+                        // Check if our term is stale.
+                        if term > node.get_current_term() {
+                            // Send granted response.
                             response_tx.send(RequestVoteResponse {
-                                term, // TODO(appcypher): Gotta update term after this.
+                                term, // TODO(appcypher): should we return our term instead?
                                 vote_granted: true,
+                                id: node.get_id(),
                             }).await?;
-                        } else {
-                            // Send the response.
-                            response_tx.send(RequestVoteResponse {
-                                term: node.get_current_term(),
-                                vote_granted: false,
-                            }).await?;
+
+                            node.change_to_follower_state().await;
+                            node.update_term_and_voted_for(term, candidate_id).await;
+                            continue;
                         }
+
+                        // We have either already voted or the request term is stale.
+                        // Send rejected response.
+                        response_tx.send(RequestVoteResponse {
+                            term: node.get_current_term(),
+                            vote_granted: false,
+                            id: node.get_id(),
+                        }).await?;
                     }
                 },
                 Some(_) = in_client_request_rx.recv() => {
-                    tracing::debug!(">> Received client request.");
+                    tracing::debug!(id = node.id.to_string(), "Received client request");
                 },
                 _ = shutdown_rx.recv() => {
                     // Shutdown.
@@ -123,12 +140,8 @@ impl CandidateTasks {
         let (vote_result_tx, vote_result_rx) = mpsc::channel(1);
 
         tokio::spawn(async move {
-            // Filter out the current node from the peers. // TODO(appcypher): Might want to move this to the RaftNodeInner. Filter it out at creation and updates.
-            let valid_peers = node
-                .get_peers()
-                .iter()
-                .filter(|peer| **peer != node.get_id())
-                .collect::<Vec<_>>();
+            // Filter out the current node from the peers.
+            let valid_peers: Vec<NodeId> = node.get_valid_peers().cloned().collect();
 
             // Early exit to if there are no peers.
             if valid_peers.is_empty() {
@@ -137,13 +150,13 @@ impl CandidateTasks {
             }
 
             // Create a channel to receive the vote responses.
-            let (vote_tx, mut vote_rx) = mpsc::channel::<RequestVoteResponse>(valid_peers.len());
+            let (vote_tx, mut vote_rx) =
+                mpsc::channel::<RequestVoteResponse>(max(valid_peers.len(), 1));
 
             // Send RequestVote RPC to all other servers.
-            for peer in valid_peers.iter() {
+            for peer in valid_peers {
                 let vote_tx = vote_tx.clone();
                 let node = Arc::clone(&node);
-                let peer = **peer;
 
                 // Send the RequestVote RPC in a separate task.
                 tokio::spawn(async move {
@@ -158,7 +171,6 @@ impl CandidateTasks {
             // Wait for all the vote responses.
             let mut votes_granted = 1;
             while let Some(vote) = vote_rx.recv().await {
-                tracing::debug!(">> Received vote response: {:?}", vote);
                 votes_granted += if vote.vote_granted { 1 } else { 0 };
 
                 // We short-circuit if we have enough votes to become the leader.

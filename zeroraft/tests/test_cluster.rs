@@ -3,17 +3,17 @@ mod fixtures;
 use std::time::Duration;
 
 use tokio::time;
-use tracing_test::traced_test;
 
-use crate::fixtures::RaftNodeCluster;
+use crate::fixtures::{RaftNodeCluster, RaftNodeClusterConfig};
 
 //--------------------------------------------------------------------------------------------------
 // Tests
 //--------------------------------------------------------------------------------------------------
 
 #[tokio::test]
-#[traced_test]
 async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+
     let mut cluster = RaftNodeCluster::new(2);
 
     // Start the cluster.
@@ -36,15 +36,22 @@ async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[traced_test]
 async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()> {
-    let mut cluster = RaftNodeCluster::new(3);
+    tracing_subscriber::fmt::init();
+
+    let mut cluster = RaftNodeCluster::new_with_config(
+        3,
+        RaftNodeClusterConfig {
+            election_timeout_range: (100, 200),
+            ..Default::default()
+        },
+    );
 
     // Start the cluster.
     cluster.start();
 
     // Wait for the cluster to work out leader.
-    time::sleep(Duration::from_secs(3)).await;
+    time::sleep(Duration::from_secs(1)).await;
 
     // Count leaders.
     let mut leaders = 0;
@@ -55,9 +62,7 @@ async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()
         }
     }
 
-    // TODO(appcypher)
-    // assert_eq!(leaders, 1);
-    tracing::info!("Leaders: {leaders}");
+    assert_eq!(leaders, 1);
 
     Ok(())
 }

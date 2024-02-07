@@ -1,8 +1,8 @@
 //! # Zeroraft
 
 mod command;
-mod default;
-mod error;
+mod defaults;
+mod errors;
 mod log;
 mod node;
 mod request;
@@ -12,9 +12,11 @@ mod response;
 // Exports
 //--------------------------------------------------------------------------------------------------
 
+pub mod utils;
+
 pub use command::*;
-pub use default::*;
-pub use error::*;
+pub use defaults::*;
+pub use errors::*;
 pub use log::*;
 pub use node::*;
 pub use request::*;

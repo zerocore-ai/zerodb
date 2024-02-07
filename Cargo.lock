@@ -1157,8 +1157,6 @@ name = "zerodb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cbor4ii",
- "futures",
  "hyper",
  "rand",
  "serde",
@@ -1190,6 +1188,8 @@ name = "zeroraft"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cbor4ii",
+ "futures",
  "rand",
  "serde",
  "thiserror",

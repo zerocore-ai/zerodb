@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::{Log, PeerRpc, RaftNodeInner, Request, RequestVoteResponse, Response, Result};
+use crate::{
+    AppendEntriesRequest, AppendEntriesResponse, Log, PeerRpc, RaftNodeInner, Request,
+    RequestVoteRequest, RequestVoteResponse, Response, Result,
+};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -38,20 +41,40 @@ impl FollowerTasks {
 
             tokio::select! {
                 Some(request) = in_rpc_rx.recv() => match request {
-                    PeerRpc::AppendEntries(_, _) => {
-                        tracing::debug!(">> Received AppendEntries request.");
-                        // Reset election countdown.
+                    PeerRpc::AppendEntries(AppendEntriesRequest { term, .. }, response_tx) => {
+                        // TODO(appcypher): ...
+
+                        // Send ok response.
+                        response_tx.send(AppendEntriesResponse {
+                            term, // TODO(appcypher): should we return our term instead?
+                            success: true,
+                            id: node.get_id(),
+                        }).await?;
+
                         election_countdown.reset();
                     },
-                    PeerRpc::RequestVote(request, response_tx) => {
-                        // TODO(appcypher): Check if we can vote for the candidate. For now, we always vote for the candidate.
-                        let response = RequestVoteResponse {
-                            term: request.term, // TODO(appcypher): Gotta update term after this.
-                            vote_granted: true,
-                        };
+                    PeerRpc::RequestVote(RequestVoteRequest { term, candidate_id }, response_tx) => {
+                        // Check if our term is stale.
+                        if term > node.get_current_term() {
+                            // Send granted response.
+                            response_tx.send(RequestVoteResponse {
+                                term, // TODO(appcypher): should we return our term instead?
+                                vote_granted: true,
+                                id: node.get_id(),
+                            }).await?;
 
-                        // Send the response.
-                        response_tx.send(response).await?;
+                            node.change_to_follower_state().await;
+                            node.update_term_and_voted_for(term, candidate_id).await;
+                            continue;
+                        }
+
+                        // We have either already voted or the request term is stale.
+                        // Send not granted response.
+                        response_tx.send(RequestVoteResponse {
+                            term: node.get_current_term(),
+                            vote_granted: false,
+                            id: node.get_id(),
+                        }).await?;
                     }
                 },
                 Some(_) = in_client_request_rx.recv() => {

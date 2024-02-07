@@ -1,6 +1,6 @@
 use zeroraft::{channels, MemRaftNode, OutsideChannels};
 
-use crate::{config::ZerodbConfig, Query, QueryResponse, Result};
+use crate::{configs::ZerodbConfig, Query, QueryResponse, Result};
 
 //--------------------------------------------------------------------------------------------------
 // Types

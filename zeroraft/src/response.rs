@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::NodeId;
+
 //--------------------------------------------------------------------------------------------------
 // Traits
 //--------------------------------------------------------------------------------------------------
@@ -18,14 +20,16 @@ pub struct RequestVoteResponse {
     pub term: u64,
     /// A boolean indicating whether the vote was granted.
     pub vote_granted: bool,
+    /// The id of the node that sent the response.
+    pub id: NodeId,
 }
 
 /// `AppendEntriesResponse` is a struct representing a response to a request to append entries to the log in the Raft consensus algorithm.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppendEntriesResponse {
-    // pub term: u64,
-    // pub success: bool,
-    // pub id: NodeId,
+    pub term: u64,
+    pub success: bool, // TODO(appcypher): Fix fields
+    pub id: NodeId,
 }
 
 /// `ClientResponse` is a struct representing a response to a client request in the Raft consensus algorithm.

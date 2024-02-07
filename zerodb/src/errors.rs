@@ -1,7 +1,5 @@
 //! Error types of the zerodb crate.
 
-use std::{collections::TryReserveError, convert::Infallible};
-
 use thiserror::Error;
 
 //--------------------------------------------------------------------------------------------------
@@ -37,14 +35,6 @@ pub enum ZerodbError {
     /// Tokio join error.
     #[error(transparent)]
     TokioJoinError(#[from] tokio::task::JoinError),
-
-    /// CBOR decode error.
-    #[error(transparent)]
-    DecoderError(#[from] cbor4ii::serde::DecodeError<Infallible>),
-
-    /// CBOR encode error.
-    #[error(transparent)]
-    EncoderError(#[from] cbor4ii::serde::EncodeError<TryReserveError>),
 
     /// Tokio channel send error.
     #[error("tokio channel send error: {0}")]

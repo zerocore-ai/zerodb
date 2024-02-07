@@ -3,7 +3,6 @@ mod fixtures;
 use std::time::Duration;
 
 use tokio::time;
-use tracing_test::traced_test;
 
 use crate::fixtures::RaftNodeServer;
 
@@ -12,8 +11,9 @@ use crate::fixtures::RaftNodeServer;
 //--------------------------------------------------------------------------------------------------
 
 #[tokio::test]
-#[traced_test]
 async fn test_single_server_can_shutdown() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+
     let server = RaftNodeServer::builder().build();
 
     // Start the server.
