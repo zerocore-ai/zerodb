@@ -148,14 +148,15 @@ where
 {
     /// Creates a new election countdown.
     pub(super) fn new_election_countdown(&self) -> Countdown {
-        let t = Countdown::start_range(self.election_timeout_range);
+        let countdown = Countdown::start_range(self.election_timeout_range);
+
         tracing::debug!(
             id = self.id.to_string(),
             "Starting election countdown: {:?}",
-            t.get_interval()
+            countdown.get_interval()
         );
 
-        t
+        countdown
     }
 
     /// Changes the state of the node to `Follower`.

@@ -5,7 +5,6 @@ mod command;
 mod errors;
 mod init;
 mod node;
-mod server;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
@@ -18,4 +17,3 @@ pub use command::*;
 pub use errors::*;
 pub use init::*;
 pub use node::*;
-pub use server::*;
