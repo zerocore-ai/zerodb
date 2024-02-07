@@ -10,10 +10,8 @@ use crate::fixtures::{RaftNodeCluster, RaftNodeClusterConfig};
 // Tests
 //--------------------------------------------------------------------------------------------------
 
-#[tokio::test]
+#[test_log::test(tokio::test)]
 async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
     let mut cluster = RaftNodeCluster::new(2);
 
     // Start the cluster.
@@ -35,10 +33,8 @@ async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[test_log::test(tokio::test)]
 async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
     let mut cluster = RaftNodeCluster::new_with_config(
         3,
         RaftNodeClusterConfig {

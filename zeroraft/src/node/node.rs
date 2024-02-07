@@ -396,10 +396,8 @@ mod tests {
 
     use super::*;
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_node_can_shut_down() -> anyhow::Result<()> {
-        tracing_subscriber::fmt::init();
-
         let (raft_channels, _) = channels::create();
 
         // Create a node.
@@ -422,10 +420,8 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_node_starts_as_follower() -> anyhow::Result<()> {
-        tracing_subscriber::fmt::init();
-
         let (raft_channels, _) = channels::create();
 
         // Create a node.
@@ -442,10 +438,8 @@ mod tests {
     }
 
     // // TODO(appcypher): test_node_becomes_candidate_after_election_timeout
-    // #[tokio::test]
+    // #[test_log::test(tokio::test)]
     // async fn test_node_becomes_candidate_after_election_timeout() -> anyhow::Result<()> {
-    //     tracing_subscriber::fmt::init();
-
     //     let (raft_channels, _) = channels::create();
 
     //     // Create a node.
@@ -466,10 +460,8 @@ mod tests {
     //     Ok(())
     // }
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_node_becomes_leader_after_vote_request_with_no_peers() -> anyhow::Result<()> {
-        tracing_subscriber::fmt::init();
-
         let (raft_channels, _) = channels::create();
 
         // Create a node.
