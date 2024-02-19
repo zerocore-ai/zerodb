@@ -1,18 +1,14 @@
 use std::{
     collections::HashSet,
-    sync::{
-        atomic::{AtomicBool, AtomicU64},
-        Arc,
-    },
-    time::Instant,
+    sync::{atomic::AtomicU64, Arc},
 };
 
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{
-    node::task::TaskState, Log, NodeId, RaftNode, RaftNodeInner, RaftSideChannels, Request,
-    Response, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL,
+    task::TaskState, Log, NodeId, RaftNode, RaftNodeInner, RaftSideChannels, Request, Response,
+    Result, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -29,16 +25,11 @@ where
     pub(super) _r: std::marker::PhantomData<R>,
     pub(super) _p: std::marker::PhantomData<P>,
     pub(super) id: NodeId,
-    pub(super) current_term: AtomicU64,
-    pub(super) voted_for: Mutex<Option<NodeId>>,
     pub(super) log: L,
-    pub(super) current_state: Mutex<TaskState>,
-    pub(super) last_heartbeat: Option<Instant>,
+    pub(super) peers: HashSet<NodeId>,
+    pub(super) channels: Channels,
     pub(super) election_timeout_range: (u64, u64),
     pub(super) heartbeat_interval: u64,
-    pub(super) running: AtomicBool,
-    pub(super) channels: Channels,
-    pub(super) peers: HashSet<NodeId>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -56,33 +47,14 @@ where
         RaftNodeBuilder { id, ..self }
     }
 
-    /// Sets the current term of the Raft node.
-    pub fn current_term(self, current_term: u64) -> Self {
-        RaftNodeBuilder {
-            current_term: AtomicU64::new(current_term),
-            ..self
-        }
-    }
-
-    /// Sets the ID of the node that the Raft node voted for in the current term.
-    pub fn voted_for(self, voted_for: NodeId) -> Self {
-        RaftNodeBuilder {
-            voted_for: Mutex::new(Some(voted_for)),
-            ..self
-        }
-    }
-
     /// Sets the log of the Raft node.
     pub fn log(self, log: L) -> Self {
         RaftNodeBuilder { log, ..self }
     }
 
-    /// Sets the current state of the Raft node.
-    pub fn current_state(self, current_state: TaskState) -> Self {
-        RaftNodeBuilder {
-            current_state: Mutex::new(current_state),
-            ..self
-        }
+    /// Sets the peers of the Raft node only if the log does not have a membership yet.
+    pub fn peers(self, peers: HashSet<NodeId>) -> Self {
+        RaftNodeBuilder { peers, ..self }
     }
 
     /// Sets the election timeout range of the Raft node.
@@ -101,18 +73,6 @@ where
         }
     }
 
-    /// Add a peer to the Raft node.
-    pub fn add_peer(self, peer: NodeId) -> Self {
-        let mut peers = self.peers;
-        peers.insert(peer);
-        RaftNodeBuilder { peers, ..self }
-    }
-
-    /// Add peers to the Raft node.
-    pub fn peers(self, peers: HashSet<NodeId>) -> Self {
-        RaftNodeBuilder { peers, ..self }
-    }
-
     /// Sets the communication channels for the Raft node.
     pub fn channels(
         self,
@@ -123,15 +83,10 @@ where
             _r: self._r,
             _p: self._p,
             id: self.id,
-            current_term: self.current_term,
-            voted_for: self.voted_for,
             log: self.log,
-            current_state: self.current_state,
-            last_heartbeat: self.last_heartbeat,
+            peers: self.peers,
             election_timeout_range: self.election_timeout_range,
             heartbeat_interval: self.heartbeat_interval,
-            running: self.running,
-            peers: self.peers,
             channels,
         }
     }
@@ -144,22 +99,37 @@ where
     P: Response,
 {
     /// Builds the Raft node.
-    pub fn build(self) -> RaftNode<L, R, P> {
+    pub async fn build(mut self) -> Result<RaftNode<L, R, P>> {
+        // Load the current term, voted for from the log.
+        let current_term = AtomicU64::new(self.log.load_current_term().await);
+        let voted_for = Mutex::new(self.log.load_voted_for().await);
+
+        // Load the membership and filter out the node's own ID.
+        // But first, we check if there is no membership yet, in which case we use the provided peers.
+        let membership = self.log.get_membership().await;
+        let filtered_membership = if membership.is_empty() {
+            self.log.set_initial_membership(self.peers.clone()).await?;
+            HashSet::from_iter(self.peers.iter().cloned().filter(|id| id != &self.id))
+        } else {
+            HashSet::from_iter(membership.iter().cloned().filter(|id| id != &self.id))
+        };
+        let peers = Mutex::new(filtered_membership);
+
         let inner = Arc::new(RaftNodeInner {
             id: self.id,
-            current_term: self.current_term,
-            voted_for: self.voted_for,
-            log: self.log,
-            current_state: self.current_state,
-            last_heartbeat: self.last_heartbeat,
+            current_term,
+            voted_for,
+            log: Mutex::new(self.log),
+            channels: self.channels,
+            current_state: Mutex::new(TaskState::Follower),
             election_timeout_range: self.election_timeout_range,
             heartbeat_interval: self.heartbeat_interval,
-            running: self.running,
-            channels: self.channels,
-            peers: self.peers,
+            leader_id: Mutex::new(None),
+            peers,
+            last_heard_from_leader: Mutex::new(None),
         });
 
-        RaftNode { inner }
+        Ok(RaftNode { inner })
     }
 }
 
@@ -179,16 +149,11 @@ where
             _r: std::marker::PhantomData,
             _p: std::marker::PhantomData,
             id: Uuid::new_v4(),
-            current_term: Default::default(),
-            voted_for: Default::default(),
             log: Default::default(),
-            current_state: Default::default(),
-            last_heartbeat: None,
+            peers: Default::default(),
             election_timeout_range: DEFAULT_ELECTION_TIMEOUT_RANGE,
             heartbeat_interval: DEFAULT_HEARTBEAT_INTERVAL,
-            running: Default::default(),
             channels: Default::default(),
-            peers: Default::default(),
         }
     }
 }

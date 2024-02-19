@@ -3,8 +3,8 @@ use std::{cmp::max, collections::HashSet, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 
 use crate::{
-    AppendEntriesRequest, AppendEntriesResponse, Countdown, Log, NodeId, PeerRpc, RaftNodeInner,
-    Request, RequestVoteRequest, RequestVoteResponse, Response, Result,
+    task::common, AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason,
+    ClientRequest, Countdown, Log, NodeId, PeerRpc, RaftNodeInner, Request, Response, Result,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ where
     R: Request,
     P: Response,
 {
-    reached_peers: Arc<Mutex<HashSet<NodeId>>>,
+    reached_peers: Arc<Mutex<HashSet<NodeId>>>, // Arc<Mutex<HashMap<NodeId, u64>>>
     node: Arc<RaftNodeInner<L, R, P>>,
 }
 
@@ -42,15 +42,14 @@ impl LeaderTasks {
         let mut heartbeat_countdown = Countdown::start(node.get_heartbeat_interval());
 
         // Create a append_entries_session session.
-        let mut append_entries_session = AppendEntriesSession::new(Arc::clone(&node));
-        append_entries_session.send_heartbeats_to_all(); // TODO(appcypher): Send empty hearbeats or send the actual entries?
+        let mut append_entries_session = AppendEntriesSession::initialize(Arc::clone(&node));
+        append_entries_session.send_heartbeats_to_all();
 
         // Get the channels.
         let channels = node.get_channels();
         let in_rpc_rx = &mut *channels.in_rpc_rx.lock().await;
         let in_client_request_rx = &mut *channels.in_client_request_rx.lock().await;
-        let shutdown_rx: &mut tokio::sync::mpsc::Receiver<()> =
-            &mut *channels.shutdown_rx.lock().await;
+        let shutdown_rx: &mut mpsc::Receiver<()> = &mut *channels.shutdown_rx.lock().await;
 
         loop {
             if !node.is_leader_state().await {
@@ -63,42 +62,42 @@ impl LeaderTasks {
                     node.change_to_shutdown_state().await;
                 },
                 Some(request) = in_rpc_rx.recv() => match request {
-                    PeerRpc::AppendEntries(AppendEntriesRequest { .. }, _response_tx) => {
-                        // TODO(appcypher): ...
+                    PeerRpc::AppendEntries(request, response_tx) => {
+                        common::respond_to_append_entries(Arc::clone(&node), request, response_tx, |node, _, response_tx| Box::pin(async move {
+                            response_tx
+                                .send(AppendEntriesResponse {
+                                    term: node.get_current_term(),
+                                    success: false,
+                                    id: node.get_id(),
+                                    reason: AppendEntriesResponseReason::NotAFollower,
+                                })
+                                .await?;
+
+                            Ok(())
+                        })).await?;
                     },
-                    PeerRpc::RequestVote(RequestVoteRequest { term, candidate_id }, response_tx) => {
-                        // Check if our term is stale.
-                        if term > node.get_current_term() {
-                            // Send granted response.
-                            response_tx.send(RequestVoteResponse {
-                                term, // TODO(appcypher): should we return our term instead?
-                                vote_granted: true,
-                                id: node.get_id(),
-                            }).await?;
-
-                            node.change_to_follower_state().await;
-                            node.update_term_and_voted_for(term, candidate_id).await;
-                            continue;
-                        }
-
-                        // We have either already voted or the request term is stale.
-                        // Send rejected response.
-                        response_tx.send(RequestVoteResponse {
-                            term: node.get_current_term(),
-                            vote_granted: false,
-                            id: node.get_id(),
-                        }).await?;
+                    PeerRpc::RequestVote(request, response_tx) => {
+                        common::respond_to_request_vote(Arc::clone(&node), request, response_tx).await?;
+                    },
+                    PeerRpc::Config(_, _) => {
+                        // TODO(appcypher): Implement Config RPC.
+                        unimplemented!("Config RPC not implemented");
+                    },
+                    PeerRpc::InstallSnapshot(_, _) => {
+                        // TODO(appcypher): Implement InstallSnapshot RPC.
+                        unimplemented!("InstallSnapshot RPC not implemented");
                     }
                 },
-                Some(_) = in_client_request_rx.recv() => {
+                Some(ClientRequest(request, response_tx)) = in_client_request_rx.recv() => {
                     tracing::debug!(id = node.id.to_string(), "Received client request");
+
                 },
                 _ = heartbeat_countdown.continuation() => {
                     // Reset the heartbeat countdown.
                     heartbeat_countdown.reset();
 
                     // Reset the append_entries_session session.
-                    append_entries_session = AppendEntriesSession::new(Arc::clone(&node));
+                    append_entries_session.reset().await;
                     append_entries_session.send_heartbeats_to_all();
                 },
             }
@@ -114,27 +113,48 @@ where
     R: Request + Sync + Send + 'static,
     P: Response + Send + 'static,
 {
-    pub fn new(node: Arc<RaftNodeInner<L, R, P>>) -> Self {
+    /// Initializes a new append_entries_session session.
+    pub fn initialize(node: Arc<RaftNodeInner<L, R, P>>) -> Self {
         Self {
             reached_peers: Arc::new(Mutex::new(HashSet::new())),
             node,
         }
     }
 
+    /// Resets the append_entries_session session.
+    pub async fn reset(&mut self) {
+        *self.reached_peers.lock().await = HashSet::new();
+    }
+
+    /// Sends heartbeats to all peers.
     pub fn send_heartbeats_to_all(&self) {
         let reached_peers = Arc::clone(&self.reached_peers);
         let node = Arc::clone(&self.node);
 
         tokio::spawn(async move {
-            let valid_peers = node.get_valid_peers().cloned().collect::<HashSet<_>>();
+            let peers = &mut *node.peers.lock().await;
+
+            // Early exit to if there are no peers.
+            if peers.is_empty() {
+                return crate::Ok(());
+            }
+
             let reached_peers = &mut *reached_peers.lock().await;
-            let unreached_peers = &valid_peers - reached_peers;
+            let unreached_peers = peers
+                .difference(&reached_peers)
+                .cloned()
+                .collect::<HashSet<_>>();
+
+            // Early exit if there are no unreached peers.
+            if unreached_peers.is_empty() {
+                return crate::Ok(());
+            }
 
             // Create a channel to receive the vote responses.
             let (append_entries_tx, mut append_entries_rx) =
                 mpsc::channel::<AppendEntriesResponse>(max(unreached_peers.len(), 1));
 
-            // Send heartbeats to all that have not been sent to.
+            // Send heartbeats to all unreached peers.
             for peer in unreached_peers {
                 let append_entries_tx = append_entries_tx.clone();
                 let node = Arc::clone(&node);
@@ -146,6 +166,11 @@ where
                         AppendEntriesRequest {
                             term: node.get_current_term(),
                             leader_id: node.get_id(),
+                            // TODO(appcypher): Fix this.
+                            prev_log_index: 0,
+                            prev_log_term: 0,
+                            entries: vec![],
+                            last_commit_index: 0,
                         },
                         peer,
                         append_entries_tx,

@@ -11,6 +11,8 @@ edition.workspace = true
 path = "src/lib.rs"
 
 [dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
 cbor4ii = { version = "0.3.2", features = ["serde1"] }
 futures.workspace = true
 rand.workspace = true
@@ -22,5 +24,4 @@ tracing-subscriber.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
-anyhow.workspace = true
 test-log.workspace = true

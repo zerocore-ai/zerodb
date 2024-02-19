@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CombinedConfigStates, SingleConfigState};
+use crate::NodeId;
 
 //--------------------------------------------------------------------------------------------------
 // Traits
@@ -20,20 +20,24 @@ pub trait Request: Serialize {}
 
 /// `Command` is an enum representing a command in the Raft consensus protocol.
 ///
-/// This enum is parameterized over a type `C` that implements the `CustomCommand` trait, allowing for flexibility in the specific commands that can be included in a log entry.
-/// It has three variants: `Config`, `JointConfig`, and `Custom`.
-/// `Config` represents a configuration command that includes a `MembershipConfig`.
-/// `JointConfig` represents a joint configuration command that includes two `MembershipConfig`.
-/// `Custom` represents a custom command defined by the user.
+/// This enum is parameterized over a type `R` that implements the `Request` trait, allowing for flexibility in the specific commands that can be included in a log entry.
+///
+/// It has three variants: `Config`, `JointConfig`, and `ClientRequest`.
+///
+/// - `Config` represents a configuration command that includes a `MembershipConfig`.
+/// - `JointConfig` represents a joint configuration command that includes two `MembershipConfig`.
+/// - `ClientRequest` represents a custom command defined by the user.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command<R>
 where
     R: Request,
 {
     /// A configuration state.
-    SingleConfigState(SingleConfigState),
+    SingleConfig(Vec<NodeId>),
+
     /// A transition between multiple configuration states.
-    CombinedConfigStates(CombinedConfigStates),
+    JointConfig(Vec<NodeId>, Vec<NodeId>),
+
     /// A custom command defined by the user.
-    Client(R),
+    ClientRequest(R),
 }

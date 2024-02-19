@@ -99,4 +99,4 @@ jobs:
           toolchain: ${{ matrix.rust-toolchain }}
 
       - name: Run Tests
-        run: cargo test --all-features -- --nocapture
+        run: RUST_LOG=debug cargo test --all-features -- --nocapture

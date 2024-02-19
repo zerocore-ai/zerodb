@@ -15,10 +15,10 @@ where
     P: Response,
 {
     /// Channel for raft to receive rpc requests from the outside.
-    pub in_rpc_rx: Mutex<mpsc::UnboundedReceiver<PeerRpc>>,
+    pub in_rpc_rx: Mutex<mpsc::UnboundedReceiver<PeerRpc<R>>>,
 
     /// Channel for raft to send rpc requests to the outside.
-    pub out_rpc_tx: mpsc::UnboundedSender<(NodeId, PeerRpc)>,
+    pub out_rpc_tx: mpsc::UnboundedSender<(NodeId, PeerRpc<R>)>,
 
     /// Channel for raft to recieve client requests from the outside.
     pub in_client_request_rx: Mutex<mpsc::UnboundedReceiver<ClientRequest<R, P>>>,
@@ -37,10 +37,10 @@ where
     P: Response,
 {
     /// Channel for sending incoming rpc requests to the Raft node.
-    pub in_rpc_tx: mpsc::UnboundedSender<PeerRpc>,
+    pub in_rpc_tx: mpsc::UnboundedSender<PeerRpc<R>>,
 
     /// Channel for capturing outgoing rpc requests from the Raft node.
-    pub out_rpc_rx: Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc)>>,
+    pub out_rpc_rx: Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<R>)>>,
 
     /// Channel for sending client requests to the Raft node.
     pub in_client_request_tx: mpsc::UnboundedSender<ClientRequest<R, P>>,

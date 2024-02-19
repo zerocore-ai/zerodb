@@ -1,17 +1,17 @@
-#![allow(clippy::module_inception)]
+//! # Task
 
-mod builder;
-mod countdown;
-mod node;
-mod task;
+mod candidate;
+mod follower;
+mod leader;
+mod state;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub mod channels;
+pub mod common;
 
-pub use builder::*;
-pub use channels::*;
-pub use countdown::*;
-pub use node::*;
+pub(crate) use candidate::*;
+pub(crate) use follower::*;
+pub(crate) use leader::*;
+pub(crate) use state::*;

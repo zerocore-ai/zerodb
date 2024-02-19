@@ -1,4 +1,4 @@
-//! Error types of the zerodb crate.
+//! Error types of the zeroraft crate.
 
 use thiserror::Error;
 
@@ -16,9 +16,9 @@ pub enum ZeroraftError {
     #[error("tokio channel send error: {0}")]
     TokioSendError(String),
 
-    /// TODO
-    #[error("TODO")]
-    Todo,
+    /// Erros from the log.
+    #[error("log error: {0}")]
+    LogError(#[from] anyhow::Error),
 }
 
 //--------------------------------------------------------------------------------------------------

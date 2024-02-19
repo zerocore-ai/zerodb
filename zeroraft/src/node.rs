@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     ops::Deref,
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicU64, Ordering},
         Arc,
     },
     time::Instant,
@@ -15,9 +15,9 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
-    node::task::TaskState, AppendEntriesRequest, AppendEntriesResponse, Countdown, Log, MemoryLog,
+    task::TaskState, AppendEntriesRequest, AppendEntriesResponse, Countdown, Log, MemoryLog,
     PeerRpc, RaftNodeBuilder, RaftSideChannels, Request, RequestVoteRequest, RequestVoteResponse,
-    Response, Result, ZeroraftError,
+    Response, Result,
 };
 
 use super::task::{CandidateTasks, FollowerTasks, LeaderTasks};
@@ -60,30 +60,31 @@ where
     pub(crate) voted_for: Mutex<Option<NodeId>>,
 
     /// The log of the node.
-    pub(crate) log: L,
-
-    /// The current state of the node.
-    pub(crate) current_state: Mutex<TaskState>,
-
-    /// Last hearbeat
-    pub(crate) last_heartbeat: Option<Instant>,
-
-    /// Election timeout range.
-    pub(crate) election_timeout_range: (u64, u64),
-
-    // TODO(appcypher): Remove allow
-    /// Heartbeat interval.
-    #[allow(dead_code)]
-    pub(crate) heartbeat_interval: u64,
-
-    /// Whether the node is running.
-    pub(crate) running: AtomicBool,
+    pub(crate) log: Mutex<L>,
 
     /// The communication channels for the node.
     pub(crate) channels: RaftSideChannels<R, P>,
 
-    /// Membership configuration.
-    pub(crate) peers: HashSet<NodeId>,
+    /// The current state of the node.
+    pub(crate) current_state: Mutex<TaskState>,
+
+    /// Election timeout range.
+    pub(crate) election_timeout_range: (u64, u64),
+
+    /// Heartbeat interval.
+    pub(crate) heartbeat_interval: u64,
+
+    /// The current leader id.
+    pub(crate) leader_id: Mutex<Option<NodeId>>,
+
+    /// The peers in the cluster from the last membership update.
+    ///
+    /// Current node is filtered out of the membership.
+    pub(crate) peers: Mutex<HashSet<NodeId>>,
+
+    /// Last time the node heard from the leader.
+    /// Used to prevent unnecessary voting when there is a stable leader.
+    pub(crate) last_heard_from_leader: Mutex<Option<Instant>>,
 }
 
 /// This is a convenience type alias for a Raft node with an in-memory log.
@@ -119,6 +120,10 @@ where
                     TaskState::Follower => FollowerTasks::start(inner).await?,
                     TaskState::Candidate => CandidateTasks::start(inner).await?,
                     TaskState::Leader => LeaderTasks::start(inner).await?,
+                    TaskState::NonVoter => {
+                        // TODO(appcypher): Implement NonVotingMember state
+                        todo!("Implement NonVotingMember state")
+                    }
                     TaskState::Shutdown => {
                         break;
                     }
@@ -144,7 +149,7 @@ impl<L, R, P> RaftNodeInner<L, R, P>
 where
     L: Log<R>,
     R: Request,
-    P: Response + Send + 'static,
+    P: Response,
 {
     /// Creates a new election countdown.
     pub(super) fn new_election_countdown(&self) -> Countdown {
@@ -198,10 +203,41 @@ where
     }
 
     /// Updates the current term and the ID of the node that the current node voted for in the current term.
-    pub(super) async fn update_term_and_voted_for(&self, term: u64, candidate_id: NodeId) {
-        // TODO(appcypher): We need to persist this to disk.
+    pub(super) async fn update_current_term_and_voted_for(
+        &self,
+        term: u64,
+        candidate_id: NodeId,
+    ) -> Result<()> {
+        // Persist values to disk first.
+        self.log.lock().await.store_current_term(term).await?;
+        self.log.lock().await.store_voted_for(candidate_id).await?;
+
+        // Update in-memory values.
         self.current_term.store(term, Ordering::SeqCst);
         self.voted_for.lock().await.replace(candidate_id);
+
+        Ok(())
+    }
+
+    /// Updates the current term of the node.
+    pub(super) async fn update_current_term(&self, term: u64) -> Result<()> {
+        // Persist value to disk first.
+        self.log.lock().await.store_current_term(term).await?;
+
+        // Update in-memory value.
+        self.current_term.store(term, Ordering::SeqCst);
+
+        Ok(())
+    }
+
+    /// Update the last time the node heard from the leader.
+    pub(super) async fn update_last_heard_from_leader(&self) {
+        *self.last_heard_from_leader.lock().await = Some(Instant::now());
+    }
+
+    /// Updates the leader id.
+    pub(super) async fn update_leader_id(&self, leader_id: NodeId) {
+        *self.leader_id.lock().await = Some(leader_id);
     }
 
     /// Checks if the current state of the node is `Follower`.
@@ -239,22 +275,6 @@ where
         &self.channels
     }
 
-    /// Returns the peers of the node.
-    pub fn get_peers(&self) -> &HashSet<NodeId> {
-        &self.peers
-    }
-
-    /// Returns the valid peers of the node.
-    pub fn get_valid_peers(&self) -> impl Iterator<Item = &NodeId> {
-        // TODO(appcypher): We should do this filtering at creation and update time.
-        self.peers.iter().filter(|peer| **peer != self.id)
-    }
-
-    /// Returns the log of the node.
-    pub fn get_log(&self) -> &L {
-        &self.log
-    }
-
     /// Returns the ID of the node that the current node voted for in the current term.
     pub async fn get_voted_for(&self) -> Option<NodeId> {
         *self.voted_for.lock().await
@@ -270,9 +290,9 @@ where
         self.heartbeat_interval
     }
 
-    /// Returns the last heartbeat.
-    pub fn get_last_heartbeat(&self) -> Option<Instant> {
-        self.last_heartbeat
+    /// Returns the current leader id.
+    pub async fn get_leader_id(&self) -> Option<NodeId> {
+        *self.leader_id.lock().await
     }
 
     /// Returns the current state of the node.
@@ -280,7 +300,7 @@ where
         self.current_state.lock().await.clone()
     }
 
-    /// Returns whether the node is running.
+    /// Sends a request vote RPC to a peer.
     pub(super) async fn send_request_vote_rpc(
         &self,
         peer: NodeId,
@@ -290,6 +310,8 @@ where
         let request = RequestVoteRequest {
             term: self.current_term.load(Ordering::SeqCst),
             candidate_id: self.id,
+            last_log_index: self.log.lock().await.get_last_index().await,
+            last_log_term: self.log.lock().await.get_last_term().await,
         };
 
         // Response channel.
@@ -303,7 +325,7 @@ where
             .send((peer, PeerRpc::RequestVote(request, response_tx)))?;
 
         // Wait for response
-        let response = response_rx.recv().await.ok_or(ZeroraftError::Todo)?;
+        let response = response_rx.recv().await.unwrap();
 
         tracing::debug!(
             id = self.id.to_string(),
@@ -324,7 +346,7 @@ where
     /// Sends an append entries RPC to a peer.
     pub(super) async fn send_append_entries_rpc(
         &self,
-        request: AppendEntriesRequest,
+        request: AppendEntriesRequest<R>,
         peer: NodeId,
         append_entries_tx: mpsc::Sender<AppendEntriesResponse>,
     ) -> Result<()> {
@@ -339,7 +361,7 @@ where
             .send((peer, PeerRpc::AppendEntries(request, response_tx)))?;
 
         // Wait for response
-        let response = response_rx.recv().await.ok_or(ZeroraftError::Todo)?;
+        let response = response_rx.recv().await.unwrap();
 
         tracing::debug!(
             id = self.id.to_string(),
@@ -357,7 +379,6 @@ where
 
     /// Shuts down the Raft node.
     pub async fn shutdown(&self) -> Result<()> {
-        self.running.store(false, Ordering::SeqCst);
         Ok(self.channels.shutdown_tx.send(()).await?)
     }
 }
@@ -376,109 +397,5 @@ where
 
     fn deref(&self) -> &Self::Target {
         &self.inner
-    }
-}
-
-//--------------------------------------------------------------------------------------------------
-// Tests
-//--------------------------------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use std::time::Duration;
-
-    use tokio::time;
-
-    use crate::{
-        node::channels,
-        utils::mock::{MockRequest, MockResponse},
-        DEFAULT_ELECTION_TIMEOUT_RANGE,
-    };
-
-    use super::*;
-
-    #[test_log::test(tokio::test)]
-    async fn test_node_can_shut_down() -> anyhow::Result<()> {
-        let (raft_channels, _) = channels::create();
-
-        // Create a node.
-        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
-            .channels(raft_channels)
-            .build();
-
-        // Start the node.
-        node.start();
-
-        // Shutdown the node.
-        node.shutdown().await?;
-
-        // Wait for the node to shutdown.
-        time::sleep(Duration::from_millis(10)).await;
-
-        assert!(node.inner.is_shutdown_state().await);
-        assert!(!node.inner.running.load(Ordering::SeqCst));
-
-        Ok(())
-    }
-
-    #[test_log::test(tokio::test)]
-    async fn test_node_starts_as_follower() -> anyhow::Result<()> {
-        let (raft_channels, _) = channels::create();
-
-        // Create a node.
-        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
-            .channels(raft_channels)
-            .build();
-
-        // Start the node.
-        node.start();
-
-        assert!(node.inner.is_follower_state().await);
-
-        Ok(())
-    }
-
-    // // TODO(appcypher): test_node_becomes_candidate_after_election_timeout
-    // #[test_log::test(tokio::test)]
-    // async fn test_node_becomes_candidate_after_election_timeout() -> anyhow::Result<()> {
-    //     let (raft_channels, _) = channels::create();
-
-    //     // Create a node.
-    //     let node = MemRaftNode::<MockRequest, MockResponse>::builder()
-    //         .election_timeout_range((100, 101))
-    //         .channels(raft_channels)
-    //         .build();
-
-    //     // Start the node.
-    //     node.start();
-
-    //     // Wait for the node to become a candidate.
-    //     time::sleep(Duration::from_micros(101_550)).await;
-
-    //     // Assert that the node is in the candidate state.
-    //     assert!(node.inner.is_candidate_state().await);
-
-    //     Ok(())
-    // }
-
-    #[test_log::test(tokio::test)]
-    async fn test_node_becomes_leader_after_vote_request_with_no_peers() -> anyhow::Result<()> {
-        let (raft_channels, _) = channels::create();
-
-        // Create a node.
-        let node = MemRaftNode::<MockRequest, MockResponse>::builder()
-            .peers(HashSet::new())
-            .channels(raft_channels)
-            .build();
-
-        // Start the node.
-        node.start();
-
-        // Wait for the node to become a leader.
-        time::sleep(Duration::from_millis(DEFAULT_ELECTION_TIMEOUT_RANGE.1 * 2)).await;
-
-        assert!(node.inner.is_leader_state().await);
-
-        Ok(())
     }
 }

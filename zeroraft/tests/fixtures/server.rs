@@ -31,8 +31,8 @@ pub struct RaftNodeServer {
     client_addr: SocketAddr,
     peer_addr: SocketAddr,
     node: MemRaftNode<MockRequest, MockResponse>,
-    in_rpc_tx: mpsc::UnboundedSender<PeerRpc>,
-    out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc)>>>,
+    in_rpc_tx: mpsc::UnboundedSender<PeerRpc<MockRequest>>,
+    out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<MockRequest>)>>>,
     in_client_request_tx: mpsc::UnboundedSender<ClientRequest<MockRequest, MockResponse>>,
 }
 
@@ -52,7 +52,7 @@ pub struct RaftNodeServerBuilder<N = (), C = ()> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 enum Rpc {
-    AppendEntries(AppendEntriesRequest),
+    AppendEntries(AppendEntriesRequest<MockRequest>),
     RequestVote(RequestVoteRequest),
 }
 
@@ -158,7 +158,7 @@ impl RaftNodeServerBuilder {
     }
 
     /// Build the Raft node.
-    pub fn build(self) -> RaftNodeServer {
+    pub async fn build(self) -> anyhow::Result<RaftNodeServer> {
         let (raft_channels, outside_channels) = channels::create();
 
         let node = MemRaftNode::<MockRequest, MockResponse>::builder()
@@ -167,9 +167,10 @@ impl RaftNodeServerBuilder {
             .heartbeat_interval(self.heartbeat_interval)
             .peers(self.peers.keys().copied().collect())
             .channels(raft_channels)
-            .build();
+            .build()
+            .await?;
 
-        RaftNodeServer {
+        Ok(RaftNodeServer {
             peers: self.peers,
             id: self.id,
             client_addr: self.client_addr,
@@ -178,7 +179,7 @@ impl RaftNodeServerBuilder {
             in_rpc_tx: outside_channels.in_rpc_tx,
             out_rpc_rx: Arc::new(outside_channels.out_rpc_rx),
             in_client_request_tx: outside_channels.in_client_request_tx,
-        }
+        })
     }
 }
 
@@ -247,7 +248,7 @@ fn start_client_server(
 /// Start the peer server.
 fn start_peer_server(
     addr: SocketAddr,
-    in_rpc_tx: mpsc::UnboundedSender<PeerRpc>,
+    in_rpc_tx: mpsc::UnboundedSender<PeerRpc<MockRequest>>,
 ) -> JoinHandle<anyhow::Result<()>> {
     // PeerServer::new(addr, in_rpc_tx)::start()
     tokio::spawn(async move {
@@ -302,7 +303,7 @@ fn start_peer_server(
 /// Forward outgoing requests.
 fn forward_outgoing_requests(
     peers: Arc<HashMap<NodeId, SocketAddr>>,
-    out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc)>>>,
+    out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<MockRequest>)>>>,
 ) -> JoinHandle<anyhow::Result<()>> {
     tokio::spawn(async move {
         while let Some((peer, request)) = out_rpc_rx.lock().await.recv().await {
@@ -341,6 +342,12 @@ fn forward_outgoing_requests(
                     let response: RequestVoteResponse = cbor4ii::serde::from_slice(&buf)?;
 
                     response_tx.send(response).await?;
+                }
+                PeerRpc::Config(_, _) => {
+                    // Do nothing.
+                }
+                PeerRpc::InstallSnapshot(_, _) => {
+                    // Do nothing.
                 }
             };
         }

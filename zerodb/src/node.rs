@@ -34,7 +34,8 @@ impl ZerodbNode {
         // Create Raft Node.
         let raft_node = MemRaftNode::<Query, QueryResponse>::builder()
             .channels(raft_channels)
-            .build();
+            .build()
+            .await?;
 
         // Save other channels.
         self.outside_channels = Some(outside_channels);

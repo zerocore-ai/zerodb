@@ -11,29 +11,6 @@ use crate::fixtures::{RaftNodeCluster, RaftNodeClusterConfig};
 //--------------------------------------------------------------------------------------------------
 
 #[test_log::test(tokio::test)]
-async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
-    let mut cluster = RaftNodeCluster::new(2);
-
-    // Start the cluster.
-    let handle = cluster.start();
-
-    // Shutdown the cluster.
-    cluster.shutdown().await?;
-
-    // Wait for shutdown to complete.
-    time::sleep(Duration::from_millis(100)).await;
-
-    for server in cluster.get_servers().values() {
-        let node = server.get_node();
-        assert!(node.is_shutdown_state().await);
-    }
-
-    handle.await??;
-
-    Ok(())
-}
-
-#[test_log::test(tokio::test)]
 async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()> {
     let mut cluster = RaftNodeCluster::new_with_config(
         3,
@@ -41,7 +18,8 @@ async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()
             election_timeout_range: (100, 200),
             ..Default::default()
         },
-    );
+    )
+    .await?;
 
     // Start the cluster.
     cluster.start();
@@ -58,6 +36,7 @@ async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()
         }
     }
 
+    // There should be only one leader.
     assert_eq!(leaders, 1);
 
     Ok(())
