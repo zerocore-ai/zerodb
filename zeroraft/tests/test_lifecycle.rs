@@ -36,8 +36,6 @@ async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_single_server_can_shutdown() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
     let server = RaftNodeServer::builder().build()?;
 
     // Start the server.
