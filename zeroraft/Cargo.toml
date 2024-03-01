@@ -13,7 +13,7 @@ path = "src/lib.rs"
 [dependencies]
 anyhow.workspace = true
 async-trait.workspace = true
-cbor4ii = { version = "0.3.2", features = ["serde1"] }
+cbor4ii.workspace = true
 futures.workspace = true
 rand.workspace = true
 serde.workspace = true

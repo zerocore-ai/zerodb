@@ -43,6 +43,22 @@ pub enum ZerodbError {
     /// Error from zeroraft crate
     #[error(transparent)]
     ZeroraftError(#[from] zeroraft::ZeroraftError),
+
+    /// Error decoding with cbor4ii
+    #[error("cbor4ii decode error: {0}")]
+    Cbor4iiDecodeError(String),
+
+    /// Error encoding with cbor4ii
+    #[error("cbor4ii encode error: {0}")]
+    Cbor4iiEncodeError(String),
+
+    /// Peer not found.
+    #[error("peer not found")]
+    PeerNotFound,
+
+    /// Channel closed.
+    #[error("channel closed")]
+    ChannelClosed,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -52,6 +68,24 @@ pub enum ZerodbError {
 impl<T> From<tokio::sync::mpsc::error::SendError<T>> for ZerodbError {
     fn from(err: tokio::sync::mpsc::error::SendError<T>) -> Self {
         Self::TokioSendError(err.to_string())
+    }
+}
+
+impl<T> From<cbor4ii::serde::DecodeError<T>> for ZerodbError
+where
+    T: std::fmt::Debug,
+{
+    fn from(err: cbor4ii::serde::DecodeError<T>) -> Self {
+        Self::Cbor4iiDecodeError(format!("{:?}", err))
+    }
+}
+
+impl<T> From<cbor4ii::serde::EncodeError<T>> for ZerodbError
+where
+    T: std::fmt::Debug,
+{
+    fn from(err: cbor4ii::serde::EncodeError<T>) -> Self {
+        Self::Cbor4iiEncodeError(format!("{:?}", err))
     }
 }
 

@@ -1,8 +1,8 @@
-use std::{cmp::min, sync::Arc};
+use std::cmp::min;
 
 use crate::{
     task::common, AppendEntriesResponse, AppendEntriesResponseReason, ClientRequest,
-    ClientResponse, ClientResponseReason, Log, PeerRpc, RaftNodeInner, Request, Response, Result,
+    ClientResponse, ClientResponseReason, PeerRpc, RaftNode, Request, Response, Result, Store,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -19,9 +19,9 @@ pub(crate) struct FollowerTasks;
 
 impl FollowerTasks {
     /// Starts the follower tasks.
-    pub(crate) async fn start<L, R, P>(node: Arc<RaftNodeInner<L, R, P>>) -> Result<()>
+    pub(crate) async fn start<S, R, P>(node: RaftNode<S, R, P>) -> Result<()>
     where
-        L: Log<R> + Send + Sync + 'static,
+        S: Store<R> + Send + Sync + 'static,
         R: Request + Send + Sync + 'static,
         P: Response + Send + Sync + 'static,
     {
@@ -46,10 +46,10 @@ impl FollowerTasks {
                 },
                 Some(request) = in_rpc_rx.recv() => match request {
                     PeerRpc::AppendEntries(request, response_tx) => {
-                        common::respond_to_append_entries(Arc::clone(&node), request, response_tx, |node, request, response_tx| Box::pin(async move {
+                        common::respond_to_append_entries(node.clone(), request, response_tx, |node, request, response_tx| Box::pin(async move {
                             let our_term = node.get_current_term();
                             let our_id = node.get_id();
-                            let our_last_log_index = node.log.lock().await.get_last_index().await;
+                            let our_last_log_index = node.inner.store.lock().await.get_last_index();
 
                             // Check if we don't have the prev log index the leader is trying to append to.
                             if our_last_log_index < request.prev_log_index  {
@@ -66,7 +66,7 @@ impl FollowerTasks {
                             }
 
                             // Check if log index exists but the term doesn't match.
-                            if let Some(entry) = node.log.lock().await.get_entry(request.prev_log_index).await {
+                            if let Some(entry) = node.inner.store.lock().await.get_entry(request.prev_log_index) {
                                 if entry.term != request.prev_log_term {
                                     response_tx
                                         .send(AppendEntriesResponse {
@@ -82,16 +82,16 @@ impl FollowerTasks {
                             }
 
                             // Remove extraneous entries.
-                            node.log.lock().await.remove_entries_after(request.prev_log_index).await?;
+                            node.inner.store.lock().await.remove_entries_after(request.prev_log_index)?;
 
                             // Append the entries.
-                            node.log.lock().await.append_entries(request.entries).await?;
+                            node.inner.store.lock().await.append_entries(request.entries)?;
 
                             // Update the commit index.
-                            node.log.lock().await.set_last_commit_index(min(
+                            node.inner.store.lock().await.set_last_commit_index(min(
                                 request.last_commit_index,
-                                node.log.lock().await.get_last_index().await
-                            )).await?;
+                                node.inner.store.lock().await.get_last_index()
+                            ))?;
 
                             // Respond to the append entries request.
                             response_tx
@@ -107,7 +107,7 @@ impl FollowerTasks {
                         })).await?;
                     },
                     PeerRpc::RequestVote(request, response_tx) => {
-                        common::respond_to_request_vote(Arc::clone(&node), request, response_tx).await?;
+                        common::respond_to_request_vote(node.clone(), request, response_tx).await?;
                         election_countdown.reset();
                     },
                     PeerRpc::Config(_, _) => {

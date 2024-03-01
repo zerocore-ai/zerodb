@@ -44,9 +44,6 @@ where
 
     /// Channel for sending client requests to the Raft node.
     pub in_client_request_tx: mpsc::UnboundedSender<ClientRequest<R, P>>,
-
-    /// Channel for sending shutdown signal to the Raft node.
-    pub shutdown_tx: mpsc::Sender<()>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -75,7 +72,6 @@ where
             in_rpc_tx,
             out_rpc_rx: Mutex::new(out_rpc_rx),
             in_client_request_tx,
-            shutdown_tx,
         },
     )
 }

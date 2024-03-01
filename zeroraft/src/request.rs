@@ -144,5 +144,3 @@ where
     /// A configuration command.
     Config(ConfigRequest, mpsc::Sender<()>),
 }
-
-

@@ -16,9 +16,9 @@ pub enum ZeroraftError {
     #[error("tokio channel send error: {0}")]
     TokioSendError(String),
 
-    /// Erros from the log.
-    #[error("log error: {0}")]
-    LogError(#[from] anyhow::Error),
+    /// Errors from the store.
+    #[error("store error: {0}")]
+    StoreError(#[from] anyhow::Error),
 }
 
 //--------------------------------------------------------------------------------------------------

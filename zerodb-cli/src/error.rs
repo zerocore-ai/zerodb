@@ -21,4 +21,12 @@ pub enum ZerodbCliError {
     /// A TOML error.
     #[error(transparent)]
     TomlDe(#[from] toml::de::Error),
+
+    /// A UUID error.
+    #[error(transparent)]
+    NodeId(#[from] zerodb::NodeIdError),
+
+    /// A SocketAddr error.
+    #[error(transparent)]
+    AddrParse(#[from] std::net::AddrParseError),
 }

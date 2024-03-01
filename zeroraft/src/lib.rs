@@ -5,11 +5,11 @@ mod command;
 mod countdown;
 mod defaults;
 mod errors;
-mod log;
 mod node;
 mod request;
 mod response;
 mod snapshot;
+mod store;
 mod task;
 
 //--------------------------------------------------------------------------------------------------
@@ -25,9 +25,14 @@ pub use command::*;
 pub use countdown::*;
 pub use defaults::*;
 pub use errors::*;
-pub use log::*;
-pub use node::*;
 pub use node::*;
 pub use request::*;
 pub use response::*;
 pub use snapshot::*;
+pub use store::*;
+
+//--------------------------------------------------------------------------------------------------
+// Re-exports
+//--------------------------------------------------------------------------------------------------
+
+pub use uuid::Error as NodeIdError;

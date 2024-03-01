@@ -1,9 +1,12 @@
-use std::net::SocketAddr;
+use std::net::IpAddr;
 
 use clap::Parser;
-use zerodb::configs::{
-    DEFAULT_CLIENT_PORT, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL, DEFAULT_HOST,
-    DEFAULT_PEER_PORT,
+use zerodb::{
+    configs::{
+        DEFAULT_CLIENT_PORT, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL,
+        DEFAULT_HOST, DEFAULT_PEER_PORT,
+    },
+    NodeId,
 };
 
 use crate::styles;
@@ -30,13 +33,17 @@ pub enum SubCommand {
         #[arg(short, long)]
         file: Option<String>,
 
+        /// The id of the node.
+        #[arg(long, default_value_t = NodeId::new_v4())]
+        id: NodeId,
+
         /// The name of the node.
         #[arg(short, long, default_value_t = String::new())]
         name: String,
 
         /// The host to listen on.
-        #[arg(long, default_value_t = DEFAULT_HOST.to_string())]
-        host: String,
+        #[arg(long, default_value_t = DEFAULT_HOST)]
+        host: IpAddr,
 
         /// The port to listen on for peer requests.
         #[arg(long, default_value_t = DEFAULT_PEER_PORT)]
@@ -47,8 +54,8 @@ pub enum SubCommand {
         client_port: u16,
 
         /// The list of seed nodes to connect to.
-        #[arg(short, long, use_value_delimiter = true, value_delimiter = ',')]
-        peers: Vec<SocketAddr>,
+        #[arg(short, long, num_args(1..))]
+        peer: Vec<String>,
 
         /// The interval between heartbeats.
         #[arg(long, default_value_t = DEFAULT_HEARTBEAT_INTERVAL)]

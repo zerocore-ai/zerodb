@@ -4,7 +4,8 @@ use tokio::sync::{mpsc, Mutex};
 
 use crate::{
     task::common, AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason,
-    ClientRequest, Countdown, Log, NodeId, PeerRpc, RaftNodeInner, Request, Response, Result,
+    ClientRequest, Command, Countdown, LogEntry, NodeId, PeerRpc, RaftNode, Request, Response,
+    Result, Store,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -16,14 +17,15 @@ use crate::{
 pub(crate) struct LeaderTasks;
 
 /// This type is used to track the state of the heartbeat session for each peer.
-pub(crate) struct AppendEntriesSession<L, R, P>
+pub(crate) struct AppendEntriesSession<S, R, P>
 where
-    L: Log<R>,
+    S: Store<R>,
     R: Request,
     P: Response,
 {
     reached_peers: Arc<Mutex<HashSet<NodeId>>>, // Arc<Mutex<HashMap<NodeId, u64>>>
-    node: Arc<RaftNodeInner<L, R, P>>,
+    // peers: Arc<Mutex<HashMap<NodeId, u64>>>
+    node: RaftNode<S, R, P>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -32,9 +34,9 @@ where
 
 impl LeaderTasks {
     /// Starts the leader tasks.
-    pub(crate) async fn start<L, R, P>(node: Arc<RaftNodeInner<L, R, P>>) -> Result<()>
+    pub(crate) async fn start<S, R, P>(node: RaftNode<S, R, P>) -> Result<()>
     where
-        L: Log<R> + Sync + Send + 'static,
+        S: Store<R> + Sync + Send + 'static,
         R: Request + Sync + Send + 'static,
         P: Response + Send + 'static,
     {
@@ -42,7 +44,7 @@ impl LeaderTasks {
         let mut heartbeat_countdown = Countdown::start(node.get_heartbeat_interval());
 
         // Create a append_entries_session session.
-        let mut append_entries_session = AppendEntriesSession::initialize(Arc::clone(&node));
+        let mut append_entries_session = AppendEntriesSession::initialize(node.clone());
         append_entries_session.send_heartbeats_to_all();
 
         // Get the channels.
@@ -63,7 +65,7 @@ impl LeaderTasks {
                 },
                 Some(request) = in_rpc_rx.recv() => match request {
                     PeerRpc::AppendEntries(request, response_tx) => {
-                        common::respond_to_append_entries(Arc::clone(&node), request, response_tx, |node, _, response_tx| Box::pin(async move {
+                        common::respond_to_append_entries(node.clone(), request, response_tx, |node, _, response_tx| Box::pin(async move {
                             response_tx
                                 .send(AppendEntriesResponse {
                                     term: node.get_current_term(),
@@ -77,7 +79,7 @@ impl LeaderTasks {
                         })).await?;
                     },
                     PeerRpc::RequestVote(request, response_tx) => {
-                        common::respond_to_request_vote(Arc::clone(&node), request, response_tx).await?;
+                        common::respond_to_request_vote(node.clone(), request, response_tx).await?;
                     },
                     PeerRpc::Config(_, _) => {
                         // TODO(appcypher): Implement Config RPC.
@@ -88,9 +90,19 @@ impl LeaderTasks {
                         unimplemented!("InstallSnapshot RPC not implemented");
                     }
                 },
-                Some(ClientRequest(request, response_tx)) = in_client_request_rx.recv() => {
-                    tracing::debug!(id = node.id.to_string(), "Received client request");
+                Some(ClientRequest(request, _response_tx)) = in_client_request_rx.recv() => {
+                    let entries = vec![LogEntry {
+                        term: node.get_current_term(),
+                        command: Command::ClientRequest(request)
+                    }];
 
+                    // Append the command to the log.
+                    node.inner.store.lock().await.append_entries(entries)?;
+
+                    // // Send entries to all peers for replication.
+                    // append_entries_session.send_entries_to_all(entries).await?;
+
+                    todo!();
                 },
                 _ = heartbeat_countdown.continuation() => {
                     // Reset the heartbeat countdown.
@@ -107,14 +119,14 @@ impl LeaderTasks {
     }
 }
 
-impl<L, R, P> AppendEntriesSession<L, R, P>
+impl<S, R, P> AppendEntriesSession<S, R, P>
 where
-    L: Log<R> + Sync + Send + 'static,
+    S: Store<R> + Sync + Send + 'static,
     R: Request + Sync + Send + 'static,
     P: Response + Send + 'static,
 {
     /// Initializes a new append_entries_session session.
-    pub fn initialize(node: Arc<RaftNodeInner<L, R, P>>) -> Self {
+    pub fn initialize(node: RaftNode<S, R, P>) -> Self {
         Self {
             reached_peers: Arc::new(Mutex::new(HashSet::new())),
             node,
@@ -129,10 +141,19 @@ where
     /// Sends heartbeats to all peers.
     pub fn send_heartbeats_to_all(&self) {
         let reached_peers = Arc::clone(&self.reached_peers);
-        let node = Arc::clone(&self.node);
+        let node = self.node.clone();
 
         tokio::spawn(async move {
-            let peers = &mut *node.peers.lock().await;
+            let peers: HashSet<NodeId> = node
+                .inner
+                .store
+                .lock()
+                .await
+                .get_membership()
+                .keys()
+                .cloned()
+                .filter(|id| *id != node.get_id())
+                .collect::<HashSet<_>>();
 
             // Early exit to if there are no peers.
             if peers.is_empty() {
@@ -140,8 +161,8 @@ where
             }
 
             let reached_peers = &mut *reached_peers.lock().await;
-            let unreached_peers = peers
-                .difference(&reached_peers)
+            let unreached_peers: HashSet<NodeId> = peers
+                .difference(&reached_peers.clone())
                 .cloned()
                 .collect::<HashSet<_>>();
 
@@ -157,7 +178,7 @@ where
             // Send heartbeats to all unreached peers.
             for peer in unreached_peers {
                 let append_entries_tx = append_entries_tx.clone();
-                let node = Arc::clone(&node);
+                let node = node.clone();
 
                 // Send the RequestVote RPC in a separate task.
                 tokio::spawn(async move {

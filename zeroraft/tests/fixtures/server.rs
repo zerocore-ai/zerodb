@@ -15,18 +15,22 @@ use tokio::{
 use zeroraft::{
     channels,
     utils::mock::{MockRequest, MockResponse},
-    AppendEntriesRequest, AppendEntriesResponse, ClientRequest, ClientResponse, MemRaftNode,
-    NodeId, PeerRpc, RequestVoteRequest, RequestVoteResponse, DEFAULT_ELECTION_TIMEOUT_RANGE,
+    AppendEntriesRequest, AppendEntriesResponse, ClientRequest, ClientResponse, NodeId, PeerRpc,
+    RaftNode, RequestVoteRequest, RequestVoteResponse, DEFAULT_ELECTION_TIMEOUT_RANGE,
     DEFAULT_HEARTBEAT_INTERVAL,
 };
+
+use super::MemoryStore;
 
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
 
+/// This is a convenience type alias for a Raft node with an in-memory store.
+pub type MemRaftNode<R, P> = RaftNode<MemoryStore<R>, R, P>;
+
 /// `RaftNodeServer` wraps a Raft node and provides a server for client and peer connections.
 pub struct RaftNodeServer {
-    peers: Arc<HashMap<NodeId, SocketAddr>>,
     id: NodeId,
     client_addr: SocketAddr,
     peer_addr: SocketAddr,
@@ -38,7 +42,7 @@ pub struct RaftNodeServer {
 
 /// `RaftNodeServerBuilder` is a builder for `RaftNodeServer`.
 pub struct RaftNodeServerBuilder<N = (), C = ()> {
-    peers: Arc<HashMap<NodeId, SocketAddr>>,
+    seeds: HashMap<NodeId, SocketAddr>,
     id: NodeId,
     election_timeout_range: (u64, u64),
     heartbeat_interval: u64,
@@ -73,7 +77,7 @@ impl RaftNodeServer {
 
         tracing::debug!(id = self.id.to_string(), "Started Raft node");
 
-        // TCP server for client connections.x
+        // TCP server for client connections.
         start_client_server(self.client_addr, self.in_client_request_tx.clone());
 
         tracing::debug!(
@@ -86,7 +90,7 @@ impl RaftNodeServer {
         start_peer_server(self.peer_addr, self.in_rpc_tx.clone());
 
         // Forward outgoing requests.
-        forward_outgoing_requests(Arc::clone(&self.peers), Arc::clone(&self.out_rpc_rx));
+        forward_outgoing_requests(self.node.clone(), Arc::clone(&self.out_rpc_rx));
 
         tracing::debug!(
             id = self.id.to_string(),
@@ -140,8 +144,8 @@ impl RaftNodeServerBuilder {
     }
 
     /// Set the peers of the Raft node.
-    pub fn peers(mut self, peers: HashMap<NodeId, SocketAddr>) -> Self {
-        self.peers = Arc::new(peers);
+    pub fn seeds(mut self, seeds: HashMap<NodeId, SocketAddr>) -> Self {
+        self.seeds = seeds;
         self
     }
 
@@ -158,20 +162,18 @@ impl RaftNodeServerBuilder {
     }
 
     /// Build the Raft node.
-    pub async fn build(self) -> anyhow::Result<RaftNodeServer> {
+    pub fn build(self) -> anyhow::Result<RaftNodeServer> {
         let (raft_channels, outside_channels) = channels::create();
 
         let node = MemRaftNode::<MockRequest, MockResponse>::builder()
             .id(self.id)
             .election_timeout_range(self.election_timeout_range)
             .heartbeat_interval(self.heartbeat_interval)
-            .peers(self.peers.keys().copied().collect())
+            .seeds(self.seeds.clone())
             .channels(raft_channels)
-            .build()
-            .await?;
+            .build()?;
 
         Ok(RaftNodeServer {
-            peers: self.peers,
             id: self.id,
             client_addr: self.client_addr,
             peer_addr: self.peer_addr,
@@ -190,12 +192,12 @@ impl RaftNodeServerBuilder {
 impl Default for RaftNodeServerBuilder {
     fn default() -> Self {
         Self {
-            peers: Default::default(),
             id: NodeId::new_v4(),
             election_timeout_range: DEFAULT_ELECTION_TIMEOUT_RANGE,
             heartbeat_interval: DEFAULT_HEARTBEAT_INTERVAL,
             peer_addr: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5550),
             client_addr: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5551),
+            seeds: Default::default(),
             node: (),
             outside_channels: (),
         }
@@ -211,7 +213,6 @@ fn start_client_server(
     addr: SocketAddr,
     in_client_request_tx: mpsc::UnboundedSender<ClientRequest<MockRequest, MockResponse>>,
 ) -> JoinHandle<anyhow::Result<()>> {
-    // ClientServer::new(addr, in_client_request_tx)::start()
     tokio::spawn(async move {
         let listener = TcpListener::bind(addr).await?;
 
@@ -250,7 +251,6 @@ fn start_peer_server(
     addr: SocketAddr,
     in_rpc_tx: mpsc::UnboundedSender<PeerRpc<MockRequest>>,
 ) -> JoinHandle<anyhow::Result<()>> {
-    // PeerServer::new(addr, in_rpc_tx)::start()
     tokio::spawn(async move {
         let listener = TcpListener::bind(addr).await?;
 
@@ -302,13 +302,14 @@ fn start_peer_server(
 
 /// Forward outgoing requests.
 fn forward_outgoing_requests(
-    peers: Arc<HashMap<NodeId, SocketAddr>>,
+    node: MemRaftNode<MockRequest, MockResponse>,
     out_rpc_rx: Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<MockRequest>)>>>,
 ) -> JoinHandle<anyhow::Result<()>> {
     tokio::spawn(async move {
         while let Some((peer, request)) = out_rpc_rx.lock().await.recv().await {
-            let addr = peers
-                .get(&peer)
+            let addr = node
+                .get_peer(&peer)
+                .await
                 .ok_or(anyhow::anyhow!("Node ID not found."))?;
 
             let mut stream = TcpStream::connect(addr).await?;

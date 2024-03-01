@@ -1,9 +1,13 @@
-use std::{fs, net::SocketAddr, path::Path};
+use std::{
+    collections::HashMap,
+    fs,
+    net::{IpAddr, SocketAddr},
+    path::Path,
+};
 
 use serde::{Deserialize, Serialize};
 use structstruck::strike;
-use typed_builder::TypedBuilder;
-use zeroraft::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
+use zeroraft::{NodeId, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
 
 use crate::{
     configs::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
@@ -17,39 +21,36 @@ use crate::{
 strike! {
     /// The configuration for the `Zerodb` instance.
     #[strikethrough[derive(Debug, Deserialize, Serialize)]]
-    #[derive(TypedBuilder, Default)]
+    #[derive(Default)]
     pub struct ZerodbConfig {
         /// The network configuration for cluster communication.
-        #[builder(default)]
         #[serde(default)]
         pub network:
             /// The network configuration for cluster communication.
-            #[derive(TypedBuilder)]
             pub struct NetworkConfig {
+                /// The id of the node.
+                #[serde(default)]
+                pub id: NodeId,
+
                 /// Name of the node.
-                #[builder(default)]
                 #[serde(default)]
                 pub name: String,
 
                 /// The host to listen on.
-                #[builder(default = DEFAULT_HOST.to_string())]
                 #[serde(default = "super::serde::default_host")]
-                pub host: String,
+                pub host: IpAddr,
 
                 /// The port to listen on for peers.
-                #[builder(default = DEFAULT_PEER_PORT)]
                 #[serde(default = "super::serde::default_peer_port")]
                 pub peer_port: u16,
 
                 /// The port to listen on for clients.
-                #[builder(default = DEFAULT_CLIENT_PORT)]
                 #[serde(default = "super::serde::default_client_port")]
                 pub client_port: u16,
 
                 /// The peers to connect to.
-                #[builder(default)]
                 #[serde(default)]
-                pub peers: Vec<SocketAddr>,
+                pub seeds: HashMap<NodeId, SocketAddr>,
 
                 // /// A passive node does not partake in consensus.
                 // #[builder(default)]
@@ -59,15 +60,12 @@ strike! {
                 /// The consensus configuration.
                 pub consensus:
                     /// The consensus configuration.
-                    #[derive(TypedBuilder)]
                     pub struct ConsensusConfig {
                         /// The interval at which heartbeats are sent.
-                        #[builder(default)]
                         #[serde(default = "super::serde::default_heartbeat_interval")]
                         pub heartbeat_interval: u64,
 
                         /// The range of election timeouts.
-                        #[builder(default)]
                         #[serde(default = "super::serde::default_election_timeout_range")]
                         pub election_timeout_range: (u64, u64),
                     }
@@ -110,19 +108,13 @@ impl NetworkConfig {
     }
 
     /// Gets the peer address.
-    pub fn get_peer_address(&self) -> Result<SocketAddr> {
-        Self::parse_address(&self.host, self.peer_port)
+    pub fn get_peer_address(&self) -> SocketAddr {
+        SocketAddr::new(self.host, self.peer_port)
     }
 
     /// Gets the client address.
-    pub fn get_client_address(&self) -> Result<SocketAddr> {
-        Self::parse_address(&self.host, self.client_port)
-    }
-
-    /// Parses a host and port into a `SocketAddr`.
-    pub fn parse_address(host: &str, port: u16) -> Result<SocketAddr> {
-        let addr = format!("{}:{}", host, port);
-        Ok(addr.parse()?)
+    pub fn get_client_address(&self) -> SocketAddr {
+        SocketAddr::new(self.host, self.client_port)
     }
 }
 
@@ -133,11 +125,12 @@ impl NetworkConfig {
 impl Default for NetworkConfig {
     fn default() -> Self {
         Self {
+            id: NodeId::new_v4(),
             name: String::new(),
-            host: DEFAULT_HOST.to_string(),
+            host: DEFAULT_HOST,
             peer_port: DEFAULT_PEER_PORT,
             client_port: DEFAULT_CLIENT_PORT,
-            peers: vec![],
+            seeds: HashMap::new(),
             consensus: ConsensusConfig::default(),
         }
     }
@@ -158,7 +151,7 @@ impl Default for ConsensusConfig {
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv4Addr;
+    use std::{net::Ipv4Addr, str::FromStr};
 
     use super::*;
 
@@ -169,7 +162,7 @@ mod tests {
         assert_eq!(config.network.host, DEFAULT_HOST);
         assert_eq!(config.network.peer_port, DEFAULT_PEER_PORT);
         assert_eq!(config.network.client_port, DEFAULT_CLIENT_PORT);
-        assert_eq!(config.network.peers, Vec::<SocketAddr>::new());
+        assert_eq!(config.network.seeds, HashMap::new());
         assert_eq!(config.network.consensus.heartbeat_interval, 50);
         assert_eq!(config.network.consensus.election_timeout_range, (150, 300));
     }
@@ -177,30 +170,39 @@ mod tests {
     #[test]
     fn test_full_toml() -> anyhow::Result<()> {
         let toml = r#"
-            [network]
-            name = "alice"
-            host = "127.0.0.1"
-            peer_port = 7700
-            client_port = 7711
-            peers = ["127.0.0.1:7800", "127.0.0.1:7900"]
+        [network]
+        id = "4b72a445-d90d-4fd7-9711-b0e587ab6a21"
+        name = "alice"
+        host = "127.0.0.1"
+        peer_port = 7700
+        client_port = 7711
 
-            [network.consensus]
-            heartbeat_interval = 1000
-            election_timeout_range = [150, 300]
+        [network.seeds]
+        4b72a445-d90d-4fd7-9711-b0e587ab6a21 = "127.0.0.1:7800"
+        0713a29e-9197-448a-9d34-e4ab1aa07eea = "127.0.0.1:7900"
+
+        [network.consensus]
+        heartbeat_interval = 1000
+        election_timeout_range = [150, 300]
         "#;
 
         let config: ZerodbConfig = toml::from_str(toml)?;
 
-        assert_eq!(config.network.host, "127.0.0.1");
+        assert_eq!(config.network.host, IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
         assert_eq!(config.network.peer_port, 7700);
         assert_eq!(config.network.client_port, 7711);
-        assert_eq!(
-            config.network.peers,
-            vec![
-                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 7800),
-                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 7900),
-            ]
-        );
+        assert_eq!(config.network.seeds, {
+            let mut peers = HashMap::new();
+            peers.insert(
+                NodeId::from_str("4b72a445-d90d-4fd7-9711-b0e587ab6a21")?,
+                SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), 7800),
+            );
+            peers.insert(
+                NodeId::from_str("0713a29e-9197-448a-9d34-e4ab1aa07eea")?,
+                SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), 7900),
+            );
+            peers
+        });
         assert_eq!(config.network.consensus.heartbeat_interval, 1000);
         assert_eq!(config.network.consensus.election_timeout_range, (150, 300));
 

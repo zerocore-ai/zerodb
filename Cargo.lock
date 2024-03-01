@@ -1165,6 +1165,7 @@ name = "zerodb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cbor4ii",
  "hyper",
  "rand",
  "serde",

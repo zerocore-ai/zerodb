@@ -3,6 +3,7 @@
 
 mod cluster;
 mod server;
+mod store;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
@@ -10,3 +11,4 @@ mod server;
 
 pub use cluster::*;
 pub use server::*;
+pub use store::*;

@@ -1,20 +1,30 @@
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
 
 use futures::Future;
 use tokio::sync::mpsc;
 
 use crate::{
-    AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason, Log, RaftNodeInner,
-    Request, RequestVoteRequest, RequestVoteResponse, RequestVoteResponseReason, Response, Result,
+    AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason, RaftNode, Request,
+    RequestVoteRequest, RequestVoteResponse, RequestVoteResponseReason, Response, Result, Store,
 };
+
+//--------------------------------------------------------------------------------------------------
+// Types
+//--------------------------------------------------------------------------------------------------
+
+type Callback<S, R, P> = fn(
+    RaftNode<S, R, P>,
+    AppendEntriesRequest<R>,
+    mpsc::Sender<AppendEntriesResponse>,
+) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>;
 
 //--------------------------------------------------------------------------------------------------
 // Functions
 //--------------------------------------------------------------------------------------------------
 
 /// Responds to a request vote RPC.
-pub(crate) async fn respond_to_request_vote<L, R, P>(
-    node: Arc<RaftNodeInner<L, R, P>>,
+pub(crate) async fn respond_to_request_vote<S, R, P>(
+    node: RaftNode<S, R, P>,
     RequestVoteRequest {
         term: candidate_term,
         candidate_id,
@@ -24,7 +34,7 @@ pub(crate) async fn respond_to_request_vote<L, R, P>(
     response_tx: mpsc::Sender<RequestVoteResponse>,
 ) -> Result<()>
 where
-    L: Log<R>,
+    S: Store<R>,
     R: Request,
     P: Response,
 {
@@ -67,8 +77,8 @@ where
     node.change_to_follower_state().await;
 
     // Check candidate's completeness.
-    let our_last_log_index = node.log.lock().await.get_last_index().await;
-    let our_last_log_term = node.log.lock().await.get_last_term().await;
+    let our_last_log_index = node.inner.store.lock().await.get_last_index();
+    let our_last_log_term = node.inner.store.lock().await.get_last_term();
     if our_last_log_term > candidate_last_log_term && our_last_log_index > candidate_last_log_index
     {
         response_tx
@@ -97,18 +107,14 @@ where
 }
 
 /// Responds to an append entries RPC and takes a callback function that is called after the first common checks.
-pub(crate) async fn respond_to_append_entries<L, R, P>(
-    node: Arc<RaftNodeInner<L, R, P>>,
+pub(crate) async fn respond_to_append_entries<S, R, P>(
+    node: RaftNode<S, R, P>,
     request: AppendEntriesRequest<R>,
     response_tx: mpsc::Sender<AppendEntriesResponse>,
-    callback: fn(
-        Arc<RaftNodeInner<L, R, P>>,
-        AppendEntriesRequest<R>,
-        mpsc::Sender<AppendEntriesResponse>,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>,
+    callback: Callback<S, R, P>,
 ) -> Result<()>
 where
-    L: Log<R>,
+    S: Store<R>,
     R: Request,
     P: Response,
 {
@@ -138,7 +144,7 @@ where
 
     // Update leader id.
     node.update_leader_id(request.leader_id).await;
-    
+
     // Change to follower state.
     node.change_to_follower_state().await;
 

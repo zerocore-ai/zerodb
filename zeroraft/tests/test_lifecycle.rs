@@ -12,7 +12,7 @@ mod fixtures;
 
 #[test_log::test(tokio::test)]
 async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
-    let mut cluster = RaftNodeCluster::new(3).await?;
+    let mut cluster = RaftNodeCluster::new(3)?;
 
     // Start the cluster.
     let handle = cluster.start();
@@ -38,7 +38,7 @@ async fn test_cluster_can_shutdown() -> anyhow::Result<()> {
 async fn test_single_server_can_shutdown() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let server = RaftNodeServer::builder().build().await?;
+    let server = RaftNodeServer::builder().build()?;
 
     // Start the server.
     server.start();

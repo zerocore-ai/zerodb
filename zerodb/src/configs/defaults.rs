@@ -1,9 +1,11 @@
+use std::net::{IpAddr, Ipv4Addr};
+
 //--------------------------------------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------------------------------------
 
 /// The default host to bind for the database server.
-pub const DEFAULT_HOST: &str = "127.0.0.1";
+pub const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::LOCALHOST);
 
 /// The default port to bind to for listening to peers.
 pub const DEFAULT_PEER_PORT: u16 = 6600;
@@ -16,10 +18,12 @@ pub const DEFAULT_CLIENT_PORT: u16 = 6611;
 //--------------------------------------------------------------------------------------------------
 
 pub(crate) mod serde {
+    use std::net::IpAddr;
+
     use zeroraft::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
 
-    pub(crate) fn default_host() -> String {
-        super::DEFAULT_HOST.to_string()
+    pub(crate) fn default_host() -> IpAddr {
+        super::DEFAULT_HOST
     }
 
     pub(crate) fn default_peer_port() -> u16 {

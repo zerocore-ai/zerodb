@@ -1,6 +1,29 @@
+AppendEntriesSession
+
+- new session, send heartbeat to all peers
+  |
+- send AppendEntries to incomplete peers
+  |
+- send AppendEntries to incomplete peers
+  |
+- new session, send heartbeat to all peers (heartbeat timeout)
+
+RequestVoteSession
+
+- new session, send RequestVote to all peers
+  |
+- resend RequestVote to no-ack peers (ack timeout)
+  |
+- resend RequestVote to no-ack peers (ack timeout)
+  |
+- new session, send RequestVote to all peers (election timeout)
+
 - [ ] Distributed Consensus
+
   - [ ] Raft
+
     - [ ] State transitions
+
       - [ ] Follower
         - [ ] Election timeout
         - [ ] Vote request
@@ -10,6 +33,7 @@
     - [ ] Client comms
     - [ ] Peer RPC comms
     - [ ] Timeouts
+
   - [ ]
 
 - [ ] Query Language

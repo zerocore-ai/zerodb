@@ -1,9 +1,11 @@
+use std::{collections::HashMap, str::FromStr};
+
 use clap::{CommandFactory, Parser};
 use zerodb::{
     configs::{ConsensusConfig, NetworkConfig, ZerodbConfig},
-    ZerodbNode,
+    NodeId, ZerodbNode,
 };
-use zerodb_cli::{SubCommand, ZerodbArgs};
+use zerodb_cli::{Result, SubCommand, ZerodbArgs};
 
 //--------------------------------------------------------------------------------------------------
 // Main
@@ -21,40 +23,46 @@ async fn main() -> zerodb_cli::Result<()> {
     match args.subcommand {
         Some(SubCommand::Serve {
             file,
+            id,
             name,
             host,
             peer_port,
             client_port,
-            peers,
             heartbeat_interval,
+            peer,
             election_timeout_min,
             election_timeout_max,
         }) => {
             let config = if let Some(file) = file {
                 toml::from_str(&std::fs::read_to_string(file)?)?
             } else {
-                ZerodbConfig::builder()
-                    .network(
-                        NetworkConfig::builder()
-                            .name(name)
-                            .host(host)
-                            .peer_port(peer_port)
-                            .client_port(client_port)
-                            .peers(peers)
-                            .consensus(
-                                ConsensusConfig::builder()
-                                    .heartbeat_interval(heartbeat_interval)
-                                    .election_timeout_range((
-                                        election_timeout_min,
-                                        election_timeout_max,
-                                    ))
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .build()
+                let seeds = peer
+                    .iter()
+                    .map(|peer| {
+                        let mut peer = peer.splitn(2, ':');
+                        let id = NodeId::from_str(peer.next().unwrap())?;
+                        let addr = peer.next().unwrap().parse()?;
+                        Ok((id, addr))
+                    })
+                    .collect::<Result<HashMap<_, _>>>()?;
+
+                ZerodbConfig {
+                    network: NetworkConfig {
+                        id,
+                        name,
+                        host,
+                        peer_port,
+                        client_port,
+                        seeds,
+                        consensus: ConsensusConfig {
+                            heartbeat_interval,
+                            election_timeout_range: (election_timeout_min, election_timeout_max),
+                        },
+                    },
+                }
             };
-            ZerodbNode::new(config)?.start().await?;
+
+            ZerodbNode::with_config(config)?.start().await?;
         }
         None => ZerodbArgs::command().print_help()?,
     }
