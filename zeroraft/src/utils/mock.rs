@@ -1,24 +1,25 @@
-#![warn(missing_docs)]
-//! `zerodb` is a multi-model database query engine for multi-tenant applications
+use serde::{Deserialize, Serialize};
 
-mod errors;
-mod init;
-mod node;
-mod store;
+use crate::{Request, Response};
 
 //--------------------------------------------------------------------------------------------------
-// Exports
+// Types
 //--------------------------------------------------------------------------------------------------
 
-pub mod configs;
-pub mod utils;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MockRequest {
+    Empty,
+}
 
-pub use errors::*;
-pub use init::*;
-pub use node::*;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MockResponse {
+    Empty,
+}
 
 //--------------------------------------------------------------------------------------------------
-// Re-exports
+// Methods
 //--------------------------------------------------------------------------------------------------
 
-pub use zeroraft::{self, NodeId, NodeIdError};
+impl Request for MockRequest {}
+
+impl Response for MockResponse {}

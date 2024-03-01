@@ -1,13 +1,9 @@
-#![warn(missing_docs)]
-//! `zeroengine-cli` is a command-line interface for the zeroengine serverless engine.
-
-mod args;
-mod error;
-mod styles;
-
 //--------------------------------------------------------------------------------------------------
-// Exports
+// Functions
 //--------------------------------------------------------------------------------------------------
 
-pub use args::*;
-pub use error::*;
+/// This is where general initialization code goes. For example, logging gets initialized here.
+pub fn init() -> crate::Result<()> {
+    tracing_subscriber::fmt::init();
+    Ok(())
+}

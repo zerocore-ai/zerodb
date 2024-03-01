@@ -1,5 +1,5 @@
 [package]
-name = "zeroql"
+name = "client"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

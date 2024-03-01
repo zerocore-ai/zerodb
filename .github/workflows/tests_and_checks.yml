@@ -20,8 +20,6 @@ jobs:
         rust-toolchain:
           - stable
           - nightly
-          # minimum version
-          - 1.67
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -101,4 +99,4 @@ jobs:
           toolchain: ${{ matrix.rust-toolchain }}
 
       - name: Run Tests
-        run: cargo test --all-features
+        run: RUST_LOG=debug cargo test --all-features -- --nocapture

@@ -1,24 +1,17 @@
-#![warn(missing_docs)]
-//! `zerodb` is a multi-model database query engine for multi-tenant applications
+//! Defines the different configuration used by zerodb.
 
-mod errors;
-mod init;
-mod node;
-mod store;
+mod config_zerodb;
+mod defaults;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub mod configs;
-pub mod utils;
-
-pub use errors::*;
-pub use init::*;
-pub use node::*;
+pub use config_zerodb::*;
+pub use defaults::*;
 
 //--------------------------------------------------------------------------------------------------
 // Re-exports
 //--------------------------------------------------------------------------------------------------
 
-pub use zeroraft::{self, NodeId, NodeIdError};
+pub use zeroraft::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};

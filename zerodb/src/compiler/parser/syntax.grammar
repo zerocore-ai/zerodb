@@ -1,0 +1,56 @@
+
+integer_literal =
+float_literal =
+string_literal =
+regex_literal =
+boolean_literal =
+
+line_continuation =
+spaces =
+
+list_literal =
+tuple_literal =
+range_literal =
+symbol_literal =
+object_literal =
+
+plus_operator =
+minus_operator =
+mul_operator =
+div_operator =
+mod_operator =
+exp_operator =
+eq_operator =
+neq_operator =
+lt_operator =
+gt_operator =
+le_operator =
+ge_operator =
+and_operator =
+or_operator =
+not_operator =
+neg_operator =
+pos_operator =
+relate_operator =
+relate_l_operator =
+relate_r_operator =
+relate_lr_operator =
+
+dot_operator =
+dot_prefix_operator =
+
+scope_notation =
+infix_notation =
+prefix_notation =
+call_notation =
+
+block_expression =
+match_expression =
+closure_expression =
+list_comprehension_expression =
+transaction_expression =
+
+
+let_declaration =
+function_declaration =
+import_declaration =

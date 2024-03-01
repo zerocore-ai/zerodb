@@ -1,2 +1,3 @@
 #![warn(missing_docs)]
-//! # zeroql
+
+//! # Client
