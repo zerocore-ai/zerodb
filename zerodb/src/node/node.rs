@@ -4,7 +4,7 @@ use tokio::sync::{mpsc, Mutex};
 use zeroraft::{channels, ClientRequest, NodeId, PeerRpc, RaftNode};
 
 use crate::{
-    configs::ZerodbConfig, server, store::MemoryStore, Query, QueryResponse, Result,
+    configs::ZerodbConfig, server, stores::MemoryStore, Query, QueryResponse, Result,
     ZerodbNodeBuilder,
 };
 
@@ -65,6 +65,17 @@ impl ZerodbNode {
         })
     }
 
+    /// Returns the configuration of the ZerodbNode instance.
+    pub fn get_config(&self) -> &ZerodbConfig {
+        &self.config
+    }
+
+    /// Shuts down the ZerodbNode instance.
+    pub async fn shutdown(&self) -> Result<()> {
+        self.node.shutdown().await?;
+        Ok(())
+    }
+
     /// Starts the ZerodbNode instance.
     pub async fn start(&self) -> Result<()> {
         // Start Raft Node.
@@ -82,17 +93,6 @@ impl ZerodbNode {
         // Wait for Raft Node to stop.
         raft_handle.await??;
 
-        Ok(())
-    }
-
-    /// Returns the configuration of the ZerodbNode instance.
-    pub fn get_config(&self) -> &ZerodbConfig {
-        &self.config
-    }
-
-    /// Shuts down the ZerodbNode instance.
-    pub async fn shutdown(&self) -> Result<()> {
-        self.node.shutdown().await?;
         Ok(())
     }
 }
