@@ -14,12 +14,12 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
-    task::TaskState, AppendEntriesRequest, AppendEntriesResponse, Countdown, PeerRpc,
-    RaftNodeBuilder, RaftSideChannels, Request, RequestVoteRequest, RequestVoteResponse, Response,
-    Result, Store,
+    roles::TaskState, AppendEntriesRequest, AppendEntriesResponse, PeerRpc, RaftNodeBuilder,
+    RaftSideChannels, Request, RequestVoteRequest, RequestVoteResponse, Response, Result, Store,
+    Timeout,
 };
 
-use super::task::{CandidateTasks, FollowerTasks, LeaderTasks};
+use super::roles::{CandidateRole, FollowerRole, LeaderRole};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -107,9 +107,9 @@ where
 
                 let node = node.clone();
                 match current_state {
-                    TaskState::Follower => FollowerTasks::start(node).await?,
-                    TaskState::Candidate => CandidateTasks::start(node).await?,
-                    TaskState::Leader => LeaderTasks::start(node).await?,
+                    TaskState::Follower => FollowerRole::start(node).await?,
+                    TaskState::Candidate => CandidateRole::start(node).await?,
+                    TaskState::Leader => LeaderRole::start(node).await?,
                     TaskState::NonVoter => {
                         // TODO(appcypher): Implement NonVotingMember state
                         todo!("Implement NonVotingMember state")
@@ -292,17 +292,17 @@ where
             .cloned()
     }
 
-    /// Creates a new election countdown.
-    pub(super) fn new_election_countdown(&self) -> Countdown {
-        let countdown = Countdown::start_range(self.inner.election_timeout_range);
+    /// Creates a new election timeout.
+    pub(super) fn new_election_timeout(&self) -> Timeout {
+        let timeout = Timeout::start_range(self.inner.election_timeout_range);
 
         tracing::debug!(
             id = self.inner.id.to_string(),
-            "Starting election countdown: {:?}",
-            countdown.get_interval()
+            "Starting election timeout: {:?}",
+            timeout.get_interval()
         );
 
-        countdown
+        timeout
     }
 
     /// Sends a request vote RPC to a peer.
@@ -311,12 +311,15 @@ where
         peer: NodeId,
         vote_tx: mpsc::Sender<RequestVoteResponse>,
     ) -> Result<()> {
+        let last_log_index = self.inner.store.lock().await.get_last_index();
+        let last_log_term = self.inner.store.lock().await.get_last_term();
+
         // Create request
         let request = RequestVoteRequest {
             term: self.inner.current_term.load(Ordering::SeqCst),
             candidate_id: self.inner.id,
-            last_log_index: self.inner.store.lock().await.get_last_index(),
-            last_log_term: self.inner.store.lock().await.get_last_term(),
+            last_log_index,
+            last_log_term,
         };
 
         // Response channel.

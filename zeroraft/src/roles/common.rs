@@ -12,7 +12,7 @@ use crate::{
 // Types
 //--------------------------------------------------------------------------------------------------
 
-type Callback<S, R, P> = fn(
+type AppendEntriesCallback<S, R, P> = fn(
     RaftNode<S, R, P>,
     AppendEntriesRequest<R>,
     mpsc::Sender<AppendEntriesResponse>,
@@ -79,7 +79,9 @@ where
     // Check candidate's completeness.
     let our_last_log_index = node.inner.store.lock().await.get_last_index();
     let our_last_log_term = node.inner.store.lock().await.get_last_term();
-    if our_last_log_term > candidate_last_log_term && our_last_log_index > candidate_last_log_index
+    if (our_last_log_term > candidate_last_log_term)
+        || (our_last_log_term == candidate_last_log_term
+            && our_last_log_index > candidate_last_log_index)
     {
         response_tx
             .send(RequestVoteResponse {
@@ -111,7 +113,7 @@ pub(crate) async fn respond_to_append_entries<S, R, P>(
     node: RaftNode<S, R, P>,
     request: AppendEntriesRequest<R>,
     response_tx: mpsc::Sender<AppendEntriesResponse>,
-    callback: Callback<S, R, P>,
+    callback: AppendEntriesCallback<S, R, P>,
 ) -> Result<()>
 where
     S: Store<R>,

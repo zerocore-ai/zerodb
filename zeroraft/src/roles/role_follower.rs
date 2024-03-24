@@ -1,7 +1,7 @@
 use std::cmp::min;
 
 use crate::{
-    task::common, AppendEntriesResponse, AppendEntriesResponseReason, ClientRequest,
+    roles::common, AppendEntriesResponse, AppendEntriesResponseReason, ClientRequest,
     ClientResponse, ClientResponseReason, PeerRpc, RaftNode, Request, Response, Result, Store,
 };
 
@@ -11,13 +11,13 @@ use crate::{
 
 /// The tasks that a follower performs.
 #[derive(Debug)]
-pub(crate) struct FollowerTasks;
+pub(crate) struct FollowerRole;
 
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-impl FollowerTasks {
+impl FollowerRole {
     /// Starts the follower tasks.
     pub(crate) async fn start<S, R, P>(node: RaftNode<S, R, P>) -> Result<()>
     where
@@ -25,8 +25,8 @@ impl FollowerTasks {
         R: Request + Send + Sync + 'static,
         P: Response + Send + Sync + 'static,
     {
-        // Create a election countdown.
-        let mut election_countdown = node.new_election_countdown();
+        // Create a election timeout.
+        let mut election_timeout = node.new_election_timeout();
 
         // Get the channels.
         let channels = node.get_channels();
@@ -108,7 +108,7 @@ impl FollowerTasks {
                     },
                     PeerRpc::RequestVote(request, response_tx) => {
                         common::respond_to_request_vote(node.clone(), request, response_tx).await?;
-                        election_countdown.reset();
+                        election_timeout.reset();
                     },
                     PeerRpc::Config(_, _) => {
                         // TODO(appcypher): Implement Config RPC.
@@ -144,7 +144,7 @@ impl FollowerTasks {
                     }
 
                 },
-                _ = election_countdown.continuation() => {
+                _ = election_timeout.continuation() => {
                     // Become a candidate.
                     node.change_to_candidate_state().await;
                 }

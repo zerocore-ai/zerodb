@@ -7,20 +7,20 @@ use tokio::time::{self, Sleep};
 // Types
 //--------------------------------------------------------------------------------------------------
 
-/// `Countdown` is a utility struct for countdowns that you can get a continuation of.
+/// `Timeout` is a utility struct for timeouts that you can get a continuation of.
 ///
-/// It provides functionality to start a countdown, get a continuation countdown, reset the countdown,
+/// It provides functionality to start a timeout, get a continuation timeout, reset the timeout,
 /// and retrieve the elapsed time and the current interval.
 ///
 /// This struct is particularly useful in leader election algorithms where nodes need to wait for
 /// a random period before starting an election.
 #[derive(Debug, Clone)]
-pub struct Countdown {
-    /// The amount of time to wait before the countdown is complete.
+pub struct Timeout {
+    /// The amount of time to wait before the timeout is complete.
     duration: PossibleDuration,
-    /// The time at which the countdown started.
+    /// The time at which the timeout started.
     start: Instant,
-    /// The current countdown interval.
+    /// The current timeout interval.
     current_interval: Duration,
 }
 
@@ -34,8 +34,8 @@ enum PossibleDuration {
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-impl Countdown {
-    /// Starts a new countdown with a fixed duration.
+impl Timeout {
+    /// Starts a new timeout with a fixed duration.
     pub fn start(duration: u64) -> Self {
         let current_interval = Duration::from_millis(duration);
         Self {
@@ -45,7 +45,7 @@ impl Countdown {
         }
     }
 
-    /// Starts a new countdown with a random duration within a range.
+    /// Starts a new timeout with a random duration within a range.
     pub fn start_range((min, max): (u64, u64)) -> Self {
         let current_interval = rand::thread_rng().gen_range(min..max);
         Self {
@@ -55,7 +55,7 @@ impl Countdown {
         }
     }
 
-    /// Returns a continuation of the countdown.
+    /// Returns a continuation of the timeout.
     pub fn continuation(&self) -> Sleep {
         let continuation = self.current_interval - self.start.elapsed();
         time::sleep(continuation)
@@ -89,54 +89,54 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_fixed_countdown_elapsed_correctly() {
-        let countdown = Countdown::start(200);
-        time::sleep(countdown.get_interval()).await;
-        assert!(countdown.get_elapsed() >= countdown.get_interval());
+    async fn test_fixed_timeout_elapsed_correctly() {
+        let timeout = Timeout::start(200);
+        time::sleep(timeout.get_interval()).await;
+        assert!(timeout.get_elapsed() >= timeout.get_interval());
     }
 
     #[tokio::test]
-    async fn test_range_countdown_elapsed_correctly() {
-        let countdown = Countdown::start_range((200, 400));
-        time::sleep(countdown.get_interval()).await;
-        assert!(countdown.get_elapsed() >= countdown.get_interval());
+    async fn test_range_timeout_elapsed_correctly() {
+        let timeout = Timeout::start_range((200, 400));
+        time::sleep(timeout.get_interval()).await;
+        assert!(timeout.get_elapsed() >= timeout.get_interval());
     }
 
     #[tokio::test]
-    async fn test_fixed_continuation_elapses_with_countdown() {
-        let countdown = Countdown::start(200);
-        time::sleep(countdown.get_interval() / 2).await;
-        countdown.continuation().await;
-        assert!(countdown.get_elapsed() >= countdown.get_interval());
+    async fn test_fixed_continuation_elapses_with_timeout() {
+        let timeout = Timeout::start(200);
+        time::sleep(timeout.get_interval() / 2).await;
+        timeout.continuation().await;
+        assert!(timeout.get_elapsed() >= timeout.get_interval());
     }
 
     #[tokio::test]
-    async fn test_range_continuation_elapses_with_countdown() {
-        let countdown = Countdown::start_range((200, 400));
-        time::sleep(countdown.get_interval() / 2).await;
-        countdown.continuation().await;
-        assert!(countdown.get_elapsed() >= countdown.get_interval());
+    async fn test_range_continuation_elapses_with_timeout() {
+        let timeout = Timeout::start_range((200, 400));
+        time::sleep(timeout.get_interval() / 2).await;
+        timeout.continuation().await;
+        assert!(timeout.get_elapsed() >= timeout.get_interval());
     }
 
     #[tokio::test]
-    async fn test_fixed_countdown_can_be_reset() {
-        let mut countdown = Countdown::start(200);
-        time::sleep(countdown.get_interval() / 2).await;
+    async fn test_fixed_timeout_can_be_reset() {
+        let mut timeout = Timeout::start(200);
+        time::sleep(timeout.get_interval() / 2).await;
 
-        countdown.reset();
+        timeout.reset();
 
-        time::sleep(countdown.get_interval()).await;
-        assert!(countdown.get_elapsed() >= countdown.get_interval());
+        time::sleep(timeout.get_interval()).await;
+        assert!(timeout.get_elapsed() >= timeout.get_interval());
     }
 
     #[tokio::test]
-    async fn test_range_countdown_can_be_reset() {
-        let mut countdown = Countdown::start_range((200, 400));
-        time::sleep(countdown.get_interval() / 2).await;
+    async fn test_range_timeout_can_be_reset() {
+        let mut timeout = Timeout::start_range((200, 400));
+        time::sleep(timeout.get_interval() / 2).await;
 
-        countdown.reset();
+        timeout.reset();
 
-        time::sleep(countdown.get_interval()).await;
-        assert!(countdown.get_elapsed() >= countdown.get_interval());
+        time::sleep(timeout.get_interval()).await;
+        assert!(timeout.get_elapsed() >= timeout.get_interval());
     }
 }

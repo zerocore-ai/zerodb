@@ -1,6 +1,6 @@
 use std::{collections::HashMap, net::SocketAddr};
 
-use crate::{Command, NodeId, Snapshot};
+use crate::{Command, NodeId, Result, Snapshot};
 use serde::{Deserialize, Serialize};
 
 use super::Request;
@@ -19,10 +19,10 @@ where
     //----------------- LOG ENTRIES ------------------
 
     /// Appends new entries to the log.
-    fn append_entries(&mut self, entries: Vec<LogEntry<R>>) -> anyhow::Result<()>;
+    fn append_entries(&mut self, entries: Vec<LogEntry<R>>) -> Result<()>;
 
     /// Removes all entries from the log following the given index if there are any.
-    fn remove_entries_after(&mut self, index: u64) -> anyhow::Result<()>;
+    fn remove_entries_after(&mut self, index: u64) -> Result<()>;
 
     /// Returns the log entry at the given index, if it exists.
     fn get_entry(&self, index: u64) -> Option<&LogEntry<R>>;
@@ -50,13 +50,10 @@ where
     fn get_membership(&self) -> &HashMap<NodeId, SocketAddr>;
 
     /// Sets the initial membership configuration.
-    fn set_initial_membership(
-        &mut self,
-        membership: HashMap<NodeId, SocketAddr>,
-    ) -> anyhow::Result<()>;
+    fn set_initial_membership(&mut self, membership: HashMap<NodeId, SocketAddr>) -> Result<()>;
 
     /// Sets the index of the last committed log entry and applies it to the state machine.
-    fn set_last_commit_index(&mut self, index: u64) -> anyhow::Result<()>;
+    fn set_last_commit_index(&mut self, index: u64) -> Result<()>;
 
     //----------------- SNAPSHOT -----------------------
 
@@ -72,10 +69,10 @@ where
     fn load_current_term(&self) -> u64;
 
     /// Stores the ID of the node that this node has voted for in the current term.
-    fn store_voted_for(&mut self, voted_for: NodeId) -> anyhow::Result<()>;
+    fn store_voted_for(&mut self, voted_for: NodeId) -> Result<()>;
 
     /// Stores the current term.
-    fn store_current_term(&mut self, term: u64) -> anyhow::Result<()>;
+    fn store_current_term(&mut self, term: u64) -> Result<()>;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -98,4 +95,17 @@ where
 
     /// The command of the log entry.
     pub command: Command<R>,
+}
+
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
+
+impl<R> PartialEq for LogEntry<R>
+where
+    R: Request + PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.term == other.term && self.command == other.command
+    }
 }

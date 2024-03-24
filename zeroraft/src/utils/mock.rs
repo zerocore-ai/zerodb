@@ -6,7 +6,7 @@ use crate::{Request, Response};
 // Types
 //--------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MockRequest {
     Empty,
 }

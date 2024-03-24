@@ -3,9 +3,9 @@ use std::{cmp::max, collections::HashSet, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 
 use crate::{
-    task::common, AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason,
-    ClientRequest, Command, Countdown, LogEntry, NodeId, PeerRpc, RaftNode, Request, Response,
-    Result, Store,
+    roles::common, AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason,
+    ClientRequest, Command, LogEntry, NodeId, PeerRpc, RaftNode, Request, Response, Result, Store,
+    Timeout,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ use crate::{
 
 /// The tasks that a leader performs.
 #[derive(Debug)]
-pub(crate) struct LeaderTasks;
+pub(crate) struct LeaderRole;
 
 /// This type is used to track the state of the heartbeat session for each peer.
 pub(crate) struct AppendEntriesSession<S, R, P>
@@ -32,7 +32,7 @@ where
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-impl LeaderTasks {
+impl LeaderRole {
     /// Starts the leader tasks.
     pub(crate) async fn start<S, R, P>(node: RaftNode<S, R, P>) -> Result<()>
     where
@@ -40,8 +40,8 @@ impl LeaderTasks {
         R: Request + Sync + Send + 'static,
         P: Response + Send + 'static,
     {
-        // Create a heartbeat countdown.
-        let mut heartbeat_countdown = Countdown::start(node.get_heartbeat_interval());
+        // Create a heartbeat timeout.
+        let mut heartbeat_timeout = Timeout::start(node.get_heartbeat_interval());
 
         // Create a append_entries_session session.
         let mut append_entries_session = AppendEntriesSession::initialize(node.clone());
@@ -104,9 +104,9 @@ impl LeaderTasks {
 
                     todo!();
                 },
-                _ = heartbeat_countdown.continuation() => {
-                    // Reset the heartbeat countdown.
-                    heartbeat_countdown.reset();
+                _ = heartbeat_timeout.continuation() => {
+                    // Reset the heartbeat timeout.
+                    heartbeat_timeout.reset();
 
                     // Reset the append_entries_session session.
                     append_entries_session.reset().await;

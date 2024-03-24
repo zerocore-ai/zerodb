@@ -27,7 +27,7 @@ pub trait Request: Serialize {}
 /// - `Config` represents a configuration command that includes a `MembershipConfig`.
 /// - `JointConfig` represents a joint configuration command that includes two `MembershipConfig`.
 /// - `ClientRequest` represents a custom command defined by the user.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Command<R>
 where
     R: Request,

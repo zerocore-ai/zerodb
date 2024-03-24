@@ -1,6 +1,7 @@
 use std::{
     cmp::max,
     collections::HashSet,
+    ops::Deref,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -10,9 +11,9 @@ use std::{
 use tokio::sync::{mpsc, Mutex};
 
 use crate::{
-    task::common, AppendEntriesResponse, AppendEntriesResponseReason, ClientRequest,
+    roles::common, AppendEntriesResponse, AppendEntriesResponseReason, ClientRequest,
     ClientResponse, ClientResponseReason, NodeId, PeerRpc, RaftNode, Request, RequestVoteResponse,
-    Response, Result, Store,
+    Response, Result, Store, Timeout,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -21,20 +22,7 @@ use crate::{
 
 /// The tasks that a candidate performs.
 #[derive(Debug)]
-pub(crate) struct CandidateTasks;
-
-/// This type is used to track the state of the vote session for each peer.
-pub(crate) struct VoteSession<S, R, P>
-where
-    S: Store<R>,
-    R: Request,
-    P: Response,
-{
-    reached_peers: Mutex<HashSet<NodeId>>,
-    node: RaftNode<S, R, P>,
-    vote_result_tx: Mutex<mpsc::Sender<VoteResult>>,
-    granted_votes: AtomicUsize,
-}
+pub(crate) struct CandidateRole;
 
 /// The result of a vote request.
 pub(crate) enum VoteResult {
@@ -43,11 +31,34 @@ pub(crate) enum VoteResult {
     NotGranted,
 }
 
+/// TODO: Add documentation
+pub struct VoteSession<S, R, P>
+where
+    S: Store<R>,
+    R: Request,
+    P: Response,
+{
+    inner: Arc<VoteSessionInner<S, R, P>>,
+}
+
+/// TODO: Add documentation
+pub struct VoteSessionInner<S, R, P>
+where
+    S: Store<R>,
+    R: Request,
+    P: Response,
+{
+    ack_peers: Mutex<HashSet<NodeId>>,
+    node: RaftNode<S, R, P>,
+    vote_result_tx: mpsc::Sender<VoteResult>,
+    granted_votes: AtomicUsize,
+}
+
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-impl CandidateTasks {
+impl CandidateRole {
     /// Starts the candidate tasks.
     pub(crate) async fn start<S, R, P>(node: RaftNode<S, R, P>) -> Result<()>
     where
@@ -57,12 +68,13 @@ impl CandidateTasks {
     {
         let node_id = node.get_id().to_string();
 
-        // Create a election countdown.
-        let mut election_countdown = node.new_election_countdown();
+        // Create a election and retry timeouts.
+        let mut election_timeout = node.new_election_timeout();
+        let mut retry_timeout = Timeout::start(node.get_heartbeat_interval());
 
-        // Ask for votes.
-        let (vote_session, mut vote_result_rx) = VoteSession::initialize(node.clone()).await;
-        vote_session.request_votes_from_all();
+        // Start vote session
+        let (mut vote_session, mut vote_result_rx) = VoteSession::initialize(node.clone()).await;
+        vote_session.request_votes();
 
         // Get the channels.
         let channels = node.get_channels();
@@ -70,7 +82,6 @@ impl CandidateTasks {
         let in_client_request_rx = &mut *channels.in_client_request_rx.lock().await;
         let shutdown_rx = &mut *channels.shutdown_rx.lock().await;
 
-        // let node = node.clone();
         loop {
             if !node.is_candidate_state().await {
                 break;
@@ -78,7 +89,6 @@ impl CandidateTasks {
 
             tokio::select! {
                 _ = shutdown_rx.recv() => {
-                    // Shutdown.
                     node.change_to_shutdown_state().await;
                 },
                 Some(result) = vote_result_rx.recv() => match result {
@@ -92,7 +102,7 @@ impl CandidateTasks {
                     },
                     VoteResult::NotGranted => {
                         tracing::debug!(id = node_id, "Did not receive enough votes to become leader");
-                        node.change_to_follower_state().await;
+                        // Do nothing
                     }
                 },
                 Some(request) = in_rpc_rx.recv() => match request {
@@ -123,8 +133,7 @@ impl CandidateTasks {
                     }
                 },
                 Some(ClientRequest(_, response_tx)) = in_client_request_rx.recv() => {
-                    // Check if there is a leader.
-                    if let Some(leader_id) = node.get_leader_id().await {
+                    if let Some(leader_id) = node.get_leader_id().await { // Check if there is a leader.
                         // Redirect to the leader.
                         response_tx
                             .send(ClientResponse {
@@ -146,13 +155,18 @@ impl CandidateTasks {
                             .await?;
                     }
                 },
-                _ = election_countdown.continuation()  => {
-                    // Reset election countdown.
-                    election_countdown.reset();
+                _ = retry_timeout.continuation() => {
+                    retry_timeout.reset();
+                    vote_session.request_votes();
+                }
+                _ = election_timeout.continuation()  => {
+                    // Reset timeouts
+                    election_timeout.reset();
+                    retry_timeout.reset();
 
-                    // Reset the vote session.
-                    vote_result_rx = vote_session.reset().await;
-                    vote_session.request_votes_from_all();
+                    // Restart vote session.
+                    (vote_session, vote_result_rx) = VoteSession::initialize(node.clone()).await;
+                    vote_session.request_votes();
                 }
             }
         }
@@ -163,95 +177,47 @@ impl CandidateTasks {
 
 impl<S, R, P> VoteSession<S, R, P>
 where
-    S: Store<R> + Sync + Send + 'static,
-    R: Request + Sync + Send + 'static,
-    P: Response + Send + 'static,
+    S: Store<R>,
+    R: Request,
+    P: Response,
 {
-    /// Initialize a new vote session.
-    pub async fn initialize(node: RaftNode<S, R, P>) -> (Arc<Self>, mpsc::Receiver<VoteResult>) {
+    pub async fn initialize(node: RaftNode<S, R, P>) -> (Self, mpsc::Receiver<VoteResult>) {
         node.increment_term().await;
         node.vote_for_self().await;
 
         let (vote_result_tx, vote_result_rx) = mpsc::channel(1);
-        let session = Arc::new(VoteSession {
-            reached_peers: Mutex::new(HashSet::new()),
-            node,
-            vote_result_tx: Mutex::new(vote_result_tx),
-            granted_votes: AtomicUsize::new(1),
-        });
+
+        let session = Self {
+            inner: Arc::new(VoteSessionInner {
+                ack_peers: Mutex::new(HashSet::new()),
+                node,
+                granted_votes: AtomicUsize::new(1),
+                vote_result_tx,
+            }),
+        };
 
         (session, vote_result_rx)
     }
 
-    /// Resets the vote session.
-    pub async fn reset(&self) -> mpsc::Receiver<VoteResult> {
-        self.node.increment_term().await;
-        self.node.vote_for_self().await;
-
-        let (vote_result_tx, vote_result_rx) = mpsc::channel(1);
-
-        *self.reached_peers.lock().await = HashSet::new();
-        *self.vote_result_tx.lock().await = vote_result_tx;
-        self.granted_votes.store(1, Ordering::SeqCst);
-
-        vote_result_rx
-    }
-
-    /// Requests votes from the peers.
-    fn request_votes_from_all(self: &Arc<Self>) {
-        let session = Arc::clone(self);
+    /// TODO: Document this.
+    pub fn request_votes(&self)
+    where
+        S: Send + 'static,
+        R: Send + 'static,
+        P: Send + 'static,
+    {
+        let session = self.clone();
         tokio::spawn(async move {
-            let peers: HashSet<NodeId> = session
-                .node
-                .inner
-                .store
-                .lock()
-                .await
-                .get_membership()
-                .keys()
-                .cloned()
-                .filter(|id| *id != session.node.get_id())
-                .collect::<HashSet<_>>();
-
-            // Early exit to if there are no peers.
-            if peers.is_empty() {
-                session
-                    .vote_result_tx
-                    .lock()
-                    .await
-                    .send(VoteResult::NoPeers)
-                    .await?;
-                return crate::Ok(());
-            }
-
-            let reached_peers = &mut *session.reached_peers.lock().await;
-            let unreached_peers: HashSet<NodeId> = peers
-                .difference(&reached_peers.clone())
-                .cloned()
-                .collect::<HashSet<_>>();
-
-            // Early exit if there are no unreached peers.
-            if unreached_peers.is_empty() {
-                return crate::Ok(());
-            }
+            let peers_len = session.node.inner.store.lock().await.get_membership().len();
+            let Some(unack_peers) = session.unack_peers().await? else {
+                return Ok(());
+            };
 
             // Create a channel to receive the vote responses.
-            let (vote_tx, mut vote_rx) = mpsc::channel::<RequestVoteResponse>(max(peers.len(), 1));
+            let (vote_tx, mut vote_rx) = mpsc::channel::<RequestVoteResponse>(max(peers_len, 1));
 
-            // Send RequestVote RPC to all unreached peers.
-            for peer in unreached_peers {
-                let vote_tx = vote_tx.clone();
-                let node = session.node.clone();
-
-                // Send the RequestVote RPC in a separate task.
-                tokio::spawn(async move {
-                    node.send_request_vote_rpc(peer, vote_tx).await?;
-                    crate::Ok(())
-                });
-            }
-
-            // Drop the vote_tx so that we can wait for all the vote responses.
-            drop(vote_tx);
+            // Send the RequestVote RPC in a separate task.
+            session.send_to_peers(unack_peers, vote_tx);
 
             // Wait for all the vote responses.
             while let Some(vote) = vote_rx.recv().await {
@@ -260,27 +226,96 @@ where
                 }
 
                 // We short-circuit if we have enough votes to become the leader.
-                let cluster_size = peers.len() + 1;
+                let cluster_size = peers_len + 1;
                 if session.granted_votes.load(Ordering::SeqCst) > cluster_size / 2 {
-                    session
-                        .vote_result_tx
-                        .lock()
-                        .await
-                        .send(VoteResult::Granted)
-                        .await?;
-
+                    session.vote_result_tx.send(VoteResult::Granted).await?;
                     return crate::Ok(());
                 }
             }
 
-            session
-                .vote_result_tx
-                .lock()
-                .await
-                .send(VoteResult::NotGranted)
-                .await?;
+            session.vote_result_tx.send(VoteResult::NotGranted).await?;
 
             crate::Ok(())
         });
+    }
+
+    /// TODO: Document this.
+    async fn unack_peers(&self) -> Result<Option<HashSet<NodeId>>> {
+        let peers = self.node.inner.store.lock().await;
+        let peers = peers
+            .get_membership()
+            .keys()
+            .filter(|id| **id != self.node.get_id())
+            .collect::<HashSet<_>>();
+
+        // Early exit to if there are no peers.
+        if peers.is_empty() {
+            self.vote_result_tx.send(VoteResult::NoPeers).await?;
+            return Ok(None);
+        }
+
+        let ack_peers = self.ack_peers.lock().await;
+        let ack_peers = ack_peers.iter().collect();
+        let unack_peers = peers
+            .difference(&ack_peers)
+            .map(|peer| **peer)
+            .collect::<HashSet<_>>();
+
+        // Early exit if there are no unreached peers.
+        if unack_peers.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(unack_peers))
+    }
+
+    /// TODO: Document this.
+    fn send_to_peers(
+        &self,
+        unack_peers: HashSet<NodeId>,
+        vote_tx: mpsc::Sender<RequestVoteResponse>,
+    ) where
+        S: Send + 'static,
+        R: Send + 'static,
+        P: Send + 'static,
+    {
+        // Send RequestVote RPC to all unreached peers.
+        for peer in unack_peers {
+            let vote_tx = vote_tx.clone();
+            let node = self.node.clone();
+
+            // Send the RequestVote RPC in a separate task.
+            tokio::spawn(async move { node.send_request_vote_rpc(peer, vote_tx).await });
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
+
+impl<S, R, P> Deref for VoteSession<S, R, P>
+where
+    S: Store<R>,
+    R: Request,
+    P: Response,
+{
+    type Target = VoteSessionInner<S, R, P>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<S, R, P> Clone for VoteSession<S, R, P>
+where
+    S: Store<R>,
+    R: Request,
+    P: Response,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
     }
 }

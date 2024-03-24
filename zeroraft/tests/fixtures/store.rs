@@ -3,7 +3,7 @@ use std::{
     net::SocketAddr,
 };
 
-use zeroraft::{LogEntry, NodeId, Request, Snapshot, Store};
+use zeroraft::{LogEntry, NodeId, Request, Snapshot, Store, ZeroraftError};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -21,18 +21,15 @@ where
     /// The log entries.
     entries: Vec<LogEntry<R>>,
 
-    // TODO(appcypher): Set internally.
     /// Membership of the cluster.
     membership: HashMap<NodeId, SocketAddr>,
 
     /// Commit index.
     commit_index: u64,
 
-    // TODO(appcypher): Set internally.
     /// Applied index.
     applied_index: u64,
 
-    // TODO(appcypher): Set internally.
     /// The current term.
     ///
     /// A term of 0 means that the node has not seen a candidate or leader yet.
@@ -70,25 +67,27 @@ where
 {
     type Snapshot = MemorySnapshot;
 
-    fn append_entries(&mut self, entries: Vec<LogEntry<R>>) -> anyhow::Result<()> {
+    fn append_entries(&mut self, entries: Vec<LogEntry<R>>) -> zeroraft::Result<()> {
         for e in entries {
             self.entries.push(e);
         }
 
+        self.current_term = self.entries.last().map(|e| e.term).unwrap_or(0); // Update term
+
         Ok(())
     }
 
-    fn remove_entries_after(&mut self, index: u64) -> anyhow::Result<()> {
+    fn remove_entries_after(&mut self, index: u64) -> zeroraft::Result<()> {
         self.entries.truncate(index as usize);
         Ok(())
     }
 
     fn get_entry(&self, index: u64) -> Option<&LogEntry<R>> {
-        self.entries.get(index as usize - 1)
+        self.entries.get(index as usize)
     }
 
     fn get_entries<'a>(&'a self, start: u64) -> Box<dyn Iterator<Item = &LogEntry<R>> + 'a> {
-        Box::new(self.entries.iter().skip(start as usize - 1))
+        Box::new(self.entries.iter().skip(start as usize))
     }
 
     fn get_last_index(&self) -> u64 {
@@ -114,12 +113,16 @@ where
     fn set_initial_membership(
         &mut self,
         membership: HashMap<NodeId, SocketAddr>,
-    ) -> anyhow::Result<()> {
-        self.membership = membership;
-        Ok(())
+    ) -> zeroraft::Result<()> {
+        if self.membership.is_empty() {
+            self.membership = membership;
+            return Ok(());
+        }
+
+        Err(ZeroraftError::custom("membership already set"))
     }
 
-    fn set_last_commit_index(&mut self, index: u64) -> anyhow::Result<()> {
+    fn set_last_commit_index(&mut self, index: u64) -> zeroraft::Result<()> {
         self.commit_index = index;
         Ok(())
     }
@@ -136,12 +139,12 @@ where
         self.current_term
     }
 
-    fn store_voted_for(&mut self, voted_for: NodeId) -> anyhow::Result<()> {
+    fn store_voted_for(&mut self, voted_for: NodeId) -> zeroraft::Result<()> {
         self.voted_for = Some(voted_for);
         Ok(())
     }
 
-    fn store_current_term(&mut self, term: u64) -> anyhow::Result<()> {
+    fn store_current_term(&mut self, term: u64) -> zeroraft::Result<()> {
         self.current_term = term;
         Ok(())
     }

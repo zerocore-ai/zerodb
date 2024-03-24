@@ -6,7 +6,7 @@ use zeroraft::{Request, Response};
 //--------------------------------------------------------------------------------------------------
 
 /// TODO(appcypher): To be replaced with the right command variants.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Query {
     /// Delete a key.
     Delete(String),

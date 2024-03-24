@@ -37,9 +37,9 @@ impl RaftNodeCluster {
     }
 
     /// Create a new `RaftNodeCluster` with `count` number of servers and a custom configuration.
-    pub fn new_with_config(count: u16, config: RaftNodeClusterConfig) -> anyhow::Result<Self> {
+    pub fn new_with_config(num_nodes: u16, config: RaftNodeClusterConfig) -> anyhow::Result<Self> {
         // Create `count` number of servers with new ids and let them take `count` addresses (SocketAddr) as peers.
-        let peer_addrs = (0..count)
+        let peer_addrs = (0..num_nodes)
             .map(|i| {
                 (
                     NodeId::new_v4(),

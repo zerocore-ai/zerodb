@@ -98,7 +98,6 @@ impl RaftNodeServer {
             self.peer_addr
         );
 
-        // Return
         raft_handle
     }
 
@@ -257,6 +256,7 @@ fn start_peer_server(
         loop {
             let (mut stream, _) = listener.accept().await?;
             let in_rpc_tx = in_rpc_tx.clone();
+
             tokio::spawn(async move {
                 let (mut read_stream, mut write_stream) = stream.split();
 
@@ -314,6 +314,8 @@ fn forward_outgoing_requests(
 
             let mut stream = TcpStream::connect(addr).await?;
             let (mut read_stream, mut write_stream) = stream.split();
+
+            tracing::debug!("Forwarding request to peer: {}", peer);
 
             match request {
                 PeerRpc::AppendEntries(request, response_tx) => {

@@ -1,8 +1,9 @@
 //! # Task
 
-mod candidate;
-mod follower;
-mod leader;
+mod role_candidate;
+mod role_follower;
+mod role_leader;
+mod role_nonvoter;
 mod state;
 
 //--------------------------------------------------------------------------------------------------
@@ -11,7 +12,8 @@ mod state;
 
 pub mod common;
 
-pub(crate) use candidate::*;
-pub(crate) use follower::*;
-pub(crate) use leader::*;
+pub(crate) use role_candidate::*;
+pub(crate) use role_follower::*;
+pub(crate) use role_leader::*;
+// pub(crate) use role_nonvoter::*;
 pub(crate) use state::*;

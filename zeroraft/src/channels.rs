@@ -28,6 +28,10 @@ where
 
     /// Channel for raft to send shutdown signal to itself.
     pub shutdown_tx: mpsc::Sender<()>,
+
+    #[cfg(feature = "metrics")]
+    /// Channel for raft to receive metrics from the outside.
+    pub metrics_rx: mpsc::UnboundedReceiver<crate::metrics::RaftMetrics>,
 }
 
 /// The channels for communicating with the Raft node from the outside.
@@ -44,6 +48,10 @@ where
 
     /// Channel for sending client requests to the Raft node.
     pub in_client_request_tx: mpsc::UnboundedSender<ClientRequest<R, P>>,
+
+    #[cfg(feature = "metrics")]
+    /// Channel for receiving metrics from the Raft node.
+    pub metrics_rx: mpsc::UnboundedReceiver<crate::metrics::RaftMetrics>,
 }
 
 //--------------------------------------------------------------------------------------------------
