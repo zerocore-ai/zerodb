@@ -1,22 +1,11 @@
-use std::pin::Pin;
+use std::cmp;
 
-use futures::Future;
 use tokio::sync::mpsc;
 
 use crate::{
     AppendEntriesRequest, AppendEntriesResponse, AppendEntriesResponseReason, RaftNode, Request,
     RequestVoteRequest, RequestVoteResponse, RequestVoteResponseReason, Response, Result, Store,
 };
-
-//--------------------------------------------------------------------------------------------------
-// Types
-//--------------------------------------------------------------------------------------------------
-
-type AppendEntriesCallback<S, R, P> = fn(
-    RaftNode<S, R, P>,
-    AppendEntriesRequest<R>,
-    mpsc::Sender<AppendEntriesResponse>,
-) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>;
 
 //--------------------------------------------------------------------------------------------------
 // Functions
@@ -77,8 +66,8 @@ where
     node.change_to_follower_state().await;
 
     // Check candidate's completeness.
-    let our_last_log_index = node.inner.store.lock().await.get_last_index();
-    let our_last_log_term = node.inner.store.lock().await.get_last_term();
+    let our_last_log_index = node.inner.store.read().await.get_last_index();
+    let our_last_log_term = node.inner.store.read().await.get_last_term();
     if (our_last_log_term > candidate_last_log_term)
         || (our_last_log_term == candidate_last_log_term
             && our_last_log_index > candidate_last_log_index)
@@ -113,7 +102,6 @@ pub(crate) async fn respond_to_append_entries<S, R, P>(
     node: RaftNode<S, R, P>,
     request: AppendEntriesRequest<R>,
     response_tx: mpsc::Sender<AppendEntriesResponse>,
-    callback: AppendEntriesCallback<S, R, P>,
 ) -> Result<()>
 where
     S: Store<R>,
@@ -123,6 +111,8 @@ where
     let leader_term = request.term;
     let our_term = node.get_current_term();
     let our_id = node.get_id();
+    let our_last_log_index = node.inner.store.read().await.get_last_index();
+    let len = request.entries.len() as u64;
 
     // Check if their term is stale.
     if our_term > leader_term {
@@ -131,6 +121,7 @@ where
                 term: our_term,
                 success: false,
                 id: our_id,
+                len: 0,
                 reason: AppendEntriesResponseReason::StaleTerm,
             })
             .await?;
@@ -150,8 +141,76 @@ where
     // Change to follower state.
     node.change_to_follower_state().await;
 
-    // Other operations we can do.
-    callback(node, request, response_tx).await?;
+    // Check if we don't have the prev log index the leader is trying to append to.
+    if our_last_log_index < request.prev_log_index {
+        response_tx
+            .send(AppendEntriesResponse {
+                term: our_term,
+                success: false,
+                id: our_id,
+                len: 0,
+                reason: AppendEntriesResponseReason::LogMismatch,
+            })
+            .await?;
+
+        return Ok(());
+    }
+
+    // Check if log index exists but the term doesn't match.
+    if let Some(entry) = node
+        .inner
+        .store
+        .read()
+        .await
+        .get_entry(request.prev_log_index)
+    {
+        if entry.term != request.prev_log_term {
+            response_tx
+                .send(AppendEntriesResponse {
+                    term: our_term,
+                    success: false,
+                    id: our_id,
+                    len: 0,
+                    reason: AppendEntriesResponseReason::LogMismatch,
+                })
+                .await?;
+
+            return Ok(());
+        }
+    }
+
+    // Remove extraneous entries.
+    node.inner
+        .store
+        .write()
+        .await
+        .remove_entries_after(request.prev_log_index)?;
+
+    // Append the entries.
+    node.inner
+        .store
+        .write()
+        .await
+        .append_entries(request.entries)?;
+
+    // Update the commit index.
+    let our_last_log_index = node.inner.store.read().await.get_last_index();
+    node.inner
+        .store
+        .write()
+        .await
+        .set_last_commit_index(cmp::min(request.last_commit_index, our_last_log_index))?;
+
+    // Respond to the append entries request.
+    response_tx
+        .send(AppendEntriesResponse {
+            term: our_term,
+            success: true,
+            id: our_id,
+            len,
+            reason: AppendEntriesResponseReason::Ok,
+        })
+        .await?;
 
     Ok(())
 }

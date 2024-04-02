@@ -4,7 +4,7 @@ use std::{
     sync::{atomic::AtomicU64, Arc},
 };
 
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::{
@@ -102,7 +102,7 @@ where
     pub fn build(mut self) -> Result<RaftNode<S, R, P>> {
         // Load the current term, voted for from the store.
         let current_term = AtomicU64::new(self.store.load_current_term());
-        let voted_for = Mutex::new(self.store.load_voted_for());
+        let voted_for = RwLock::new(self.store.load_voted_for());
 
         // We check if there is no membership yet, in which case we use the provided seeds.
         if self.store.get_membership().is_empty() {
@@ -113,13 +113,13 @@ where
             id: self.id,
             current_term,
             voted_for,
-            store: Mutex::new(self.store),
+            store: RwLock::new(self.store),
             channels: self.channels,
-            current_state: Mutex::new(TaskState::Follower),
+            current_state: RwLock::new(TaskState::Follower),
             election_timeout_range: self.election_timeout_range,
             heartbeat_interval: self.heartbeat_interval,
-            leader_id: Mutex::new(None),
-            last_heard_from_leader: Mutex::new(None),
+            leader_id: RwLock::new(None),
+            last_heard_from_leader: RwLock::new(None),
         });
 
         Ok(RaftNode { inner })

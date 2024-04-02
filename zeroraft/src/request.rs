@@ -144,3 +144,23 @@ where
     /// A configuration command.
     Config(ConfigRequest, mpsc::Sender<()>),
 }
+
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
+
+impl<R> Clone for AppendEntriesRequest<R>
+where
+    R: Request + Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            term: self.term,
+            leader_id: self.leader_id,
+            last_commit_index: self.last_commit_index,
+            prev_log_index: self.prev_log_index,
+            prev_log_term: self.prev_log_term,
+            entries: self.entries.clone(),
+        }
+    }
+}

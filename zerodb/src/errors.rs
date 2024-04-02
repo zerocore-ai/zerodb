@@ -6,10 +6,10 @@ use thiserror::Error;
 // Types
 //--------------------------------------------------------------------------------------------------
 
-/// A specialized `Result` type for zeroengine crate.
+/// A specialized `Result` type for zerodb crate.
 pub type Result<T> = std::result::Result<T, ZerodbError>;
 
-/// The main error type of the zeroengine crate.
+/// The main error type of the zerodb crate.
 #[derive(Debug, Error)]
 pub enum ZerodbError {
     /// Unsupported equal peer and client ports.

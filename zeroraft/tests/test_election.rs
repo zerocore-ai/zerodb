@@ -16,15 +16,13 @@ async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()
         3,
         RaftNodeClusterConfig {
             election_timeout_range: (100, 200),
-            ..Default::default()
+            heartbeat_interval: 25,
         },
     )?;
 
-    // Start the cluster.
-    cluster.start();
+    cluster.start(); // Start the cluster.
 
-    // Wait for the cluster to work out leader.
-    time::sleep(Duration::from_secs(1)).await;
+    time::sleep(Duration::from_secs(1)).await; // Wait for the cluster to work out leader.
 
     // Count leaders.
     let mut leaders = 0;
@@ -35,14 +33,13 @@ async fn test_cluster_can_choose_single_leader_from_start() -> anyhow::Result<()
         }
     }
 
-    // There should be only one leader.
-    assert_eq!(leaders, 1);
+    assert_eq!(leaders, 1); // There should be only one leader.
 
     Ok(())
 }
 
-// TODO: Candidate with incomplete log
-// TODO: Candidate has stale term
-// TODO: Voter already voted in candidate term
-// TODO: Candidate restarts its vote session if election coundown times out without a majority vote.
-// TODO: Candidate resends vote requests to peers that did not acknowledge the vote.
+// TODO: Candidate with incomplete log. Candidate steps down
+// TODO: Candidate has stale term. Candidate steps down
+// TODO: Voter already voted in candidate term. Candidate waits
+// TODO: Election coundown times out without a majority vote. Candidate retries
+// TODO: Peers did not acknowledge the vote. Candidate resends

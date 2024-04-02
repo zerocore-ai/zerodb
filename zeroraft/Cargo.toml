@@ -28,4 +28,7 @@ test-log.workspace = true
 
 
 [features]
+default = []
 metrics = []
+debug = ["tracing/max_level_debug"]
+info = ["tracing/max_level_info"]

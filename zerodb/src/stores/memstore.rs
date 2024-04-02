@@ -86,8 +86,18 @@ where
         self.entries.get(index as usize)
     }
 
-    fn get_entries<'a>(&'a self, start: u64) -> Box<dyn Iterator<Item = &LogEntry<R>> + 'a> {
-        Box::new(self.entries.iter().skip(start as usize))
+    fn get_entries<'a>(
+        &'a self,
+        start: u64,
+        limit: Option<u64>,
+    ) -> Box<dyn Iterator<Item = &LogEntry<R>> + 'a> {
+        let limit = limit.unwrap_or(self.entries.len() as u64);
+        Box::new(
+            self.entries
+                .iter()
+                .skip(start as usize)
+                .take(limit as usize),
+        )
     }
 
     fn get_last_index(&self) -> u64 {
@@ -123,7 +133,9 @@ where
     }
 
     fn set_last_commit_index(&mut self, index: u64) -> zeroraft::Result<()> {
+        // let old_commit_index = self.commit_index;
         self.commit_index = index;
+        // TDDO: Apply commands up to this index
         Ok(())
     }
 

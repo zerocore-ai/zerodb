@@ -1,31 +1,43 @@
-- [ ] Distributed Consensus
 
-  - [ ] Raft
+- [ ] Working
+  - [x] Change Countdown to Timeout
+  - [x] Replication Session
+  - [ ] zeroql: Lexer
 
-    - [ ] State transitions
 
-      - [ ] Follower
-        - [ ] Election timeout
-        - [ ] Vote request
-      - [ ] Leader
-      - [ ] Candidate
+- [x] Distributed Consensus
 
-    - [ ] Client comms
-    - [ ] Peer RPC comms
-    - [ ] Timeouts
+  - [x] Raft
 
-  - [ ]
+    - [x] State transitions
+
+      - [x] Follower
+        - [x] Election timeout
+        - [x] Vote request
+      - [x] Leader
+      - [x] Candidate
+
+    - [x] Client comms
+    - [x] Peer RPC comms
+    - [x] Timeouts
+
+- [ ] Raft continuation
+
+  - [ ] Use binary search with some lower bound paired with exponential backoff to find the next index to send to a follower
+  - [ ] Implement Install Snapshot
+  - [ ] Implement Log compaction
+  - [ ] Implement Configuration changes
 
 - [ ] Query Language
 
-  - [ ] Language - https://gist.github.com/appcypher/6032834df3f835b611139c56d2b5a8d3
   - [ ] Grammar
-  - [ ] Lexer
   - [ ] Parser
   - [ ] AST
+  - [ ] Wasm Codegen
 
 - [ ] Backing Key-Value Store
 
+  - [ ] Memstore
   - [ ] RocksDB
   - [ ] TiKV
 
@@ -47,10 +59,7 @@
 
 - [ ] Query Engine
 
-  - [ ] Query Planner ?
-  - [ ] Query Optimizer ?
-  - [ ] Query Compiler
-  - [ ] Query Executor
+  - [ ] Query Executor (wasmtime)
 
 - [ ] Provide a simple API
 
@@ -59,37 +68,11 @@
     - [ ] Execute (Query or Prepared)
   - [ ] A basic server
   - [ ] A simple CLI
-  - [ ] WIT interface
   - [ ] A basic client
     - [ ] Rust client
-    - [ ] zerosystem WIT and Guest SDK
+    - [ ] zerosys:db WIT and Guest SDK
 
 - [ ] Tests
   - [ ] Proptests
   - [ ] Fuzzing
   - [ ] Jepsen
-
-- [ ] Working
-  - [x] Change Countdown to Timeout
-
-```
-RequestVoteSession
-
-- new session, send RequestVote to all peers
-  |
-- resend RequestVote to no-ack peers (ack timeout)
-  |
-- resend RequestVote to no-ack peers (ack timeout)
-  |
-- new session, send RequestVote to all peers (election timeout)
-
-AppendEntriesSession
-
-- new session, send heartbeat to all peers
-  |
-- send AppendEntries to incomplete peers
-  |
-- send AppendEntries to incomplete peers
-  |
-- new session, send heartbeat to all peers (heartbeat timeout)
-```

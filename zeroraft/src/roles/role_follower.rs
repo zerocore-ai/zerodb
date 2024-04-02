@@ -1,8 +1,6 @@
-use std::cmp::min;
-
 use crate::{
-    roles::common, AppendEntriesResponse, AppendEntriesResponseReason, ClientRequest,
-    ClientResponse, ClientResponseReason, PeerRpc, RaftNode, Request, Response, Result, Store,
+    roles::common, ClientRequest, ClientResponse, ClientResponseReason, PeerRpc, RaftNode, Request,
+    Response, Result, Store,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -41,82 +39,22 @@ impl FollowerRole {
 
             tokio::select! {
                 _ = shutdown_rx.recv() => {
-                    // Shutdown.
                     node.change_to_shutdown_state().await;
                 },
                 Some(request) = in_rpc_rx.recv() => match request {
                     PeerRpc::AppendEntries(request, response_tx) => {
-                        common::respond_to_append_entries(node.clone(), request, response_tx, |node, request, response_tx| Box::pin(async move {
-                            let our_term = node.get_current_term();
-                            let our_id = node.get_id();
-                            let our_last_log_index = node.inner.store.lock().await.get_last_index();
-
-                            // Check if we don't have the prev log index the leader is trying to append to.
-                            if our_last_log_index < request.prev_log_index  {
-                                response_tx
-                                    .send(AppendEntriesResponse {
-                                        term: our_term,
-                                        success: false,
-                                        id: our_id,
-                                        reason: AppendEntriesResponseReason::LogDoesNotExist,
-                                    })
-                                    .await?;
-
-                                return Ok(());
-                            }
-
-                            // Check if log index exists but the term doesn't match.
-                            if let Some(entry) = node.inner.store.lock().await.get_entry(request.prev_log_index) {
-                                if entry.term != request.prev_log_term {
-                                    response_tx
-                                        .send(AppendEntriesResponse {
-                                            term: our_term,
-                                            success: false,
-                                            id: our_id,
-                                            reason: AppendEntriesResponseReason::LogTermMismatch,
-                                        })
-                                        .await?;
-
-                                    return Ok(());
-                                }
-                            }
-
-                            // Remove extraneous entries.
-                            node.inner.store.lock().await.remove_entries_after(request.prev_log_index)?;
-
-                            // Append the entries.
-                            node.inner.store.lock().await.append_entries(request.entries)?;
-
-                            // Update the commit index.
-                            node.inner.store.lock().await.set_last_commit_index(min(
-                                request.last_commit_index,
-                                node.inner.store.lock().await.get_last_index()
-                            ))?;
-
-                            // Respond to the append entries request.
-                            response_tx
-                                .send(AppendEntriesResponse {
-                                    term: our_term,
-                                    success: true,
-                                    id: our_id,
-                                    reason: AppendEntriesResponseReason::Ok,
-                                })
-                                .await?;
-
-                            Ok(())
-                        })).await?;
+                        common::respond_to_append_entries(node.clone(), request, response_tx).await?;
+                        election_timeout.reset();
                     },
                     PeerRpc::RequestVote(request, response_tx) => {
                         common::respond_to_request_vote(node.clone(), request, response_tx).await?;
                         election_timeout.reset();
                     },
                     PeerRpc::Config(_, _) => {
-                        // TODO(appcypher): Implement Config RPC.
-                        unimplemented!("Config RPC not implemented")
+                        unimplemented!("Config RPC not implemented") // TODO(appcypher): Implement Config RPC.
                     },
                     PeerRpc::InstallSnapshot(_, _) => {
-                        // TODO(appcypher): Implement InstallSnapshot RPC.
-                        unimplemented!("InstallSnapshot RPC not implemented")
+                        unimplemented!("InstallSnapshot RPC not implemented") // TODO(appcypher): Implement InstallSnapshot RPC.
                     }
                 },
                 Some(ClientRequest(_, response_tx)) = in_client_request_rx.recv() => {
@@ -145,7 +83,6 @@ impl FollowerRole {
 
                 },
                 _ = election_timeout.continuation() => {
-                    // Become a candidate.
                     node.change_to_candidate_state().await;
                 }
             }

@@ -28,7 +28,11 @@ where
     fn get_entry(&self, index: u64) -> Option<&LogEntry<R>>;
 
     /// Returns an iterator over the log entries within the given range.
-    fn get_entries<'a>(&'a self, start: u64) -> Box<dyn Iterator<Item = &LogEntry<R>> + 'a>;
+    fn get_entries<'a>(
+        &'a self,
+        start: u64,
+        limit: Option<u64>,
+    ) -> Box<dyn Iterator<Item = &LogEntry<R>> + 'a>;
 
     /// Returns the index of the last log entry.
     ///
@@ -107,5 +111,17 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         self.term == other.term && self.command == other.command
+    }
+}
+
+impl<R> Clone for LogEntry<R>
+where
+    R: Request + Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            term: self.term,
+            command: self.command.clone(),
+        }
     }
 }

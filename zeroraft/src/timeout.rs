@@ -57,8 +57,7 @@ impl Timeout {
 
     /// Returns a continuation of the timeout.
     pub fn continuation(&self) -> Sleep {
-        let continuation = self.current_interval - self.start.elapsed();
-        time::sleep(continuation)
+        time::sleep(self.get_remaining())
     }
 
     /// Resets the election timeout.
@@ -72,6 +71,11 @@ impl Timeout {
     /// Returns the elapsed time since the election timeout started.
     pub fn get_elapsed(&self) -> Duration {
         self.start.elapsed()
+    }
+
+    /// Returns the remaining time until the timeout is complete.
+    pub fn get_remaining(&self) -> Duration {
+        self.current_interval - self.start.elapsed()
     }
 
     /// Gets the current election timeout interval.

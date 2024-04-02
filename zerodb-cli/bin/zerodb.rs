@@ -40,8 +40,8 @@ async fn main() -> zerodb_cli::Result<()> {
                     .iter()
                     .map(|peer| {
                         let mut peer = peer.splitn(2, ':');
-                        let id = NodeId::from_str(peer.next().unwrap())?;
-                        let addr = peer.next().unwrap().parse()?;
+                        let id = NodeId::from_str(peer.next().unwrap())?; // TODO: Handle error.
+                        let addr = peer.next().unwrap().parse()?; // TODO: Handle error.
                         Ok((id, addr))
                     })
                     .collect::<Result<HashMap<_, _>>>()?;

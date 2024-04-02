@@ -25,6 +25,9 @@ pub struct AppendEntriesResponse {
     /// The id of the node that sent the response.
     pub id: NodeId,
 
+    /// Length of entries appended.
+    pub len: u64,
+
     /// The reason for the response.
     pub reason: AppendEntriesResponseReason,
 }
@@ -35,11 +38,8 @@ pub enum AppendEntriesResponseReason {
     /// The term in the append entries request is older than the current term.
     StaleTerm,
 
-    NotAFollower,
-
-    LogDoesNotExist,
-
-    LogTermMismatch,
+    /// The recipient's log is the same as the leader's log.
+    LogMismatch,
 
     /// Append entries request was successful.
     Ok,

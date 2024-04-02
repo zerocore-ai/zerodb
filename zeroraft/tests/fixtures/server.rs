@@ -315,8 +315,6 @@ fn forward_outgoing_requests(
             let mut stream = TcpStream::connect(addr).await?;
             let (mut read_stream, mut write_stream) = stream.split();
 
-            tracing::debug!("Forwarding request to peer: {}", peer);
-
             match request {
                 PeerRpc::AppendEntries(request, response_tx) => {
                     let request = Rpc::AppendEntries(request);
@@ -340,7 +338,7 @@ fn forward_outgoing_requests(
                     write_stream.shutdown().await?;
 
                     let mut buf = vec![];
-                    read_stream.read_to_end(&mut buf).await?; // Stuck here waiting for data.
+                    read_stream.read_to_end(&mut buf).await?;
 
                     let response: RequestVoteResponse = cbor4ii::serde::from_slice(&buf)?;
 
