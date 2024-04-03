@@ -4,6 +4,7 @@ members = [
     "components/zerosys-db/host",
     "zerodb",
     "zerodb-cli",
+    "zeroql",
     "zeroraft",
 ]
 resolver = "2"

@@ -284,7 +284,7 @@ match list {
 #### Definition
 
 ```js
-function average(s: [int]) -> [int] {
+fun average(s: [int]) -> [int] {
     // ...
 }
 ```
@@ -300,7 +300,7 @@ function average(s: [int]) -> [int] {
 #### Default Arguments
 
 ```js
-function average(s: [int], n: int = 10) -> [int] {
+fun average(s: [int], n: int = 10) -> [int] {
     # ...
 }
 ```
@@ -308,7 +308,7 @@ function average(s: [int], n: int = 10) -> [int] {
 #### Result Type
 
 ```js
-function get_names(p: [person]) -> [string]! {
+fun get_names(p: [person]) -> [string]! {
     # ...
 }
 ```
@@ -325,7 +325,7 @@ let point = types::create(#point, {
     y: int,
 })
 
-function __plus__(p1: point, p2: point) -> point {
+fun __plus__(p1: point, p2: point) -> point {
     {
         x: p1.x + p2.x,
         y: p1.y + p2.y,
@@ -348,7 +348,7 @@ let p3 = p1 + p2
 #### Dot
 
 ```js
-function __dot_symbol__(p: person, s: symbol) {
+fun __dot_symbol__(p: person, s: symbol) {
     # ...
 }
 
@@ -368,7 +368,7 @@ person.#john -> friend -> person.#jane
 #### Removing a Relation
 
 ```rs
-person.#john -/> friend -/> person.#jane
+person.#john -!> friend -!> person.#jane
 ```
 
 #### Querying a Relation
@@ -503,7 +503,7 @@ match age {
 #### List Matching
 
 ```js
-function sum(s: [int]) -> [int] {
+fun sum(s: [int]) -> [int] {
     match s {
         [] => 0,
         [x] => x,

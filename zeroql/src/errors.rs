@@ -1,25 +1,24 @@
-#![warn(missing_docs)]
-//! `zerodb` is a multi-model database query engine for multi-tenant applications
+//! Error types of the zerodb crate.
 
-mod errors;
-mod init;
-mod node;
+use thiserror::Error;
 
 //--------------------------------------------------------------------------------------------------
-// Exports
+// Types
 //--------------------------------------------------------------------------------------------------
 
-pub mod configs;
-pub mod stores;
-pub mod utils;
+/// A specialized `Result` type for zeroql crate.
+pub type Result<T> = std::result::Result<T, ZeroqlError>;
 
-pub use errors::*;
-pub use init::*;
-pub use node::*;
-pub use stores::*;
+/// The main error type of the zeroql crate.
+#[derive(Debug, Error)]
+pub enum ZeroqlError {}
 
 //--------------------------------------------------------------------------------------------------
-// Re-exports
+// Functions
 //--------------------------------------------------------------------------------------------------
 
-pub use zeroraft::{self, NodeId, NodeIdError};
+/// Creates a new `Ok` result.
+#[allow(non_snake_case)]
+pub fn Ok<T>(value: T) -> Result<T> {
+    Result::Ok(value)
+}

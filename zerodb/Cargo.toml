@@ -28,3 +28,4 @@ typed-builder.workspace = true
 uuid.workspace = true
 zeroraft.workspace = true
 anyhow.workspace = true
+logos = "0.14.0"

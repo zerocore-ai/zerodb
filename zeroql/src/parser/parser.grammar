@@ -1,0 +1,129 @@
+(*
+ * This is a grammar for the zeroql language.
+ *
+ * The precedence of the operators and notations is based on the following table:
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence#table
+ *)
+
+list_literal =
+    | "[" "]"
+    | "[" expression (',' expression)* (",")? "]"
+
+tuple_literal =
+    | "(" expression ',' ")"
+    | "(" expression (',' expression)+ (",")? ")"
+
+range_literal =
+    | "[" expression? ".." ("=")? (expression)? "]"
+
+symbol_literal =
+    | "#" identifier
+
+object_literal =
+    | "{" ":" "}"
+    | "{" expression ":" expression ("," expression ":" expression)* (",")? "}"
+
+(* IDENTIFIER *)
+
+identifier =
+    | [a-zA-Z_] [a-zA-Z0-9_]*
+
+(* EXPRESSIONS *)
+
+inline_statement =
+    | (expression  ";")+ expression ( ";")?
+
+statements =
+    | (inline_statement newlines)* inline_statement
+
+block_expression =
+    | "{" statements "}"
+
+match_expression =
+    | (* TODO *)
+
+if_expression =
+    | (* TODO *)
+
+for_expression =
+    | (* TODO *)
+
+while_expression =
+    | (* TODO *)
+
+closure_expression =
+    | "|" (identifier ("," identifier)* gap)? "|" expression
+
+list_comprehension_expression =
+    | (* TODO *)
+
+transaction_expression =
+    | "transaction" block_expression
+
+parens_expression =
+    | "(" expression ")"
+
+expression =
+    | integer_literal
+    | float_literal
+    | string_literal
+    | regex_literal
+    | boolean_literal
+    | list_literal
+    | tuple_literal
+    | range_literal
+    | symbol_literal
+    | object_literal
+    | (* TODO *)
+
+(* NOTATIONS *)
+
+dot_notation =
+    | dot_notation "." identifier
+
+dot_symbol_notation =
+index_notation =
+scope_notation =
+infix_notation =
+prefix_notation =
+call_notation =
+
+try_notation =
+    | expression "?"
+
+unwrap_notation =
+    | expression "!"
+
+(* CONTROL FLOW *)
+
+control_flow =
+    | "return" expression
+    | "break" (space+ ";")?
+    | "continue" (space+ ";")?
+
+(* UNARIES *)
+
+arith_unary =
+
+(* OPERATIONS *)
+
+exp_operation =
+mul_operation =
+add_operation =
+bsh_operation =
+rel_operation =
+eq_operation =
+and_operation =
+or_operation =
+not_operation =
+neg_operation =
+pos_operation =
+relate_operation =
+grp_operation =
+
+(* DECLARATIONS *)
+
+type_declaration =
+let_declaration =
+function_declaration =
+import_declaration =

@@ -1,0 +1,20 @@
+[package]
+name = "zeroql"
+description = "A multi-paradigm query language for multi-model databases"
+keywords = []
+categories = []
+documentation = "https://docs.rs/zeroql"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+thiserror.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+logos = "0.14.0"

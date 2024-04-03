@@ -1,0 +1,154 @@
+
+(* COMMENTS *)
+
+line_comment =
+    | "#" <any source character except newline>*
+
+(* LITERALS *)
+
+digit =
+    | [0-9]
+
+bin_digit =
+    | "0"
+    | "1"
+
+oct_digit =
+    | [0-7]
+
+hex_digit =
+    | digit
+    | [a-f]
+    | [A-F]
+
+digit_part =
+    | digit ("_"? digit)*
+
+exponent =
+    | "e" ("+" | "-")? digit_part
+
+fraction =
+    | "." digit_part
+
+point_float =
+    | digit_part? fraction
+    | digit_part "."
+
+exponent_float =
+    | (digit_part | point_float) exponent
+
+dec_integer_literal =
+    | digit ("_"? digit)*
+
+bin_integer_literal =
+    | "0b" bin_digit+ ("_"? bin_digit)*
+
+oct_integer_literal =
+    | "0o" oct_digit+ ("_"? oct_digit)*
+
+hex_integer_literal =
+    | "0x" hex_digit+ ("_"? hex_digit)*
+
+integer_literal =
+    | dec_integer_literal
+    | hex_integer_literal
+    | bin_integer_literal
+    | oct_integer_literal
+
+float_literal =
+    | point_float
+    | exponent_float
+
+string_char =
+    | <any source character except "\\" or newline or the quote>
+
+string_escape_seq_char =
+    | "t"
+    | "n"
+    | "r"
+    | "\\"
+
+string_escape_seq =
+    | "\\" string_escape_seq_char
+
+string_item =
+    | string_char
+    | string_escape_seq
+
+string_literal =
+    | "'" string_item* "'"
+    | '"' string_item* '"'
+
+regex_item =
+    | <any source character except newline or "/">
+
+regex_literal =
+    | "//" regex_item* "//"
+
+boolean_literal =
+    | "true"
+    | "false"
+
+(* KEYWORDS *)
+
+keyword =
+    | "type"
+    | "let"
+    | "in"
+    | "transaction"
+    | "if"
+    | "else"
+    | "for"
+    | "while"
+    | "continue"
+    | "break"
+    | "match"
+    | "fun"
+    | "return"
+
+
+(* OPERATORS *)
+
+operator =
+    | "+"
+    | "-"
+    | "*"
+    | "/"
+    | "%"
+    | "^"
+    | "."
+    | "::"
+    | "->"
+    | "-!>"
+    | "="
+    | "+="
+    | "-="
+    | "*="
+    | "/="
+    | "%="
+    | "^="
+    | "&&"
+    | "||"
+    | "!"
+    | "=="
+    | "!="
+    | "<"
+    | ">"
+    | "<="
+    | ">="
+    | "&"
+    | "|"
+    | "~"
+    | "<<"
+    | ">>"
+    | "&="
+    | "|="
+    | "~="
+    | "<<="
+    | ">>="
+    | "?"
+    | ".."
+    | "..="
+    | "=>"
+    | "..."
+    | "|>"
