@@ -3,7 +3,7 @@
 #### Create
 
 ```js
-database::create(#app_db, {
+create_database!(@app_db, {
     ns: "bf91cccb-81ca-4ebe-9687-a79d7d3debb2"
 })
 ```
@@ -11,7 +11,7 @@ database::create(#app_db, {
 #### Delete
 
 ```rs
-delete database.#app_db
+delete database.@app_db
 ```
 
 ---
@@ -21,7 +21,7 @@ delete database.#app_db
 #### Create Table
 
 ```js
-table::create(#person, {
+create_table!(@person, {
     name: [string, unique, is_valid_name],
     age: int,
 })
@@ -30,7 +30,7 @@ table::create(#person, {
 #### Create Record
 
 ```rs
-person::create(#john, {
+person::create(@john, {
     name: "John Doe",
     age: 42,
 })
@@ -39,7 +39,7 @@ person::create(#john, {
 #### Update Record
 
 ```rs
-person.#john.update({
+person.@john.update({
     age: 43,
 })
 ```
@@ -47,13 +47,13 @@ person.#john.update({
 #### Delete Record
 
 ```rs
-delete person.#john
+delete person.@john
 ```
 
 #### Delete
 
 ```rs
-delete table.#person
+delete table.@person
 ```
 
 ---
@@ -71,6 +71,8 @@ type person {
 type average = (s: [int]) -> int
 
 type color = 'red' | 'green' | 'blue'
+
+type optional<t> = some(t) | none
 ```
 
 #### Usage
@@ -79,6 +81,40 @@ type color = 'red' | 'green' | 'blue'
 let p: person = {
     name: "John Doe",
     age: 42,
+}
+```
+
+---
+
+## Traits
+
+#### Definition
+
+```rs
+trait store<t> {
+    fun create(name: string, data: t)
+    fun update(name: string, data: t)
+    fun delete(name: string)
+}
+```
+
+#### Implementation
+
+```rs
+type memstore<t> where t: store {
+    data: hashmap<string, t>
+}
+
+fun create(m: memstore<vec<u8>>, name: string, data: t) {
+    m.data.insert(name, data)
+}
+
+fun update(m: memstore<vec<u8>>, name: string, data: t) {
+    m.data.update(name, data)
+}
+
+fun delete(m: memstore<vec<u8>>, name: string) {
+    m.data.remove(name)
 }
 ```
 
@@ -164,16 +200,16 @@ let name: string = "John Doe"
 
 ```rs
 transaction {
-    person::create(#john, {
+    person::create(@john, {
         name: "John Doe",
         age: 42,
     })
 
-    person.#john.update({
+    person.@john.update({
         age: 43,
     })
 
-    remove person.#john
+    remove person.@john
 }
 ```
 
@@ -285,7 +321,13 @@ match list {
 
 ```js
 fun average(s: [int]) -> [int] {
-    // ...
+    # ...
+}
+```
+
+```js
+fun person::create(id: symbol, data: { name: string, age: int }) -> void {
+    # ...
 }
 ```
 
@@ -308,9 +350,31 @@ fun average(s: [int], n: int = 10) -> [int] {
 #### Result Type
 
 ```js
-fun get_names(p: [person]) -> [string]! {
+fun compute(a: f64, b: f64) -> result<f64, error> {
     # ...
 }
+```
+
+```js
+let result = try compute(1.0, 2.0)
+
+let result = unwrap compute(1.0, 2.0)
+
+let result = compute(1.0, 2.0) unwrap_or 0.
+```
+
+#### Option Type
+
+```js
+fun compute(a: f64, b: f64) -> option<f64> {
+    # ...
+}
+```
+
+```js
+let result = unwrap compute(1.0, 2.0)
+
+let result = compute(1.0, 2.0) unwrap_or 0.
 ```
 
 ---
@@ -320,11 +384,6 @@ fun get_names(p: [person]) -> [string]! {
 #### Plus
 
 ```js
-let point = types::create(#point, {
-    x: int,
-    y: int,
-})
-
 fun __plus__(p1: point, p2: point) -> point {
     {
         x: p1.x + p2.x,
@@ -352,7 +411,7 @@ fun __dot_symbol__(p: person, s: symbol) {
     # ...
 }
 
-let p = person.#john;
+let p = person.@john;
 ```
 
 ---
@@ -362,23 +421,23 @@ let p = person.#john;
 #### Establishing a Relation
 
 ```rs
-person.#john -> friend -> person.#jane
+person.@john -> likes -> person.@jane
 ```
 
 #### Removing a Relation
 
 ```rs
-person.#john -!> friend -!> person.#jane
+person.@john -!> likes -!> person.@jane
 ```
 
 #### Querying a Relation
 
 ```rs
-[ { name } in person.#john -> friend -> * ]
-[ { name } in * -> friend -> person.#jane ]
-[ { name } in * -> friend -> * ]
-[ { name } in * -> friend ]
-[ { name } in friend -> * ]
+[ { name } in person.@john -> likes -> * ]
+[ { name } in * -> likes -> person.@jane ]
+[ { name } in * -> likes -> * ]
+[ { name } in * -> likes ]
+[ { name } in likes -> * ]
 ```
 
 ---
@@ -450,16 +509,14 @@ false
 #### Range
 
 ```rs
-[1..10]
-[1..=10]
+1..10
+1..=10
 ```
 
 #### Symbols
 
 ```
-#james
-#0xf356bc
-#`😏j37386vSG)=`
+@james
 ```
 
 ---
@@ -524,7 +581,21 @@ fn average(s: IntList) -> Int {
 
 zql! {
     import average
+    import person::*
+    import store::{ create, update, delete }
 
     [ { age } in person ] |> average
+}
+```
+
+---
+
+## Exporting
+
+```rs
+export {
+    average,
+    store::new,
+    person::*,
 }
 ```

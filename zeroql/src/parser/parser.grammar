@@ -7,123 +7,297 @@
 
 list_literal =
     | "[" "]"
-    | "[" expression (',' expression)* (",")? "]"
+    | "[" expression (',' expression)* ","? "]"
 
 tuple_literal =
     | "(" expression ',' ")"
-    | "(" expression (',' expression)+ (",")? ")"
+    | "(" expression (',' expression)+ ","? ")"
 
 range_literal =
-    | "[" expression? ".." ("=")? (expression)? "]"
-
-symbol_literal =
-    | "#" identifier
+    | expression? ".." "="? expression?
 
 object_literal =
     | "{" ":" "}"
-    | "{" expression ":" expression ("," expression ":" expression)* (",")? "}"
+    | "{" expression ":" expression ("," expression ":" expression)* ","? "}"
 
-(* IDENTIFIER *)
-
-identifier =
-    | [a-zA-Z_] [a-zA-Z0-9_]*
-
-(* EXPRESSIONS *)
-
-inline_statement =
-    | (expression  ";")+ expression ( ";")?
-
-statements =
-    | (inline_statement newlines)* inline_statement
-
-block_expression =
-    | "{" statements "}"
-
-match_expression =
-    | (* TODO *)
-
-if_expression =
-    | (* TODO *)
-
-for_expression =
-    | (* TODO *)
-
-while_expression =
-    | (* TODO *)
-
-closure_expression =
-    | "|" (identifier ("," identifier)* gap)? "|" expression
-
-list_comprehension_expression =
-    | (* TODO *)
-
-transaction_expression =
-    | "transaction" block_expression
-
-parens_expression =
-    | "(" expression ")"
-
-expression =
+simple_literal =
     | integer_literal
     | float_literal
     | string_literal
     | regex_literal
     | boolean_literal
+    | symbol_literal
+
+literal =
+    | identifier
+    | simple_literal
     | list_literal
     | tuple_literal
     | range_literal
-    | symbol_literal
     | object_literal
-    | (* TODO *)
 
-(* NOTATIONS *)
+(* EXPRESSIONS *)
 
-dot_notation =
-    | dot_notation "." identifier
+parens_expression =
+    | "(" expression ")"
 
-dot_symbol_notation =
-index_notation =
-scope_notation =
-infix_notation =
-prefix_notation =
-call_notation =
+statements =
+    | (expression ";")+ expression ";"?
 
-try_notation =
-    | expression "?"
+block_expression =
+    | "{" statements "}"
 
-unwrap_notation =
-    | expression "!"
+match_pattern =
+    | "[" match_pattern ("," match_pattern)* ","? "]"
+    | "(" match_pattern ("," match_pattern)* ","? ")"
+    | "{" match_pattern ("," match_pattern)* ","? "}"
+    | simple_literal
+    | identifier
+    | "_"
+    | "..." identifier?
+    | simple_literal? ".." "="? simple_literal?
+
+match_case_expr =
+    | match_pattern "=>" expression
+
+match_case_block =
+    | match_pattern "=>" block_expression
+
+match_block =
+    | "{" (match_case_expr | match_case_block) "}"
+    | "{" (match_case_expr "," | match_case_block ","?)+ (match_case_expr | match_case_block) ","? "}"
+
+match_expression =
+    | "match" expression
+
+if_expression =
+    | "if" expression block_expression ("else" "if" expression block_expression)* ("else" block_expression)?
+
+for_expression =
+    | "for" identifier "in" expression block_expression
+
+while_expression =
+    | "while" expression block_expression
+
+closure_expression =
+    | "|" (identifier ("," identifier)*)? "|" expression
+
+list_comprehension_expression =
+    | "[" expression "for" identifier "in" expression ("," expression)? "]"
+
+transaction_expression =
+    | "transaction" block_expression
+
+macro_expression =
+    | identifier "!" "(" (expression ("," expression)*)? ")"
+
+expression =
+    (* Literals *)
+    | literal
+    (* Complex Expressions *)
+    | parens_expression
+    | block_expression
+    | match_expression
+    | if_expression
+    | for_expression
+    | while_expression
+    | closure_expression
+    | list_comprehension_expression
+    | transaction_expression
+    | macro_expression
+    (* Control Flow *)
+    | control_flow
+    (* Notations *)
+    | dot_notation
+    | dot_symbol_notation
+    | index_notation
+    | scope_notation
+    | call_notation
+    (* Operations *)
 
 (* CONTROL FLOW *)
 
 control_flow =
-    | "return" expression
-    | "break" (space+ ";")?
-    | "continue" (space+ ";")?
+    | "return" expression?
+    | "break"
+    | "continue"
+
+(* NOTATIONS *)
+
+dot_notation =
+    | expression "." identifier
+
+dot_symbol_notation =
+    | expression "." symbol_literal
+
+index_notation =
+    | expression "[" expression "]"
+
+scope_notation =
+    | identifier "::" identifier
+
+call_notation =
+    | expression "(" expression ("," expression)* ","? ")"
+
+
+prefix_notation =
+    | identifier expression
 
 (* UNARIES *)
 
-arith_unary =
+unary_expression =
+    (* Literals *)
+    | literal
+    (* Expressions *)
+    | parens_expression
+    | block_expression
+    | list_comprehension_expression
+
+add_unary =
+    | "+" unary_expression
+    | "-" unary_expression
+
+not_unary =
+    | "!" unary_expression
+
+bitnot_unary =
+    | "~" unary_expression
+
+spread_unary =
+    | "..." unary_expression
+
+unary_operation =
+    | add_unary
+    | not_unary
+    | bitnot_unary
+    | spread_unary
+    | unary_expression
 
 (* OPERATIONS *)
 
 exp_operation =
+    | unary_operation "^" expression
+    | unary_operation
+
 mul_operation =
+    | expression "*" exp_operation
+    | expression "/" exp_operation
+    | expression "%" exp_operation
+    | exp_operation
+
 add_operation =
+    | expression "+" mul_operation
+    | expression "-" mul_operation
+    | mul_operation
+
 bsh_operation =
+    | expression "<<" add_operation
+    | expression ">>" add_operation
+    | add_operation
+
 rel_operation =
+    | expression "<" bsh_operation
+    | expression ">" bsh_operation
+    | expression "<=" bsh_operation
+    | expression ">=" bsh_operation
+    | bsh_operation
+
 eq_operation =
+    | expression "==" rel_operation
+    | expression "!=" rel_operation
+    | rel_operation
+
+bitand_operation =
+    | expression "&" eq_operation
+    | eq_operation
+
+bitor_operation =
+    | expression "|" bitand_operation
+    | bitand_operation
+
 and_operation =
+    | expression "&&" bitor_operation
+    | bitor_operation
+
 or_operation =
-not_operation =
-neg_operation =
-pos_operation =
+    | expression "||" or_operation
+    | or_operation
+
 relate_operation =
-grp_operation =
+    | "*" "->" or_operation
+    | expression "->" "*"
+    | expression "->" or_operation
+    | or_operation
+
+pipe_operation =
+    | expression "|>" relate_operation
+    | relate_operation
+
+(* INFIXES *)
+
+infix_notation =
+    | expression identifier relate_operation
+    | relate_operation
+
+
+(* ASSIGNMENTS *)
+
+assign_operation =
+    | infix_notation "=" expression
+    | infix_notation "+=" expression
+    | infix_notation "-=" expression
+    | infix_notation "*=" expression
+    | infix_notation "/=" expression
+    | infix_notation "%=" expression
+    | infix_notation "^=" expression
+    | infix_notation "<<=" expression
+    | infix_notation ">>=" expression
+    | infix_notation "&=" expression
+    | infix_notation "|=" expression
+    | infix_notation "&&=" expression
+    | infix_notation "||=" expression
+    | infix_notation
 
 (* DECLARATIONS *)
 
+generics =
+    | "<" type_signature ("," type_signature)* ","? ">"
+
+type_signature =
+    | identifier generics?
+
+where_clause =
+    | "where" identifier ":" type_signature ("," identifier ":" type_signature)* ","?
+
+block_signature =
+    | "{" (identifier ":" type_signature ("," identifier ":" type_signature)* ","?)? "}"
+
+tuple_signature =
+    | "(" type_signature ("," type_signature)+ ","? ")"
+
+variant =
+    | identifier (block_signature | tuple_signature)?
+
 type_declaration =
+    | "type" identifier (generics where_clause?)? "=" (block_signature | tuple_signature)
+    | "type" identifier (generics where_clause?)? "=" "|"? variant ("|" variant)*
+    | "type" identifier "=" "|"? simple_literal ("|" simple_literal)*
+
+trait =
+    | "trait" identifier (generics where_clause?)? (block_signature | tuple_signature)?
+
 let_declaration =
+    | "let" identifier (":" type_signature)? "=" expression
+    | "let" identifier ":" type_signature
+
 function_declaration =
+    | "fun" identifier generics? "(" (identifier ":" type_signature ("," identifier ":" type_signature)* ","?)? ")" ("->" type_signature)? where_clause? block_expression
+
+interface_items =
+    | (idenifier "::")+ ("{" interface_items ("," interface_items)* ","? "}" | "*" | identifier)
+
 import_declaration =
+    | "import" interface_items
+
+export_declaration =
+    | "export" interface_items

@@ -45,6 +45,10 @@ pub enum Token<'a> {
     #[regex(r#"//[^/\n]+//"#, |lex| lex.slice().trim_matches('/').to_string())]
     RegexLiteral(String),
 
+    /// Symbol literals
+    #[regex(r"@[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().trim_start_matches('@'))]
+    SymbolLiteral(&'a str),
+
     /// Boolean literals
     #[token("true", |_| true)]
     #[token("false", |_| false)]
@@ -53,6 +57,18 @@ pub enum Token<'a> {
     /// Keyword `type`
     #[token("type")]
     KeywordType,
+
+    /// Keyword `trait`
+    #[token("trait")]
+    KeywordTrait,
+
+    /// Keyword `import`
+    #[token("import")]
+    KeywordImport,
+
+    /// Keyword `export`
+    #[token("export")]
+    KeywordExport,
 
     /// Keyword `let`
     #[token("let")]
@@ -245,10 +261,6 @@ pub enum Token<'a> {
     /// Operator `>>=`
     #[token(">>=")]
     OpAssignBitShr,
-
-    /// Operator `?`
-    #[token("?")]
-    OpTry,
 
     /// Operator `..`
     #[token("..")]
@@ -447,6 +459,17 @@ mod tests {
     }
 
     #[test]
+    fn test_lexer_symbol() {
+        // Symbol
+        let mut lexer = Token::lexer("@hello @World_0 @_world @_0world");
+
+        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("hello"))));
+        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("World_0"))));
+        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("_world"))));
+        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("_0world"))));
+    }
+
+    #[test]
     fn test_lexer_boolean() {
         // Boolean
         let mut lexer = Token::lexer("true false");
@@ -459,10 +482,13 @@ mod tests {
     fn test_lexer_keyword() {
         // Keyword
         let mut lexer = Token::lexer(
-            "type let in transaction if else for while continue break match fun return",
+            "type trait import export let in transaction if else for while continue break match fun return",
         );
 
         assert_eq!(lexer.next(), Some(Ok(Token::KeywordType)));
+        assert_eq!(lexer.next(), Some(Ok(Token::KeywordTrait)));
+        assert_eq!(lexer.next(), Some(Ok(Token::KeywordImport)));
+        assert_eq!(lexer.next(), Some(Ok(Token::KeywordExport)));
         assert_eq!(lexer.next(), Some(Ok(Token::KeywordLet)));
         assert_eq!(lexer.next(), Some(Ok(Token::KeywordIn)));
         assert_eq!(lexer.next(), Some(Ok(Token::KeywordTransaction)));
@@ -481,7 +507,7 @@ mod tests {
     fn test_lexer_operator() {
         // Operator
         let mut lexer = Token::lexer(
-            "+ - * / % ^ . :: -> -!> = += -= *= /= %= ^= && || ! == != < <= > >= & | ~ << >> &= |= ~= <<= >>= ? .. ..= => ... |>",
+            "+ - * / % ^ . :: -> -!> = += -= *= /= %= ^= && || ! == != < <= > >= & | ~ << >> &= |= ~= <<= >>= .. ..= => ... |>",
         );
 
         assert_eq!(lexer.next(), Some(Ok(Token::OpPlus)));
@@ -520,7 +546,6 @@ mod tests {
         assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitNot)));
         assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitShl)));
         assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitShr)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpTry)));
         assert_eq!(lexer.next(), Some(Ok(Token::OpRange)));
         assert_eq!(lexer.next(), Some(Ok(Token::OpRangeInclusive)));
         assert_eq!(lexer.next(), Some(Ok(Token::OpArrow)));

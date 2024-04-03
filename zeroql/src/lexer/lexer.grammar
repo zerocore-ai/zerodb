@@ -25,7 +25,7 @@ digit_part =
     | digit ("_"? digit)*
 
 exponent =
-    | "e" ("+" | "-")? digit_part
+    | ("e" | "E") ("+" | "-")? digit_part
 
 fraction =
     | "." digit_part
@@ -85,14 +85,25 @@ regex_item =
 regex_literal =
     | "//" regex_item* "//"
 
+symbol_literal =
+    | "@" identifier
+
 boolean_literal =
     | "true"
     | "false"
+
+(* IDEMTIFIER *)
+
+identifier =
+    | [a-zA-Z_] [a-zA-Z0-9_]*
 
 (* KEYWORDS *)
 
 keyword =
     | "type"
+    | "trait"
+    | "import"
+    | "export"
     | "let"
     | "in"
     | "transaction"
