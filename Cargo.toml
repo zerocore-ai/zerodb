@@ -5,6 +5,7 @@ members = [
     "zerodb",
     "zerodb-cli",
     "zeroql",
+    "zeroql-macros",
     "zeroraft",
 ]
 resolver = "2"
@@ -22,9 +23,7 @@ anyhow = "1.0.79"
 cbor4ii = { version = "0.3.2", features = ["serde1"] }
 clap = { version = "4.4.8", features = ["derive", "color"] }
 futures = "0.3.30"
-proptest = "1.4.0"
 rand = "0.8.5"
-rstest = "0.18.2"
 serde = { version = "1.0.194", features = ["derive"] }
 structstruck = "0.4.1"
 test-log = { version = "0.2.14", features = ["trace", "tracing-subscriber"] }
