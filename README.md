@@ -24,12 +24,14 @@
   </p> -->
 </div>
 
+**`zerodb`** is a modern [multi-tenant][multi_tenant] [multi-model][multi_model] database for distributed high-performance applications.
+
+##
+
 > [!WARNING]
 > This project is still in the early stages of development and is not yet ready for production use.
 
 ##
-
-A multi-model database for multi-tenant applications
 
 ## Outline
 
@@ -41,3 +43,7 @@ A multi-model database for multi-tenant applications
 - [License](#license)
 
 ## Usage
+
+
+[multi_tenant]: https://en.wikipedia.org/wiki/Multitenancy
+[multi_model]: https://en.wikipedia.org/wiki/Multi-model_database
