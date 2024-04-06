@@ -2,7 +2,25 @@
 - [ ] Working
   - [x] Change Countdown to Timeout
   - [x] Replication Session
-  - [ ] zeroql: Lexer
+  - [x] zeroql: Lexer
+  - [ ] zeroql: Parser
+    - [x] `memoize` macro
+      - [x] Support use as impl attribute.
+      - [x] Change value back to owned
+      - [x] Provided cache should be <AnyKey, V>.
+      - [x] Get rid of sha3.
+      - [x] Change "key_extension" to "salt".
+      - [x] HashInput is compiler output.
+      - [x] Add better docs. Add note here that we are removing self. And fix implementation to reflect that.
+      - [x] Arguments have to implement Hash?
+      - [x] Add tests
+      - [x] Add example in doc. Borrow from tests.
+    - [x] `backtrack` macro
+      - [x] Support use as impl attribute.
+      - [x] Add tests
+      - [x] Add example in doc. Borrow from tests.
+    - [ ] Implement parser functions
+
 
 
 - [x] Distributed Consensus
@@ -30,16 +48,19 @@
 
 - [ ] Query Language
 
-  - [ ] Grammar
+  - [x] Grammar
   - [ ] Parser
   - [ ] AST
+  - [ ] Semantic Analysis
   - [ ] Wasm Codegen
 
 - [ ] Backing Key-Value Store
 
-  - [ ] Memstore
+  - [x] Memstore
   - [ ] RocksDB
-  - [ ] TiKV
+
+-  [ ] Data Types
+
 
 - [ ] Models
 

@@ -1,22 +1,15 @@
-mod cache;
-
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use cache::Cache;
+pub mod anykey;
+pub mod cache;
 
 //--------------------------------------------------------------------------------------------------
 // Re-exports
 //--------------------------------------------------------------------------------------------------
 
-pub use zeroql_macros_core::backtrack;
-
-pub use zeroql_macros_core::memoize;
-
-pub mod sha3 {
-    pub use sha3::{Digest, Sha3_256};
-}
+pub use zeroql_macros_core::{backtrack, memoize};
 
 //--------------------------------------------------------------------------------------------------
 // Tests
@@ -26,8 +19,10 @@ pub mod sha3 {
 mod tests {
     #[test]
     fn test_memoize() {
-        let t = trybuild::TestCases::new();
+        let cases = trybuild::TestCases::new();
 
-        t.pass("tests/01-memoize-pass.rs");
+        cases.pass("tests/01-memoize-pass.rs");
+        cases.pass("tests/02-backtrack-pass.rs");
+        cases.pass("tests/03-memoize-and-backtrack-pass.rs");
     }
 }

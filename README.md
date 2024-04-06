@@ -24,7 +24,8 @@
   </p> -->
 </div>
 
-<div align="center"><sub>:warning: Work in progress :warning:</sub></div>
+> [!WARNING]
+> This project is still in the early stages of development and is not yet ready for production use.
 
 ##
 

@@ -1,6 +1,15 @@
 use proc_macro2::TokenStream;
+use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{format_ident, quote};
-use syn::{punctuated::Punctuated, spanned::Spanned, token::Comma, FnArg, Ident, Pat, Result};
+use syn::{
+    punctuated::Punctuated, spanned::Spanned, token::Comma, Attribute, FnArg, Ident, Pat, Result,
+};
+
+//--------------------------------------------------------------------------------------------------
+// Constants
+//--------------------------------------------------------------------------------------------------
+
+const CRATE_NAME: &str = "zeroql-macros";
 
 //--------------------------------------------------------------------------------------------------
 // Functions
@@ -38,4 +47,22 @@ pub(crate) fn fn_call(fn_inputs: &Punctuated<FnArg, Comma>, fn_name: &Ident) -> 
     } else {
         quote! { #fn_name ( #(#fn_arg_names),* ) }
     }
+}
+
+pub(crate) fn crate_path(fn_name: &Ident) -> Result<Ident> {
+    let Ok(crate_name) = crate_name(CRATE_NAME) else {
+        return Err(syn::Error::new(
+            fn_name.span(),
+            format!("Could not find `{CRATE_NAME}` crate in your `Cargo.toml`"),
+        ));
+    };
+
+    Ok(match crate_name {
+        FoundCrate::Itself => format_ident!("{}", CRATE_NAME.replace('-', "_")),
+        FoundCrate::Name(name) => format_ident!("{name}"),
+    })
+}
+
+pub fn has_attr(attrs: &[Attribute], name: &str) -> bool {
+    attrs.iter().any(|attr| attr.path().is_ident(name))
 }

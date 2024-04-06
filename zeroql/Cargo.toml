@@ -18,3 +18,4 @@ thiserror.workspace = true
 tracing.workspace = true
 anyhow.workspace = true
 logos = "0.14.0"
+lru = "0.12.3"

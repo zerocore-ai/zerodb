@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
-    ExprField, Ident, ItemFn, Token,
+    ExprField, Ident, ImplItemFn, ItemFn, ItemImpl, Token,
 };
 
 use crate::utils;
@@ -45,10 +45,40 @@ impl Parse for BacktrackOptions {
 }
 
 //--------------------------------------------------------------------------------------------------
+// Functions: Entry Point
+//--------------------------------------------------------------------------------------------------
+
+pub(super) fn impl_generate(options: &BacktrackOptions, impl_tree: &ItemImpl) -> TokenStream {
+    let mut methods = Vec::new();
+    for method in impl_tree.items.iter() {
+        if let syn::ImplItem::Fn(method) = method {
+            if utils::has_attr(&method.attrs, "backtrack") {
+                methods.push(generate_transformed_impl_method(method, options));
+            } else {
+                methods.push(quote! { #method });
+            }
+        }
+    }
+
+    generate_transformed_impl(impl_tree, methods)
+}
+
+pub(super) fn fn_generate(options: BacktrackOptions, fn_tree: &ItemFn) -> TokenStream {
+    let fn_updated_name = &format_ident!("__backtrack_original_{}", fn_tree.sig.ident);
+    let renamed_fn = generate_renamed_fn(fn_updated_name, fn_tree);
+    let transformed_fn = generate_transformed_fn(fn_updated_name, fn_tree, options);
+
+    quote! {
+        #renamed_fn
+        #transformed_fn
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
 // Functions
 //--------------------------------------------------------------------------------------------------
 
-fn generate_fn_updated(fn_updated_name: &Ident, fn_tree: &ItemFn) -> TokenStream {
+fn generate_renamed_fn(fn_updated_name: &Ident, fn_tree: &ItemFn) -> TokenStream {
     let fn_vis = &fn_tree.vis;
     let fn_inputs = &fn_tree.sig.inputs;
     let fn_output = &fn_tree.sig.output;
@@ -59,7 +89,7 @@ fn generate_fn_updated(fn_updated_name: &Ident, fn_tree: &ItemFn) -> TokenStream
     }
 }
 
-fn generate_fn_wrapper(
+fn generate_transformed_fn(
     fn_updated_name: &Ident,
     fn_tree: &ItemFn,
     options: BacktrackOptions,
@@ -84,13 +114,37 @@ fn generate_fn_wrapper(
     }
 }
 
-pub(super) fn generate(options: BacktrackOptions, fn_tree: &ItemFn) -> TokenStream {
-    let fn_updated_name = &format_ident!("__backtrack_original_{}", fn_tree.sig.ident);
-    let fn_updated = generate_fn_updated(fn_updated_name, fn_tree);
-    let fn_wrapper = generate_fn_wrapper(fn_updated_name, fn_tree, options);
+fn generate_transformed_impl(impl_tree: &ItemImpl, methods: Vec<TokenStream>) -> TokenStream {
+    let impl_attrs = &impl_tree.attrs;
+    let impl_generics = &impl_tree.generics;
+    let impl_self_ty = &impl_tree.self_ty;
 
     quote! {
-        #fn_updated
-        #fn_wrapper
+        #(#impl_attrs)*
+        impl #impl_generics #impl_self_ty {
+            #(#methods)*
+        }
+    }
+}
+
+fn generate_transformed_impl_method(
+    method: &ImplItemFn,
+    options: &BacktrackOptions,
+) -> TokenStream {
+    let method_vis = &method.vis;
+    let method_sig = &method.sig;
+    let method_block = &method.block;
+    let method_attrs = &method
+        .attrs
+        .iter()
+        .filter(|attr| !utils::has_attr(&[attr.to_owned().clone()], "backtrack"))
+        .collect::<Vec<_>>();
+
+    let state = &options.state;
+
+    quote! {
+        #[backtrack(state = #state)]
+        #(#method_attrs)*
+        #method_vis #method_sig #method_block
     }
 }
