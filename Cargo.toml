@@ -21,7 +21,7 @@ edition = "2021"
 async-trait = "0.1.77"
 anyhow = "1.0.79"
 cbor4ii = { version = "0.3.2", features = ["serde1"] }
-clap = { version = "4.4.8", features = ["derive", "color"] }
+clap = { version = "4.5.4", features = ["derive", "color"] }
 futures = "0.3.30"
 rand = "0.8.5"
 regex = "1.10.4"
