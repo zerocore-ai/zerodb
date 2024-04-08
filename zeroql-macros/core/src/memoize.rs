@@ -126,6 +126,7 @@ fn generate_renamed_fn(fn_updated_name: &Ident, fn_tree: &ItemFn) -> TokenStream
     let fn_block = &fn_tree.block;
 
     quote! {
+        #[doc(hidden)]
         #fn_vis fn #fn_updated_name ( #fn_inputs ) #fn_output #fn_block
     }
 }

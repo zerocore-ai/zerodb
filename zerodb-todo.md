@@ -20,7 +20,8 @@
       - [x] Add tests
       - [x] Add example in doc. Borrow from tests.
     - [ ] Implement parser functions
-
+  - [ ] zeroql: Reimplement the Lexer
+  - [ ] zeroql: AST
 
 
 - [x] Distributed Consensus

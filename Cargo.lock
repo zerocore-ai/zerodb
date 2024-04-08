@@ -1423,10 +1423,12 @@ name = "zeroql"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "logos",
+ "lazy_static",
  "lru",
+ "regex",
  "thiserror",
  "tracing",
+ "zeroql-macros",
 ]
 
 [[package]]

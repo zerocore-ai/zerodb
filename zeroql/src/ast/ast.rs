@@ -1,14 +1,7 @@
-mod errors;
-#[allow(clippy::module_inception)]
-mod lexer;
-#[cfg(test)]
-mod tests;
-mod token;
-
 //--------------------------------------------------------------------------------------------------
-// Exports
+// Types
 //--------------------------------------------------------------------------------------------------
 
-pub use errors::*;
-pub use lexer::*;
-pub use token::*;
+/// The abstract syntax tree (AST) of the zeroql language.
+#[derive(Debug, Clone)]
+pub enum Ast {}

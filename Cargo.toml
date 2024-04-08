@@ -24,6 +24,7 @@ cbor4ii = { version = "0.3.2", features = ["serde1"] }
 clap = { version = "4.4.8", features = ["derive", "color"] }
 futures = "0.3.30"
 rand = "0.8.5"
+regex = "1.10.4"
 serde = { version = "1.0.194", features = ["derive"] }
 structstruck = "0.4.1"
 test-log = { version = "0.2.14", features = ["trace", "tracing-subscriber"] }
@@ -36,3 +37,4 @@ typed-builder = "0.18.0"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 zerodb = { path = "zerodb" }
 zeroraft = { path = "zeroraft" }
+zeroql-macros = { path = "zeroql-macros" }

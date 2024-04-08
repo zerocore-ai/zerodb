@@ -1,555 +1,378 @@
-use logos::Logos;
+use lazy_static::lazy_static;
+use regex::Regex;
+
+use crate::{LexerError, LexerResult, Span, Token, TokenKind};
 
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
 
-/// Lexer
-#[derive(Logos, Debug, PartialEq)]
-pub enum Token<'a> {
-    /// Whitespaces and comments
-    #[regex(r"[ \t\n\f]+", logos::skip)]
-    #[regex(r"#.*", logos::skip)]
-    Whitespace,
-
-    /// Identifiers
-    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
-    Identifier(&'a str),
-
-    /// Binary integer literals
-    #[regex(r"0b[01]+(_?[01])*")]
-    BinIntegerLiteral(&'a str),
-
-    /// Octal integer literals
-    #[regex(r"0o[0-7]+(_?[0-7])*")]
-    OctIntegerLiteral(&'a str),
-
-    /// Hexadecimal integer literals
-    #[regex(r"0x[0-9a-fA-F]+(_?[0-9a-fA-F])*")]
-    HexIntegerLiteral(&'a str),
-
-    /// Decimal integer literals
-    #[regex(r"\d(_?\d)*")]
-    DecIntegerLiteral(&'a str),
-
-    /// Float literals
-    #[regex(r"\.\d(_?\d)*([eE][+-]?\d(_?\d)*)?|\d(_?\d)*\.(\d(_?\d)*)?([eE][+-]?\d(_?\d)*)?|\d(_?\d)*([eE][+-]?\d(_?\d)*)")]
-    FloatLiteral(&'a str),
-
-    /// String literals
-    #[regex(r"'([^'\\]|\\t|\\n|\\r|\\\\)*'", |lex| lex.slice().trim_matches('\'').to_string())]
-    #[regex(r#""([^"\\]|\\t|\\n|\\r|\\\\)*""#, |lex| lex.slice().trim_matches('"').to_string())]
-    StringLiteral(String),
-
-    /// Regex literals
-    #[regex(r#"//[^/\n]+//"#, |lex| lex.slice().trim_matches('/').to_string())]
-    RegexLiteral(String),
-
-    /// Symbol literals
-    #[regex(r"@[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().trim_start_matches('@'))]
-    SymbolLiteral(&'a str),
-
-    /// Boolean literals
-    #[token("true", |_| true)]
-    #[token("false", |_| false)]
-    BooleanLiteral(bool),
-
-    /// Keyword `type`
-    #[token("type")]
-    KeywordType,
-
-    /// Keyword `trait`
-    #[token("trait")]
-    KeywordTrait,
-
-    /// Keyword `import`
-    #[token("import")]
-    KeywordImport,
-
-    /// Keyword `export`
-    #[token("export")]
-    KeywordExport,
-
-    /// Keyword `let`
-    #[token("let")]
-    KeywordLet,
-
-    /// Keyword `in`
-    #[token("in")]
-    KeywordIn,
-
-    /// Keyword `transaction`
-    #[token("transaction")]
-    KeywordTransaction,
-
-    /// Keyword `if`
-    #[token("if")]
-    KeywordIf,
-
-    /// Keyword `else`
-    #[token("else")]
-    KeywordElse,
-
-    /// Keyword `for`
-    #[token("for")]
-    KeywordFor,
-
-    /// Keyword `while`
-    #[token("while")]
-    KeywordWhile,
-
-    /// Keyword `continue`
-    #[token("continue")]
-    KeywordContinue,
-
-    /// Keyword `break`
-    #[token("break")]
-    KeywordBreak,
-
-    /// Keyword `match`
-    #[token("match")]
-    KeywordMatch,
-
-    /// Keyword `fun`
-    #[token("fun")]
-    KeywordFun,
-
-    /// Keyword `return`
-    #[token("return")]
-    KeywordReturn,
-
-    /// Operator `+`
-    #[token("+")]
-    OpPlus,
-
-    /// Operator `-`
-    #[token("-")]
-    OpMinus,
-
-    /// Operator `*`
-    #[token("*")]
-    OpMul,
-
-    /// Operator `/`
-    #[token("/")]
-    OpDiv,
-
-    /// Operator `%`
-    #[token("%")]
-    OpMod,
-
-    /// Operator `^`
-    #[token("^")]
-    OpPow,
-
-    /// Operator `.`
-    #[token(".")]
-    OpDot,
-
-    /// Operator `::`
-    #[token("::")]
-    OpScope,
-
-    /// Operator `->`
-    #[token("->")]
-    OpRelate,
-
-    /// Operator `-!>`
-    #[token("-!>")]
-    OpRelateNeg,
-
-    /// Operator `=`
-    #[token("=")]
-    OpAssign,
-
-    /// Operator `+=`
-    #[token("+=")]
-    OpAssignAdd,
-
-    /// Operator `-=`
-    #[token("-=")]
-    OpAssignSub,
-
-    /// Operator `*=`
-    #[token("*=")]
-    OpAssignMul,
-
-    /// Operator `/=`
-    #[token("/=")]
-    OpAssignDiv,
-
-    /// Operator `%=`
-    #[token("%=")]
-    OpAssignMod,
-
-    /// Operator `^=`
-    #[token("^=")]
-    OpAssignPow,
-
-    /// Operator `&&`
-    #[token("&&")]
-    OpAnd,
-
-    /// Operator `||`
-    #[token("||")]
-    OpOr,
-
-    /// Operator `!`
-    #[token("!")]
-    OpNot,
-
-    /// Operator `==`
-    #[token("==")]
-    OpEq,
-
-    /// Operator `!=`
-    #[token("!=")]
-    OpNe,
-
-    /// Operator `<`
-    #[token("<")]
-    OpLt,
-
-    /// Operator `<=`
-    #[token("<=")]
-    OpLe,
-
-    /// Operator `>`
-    #[token(">")]
-    OpGt,
-
-    /// Operator `>=`
-    #[token(">=")]
-    OpGe,
-
-    /// Operator `&`
-    #[token("&")]
-    OpBitAnd,
-
-    /// Operator `|`
-    #[token("|")]
-    OpBitOr,
-
-    /// Operator `~`
-    #[token("~")]
-    OpBitNot,
-
-    /// Operator `<<`
-    #[token("<<")]
-    OpBitShl,
-
-    /// Operator `>>`
-    #[token(">>")]
-    OpBitShr,
-
-    /// Operator `&=`
-    #[token("&=")]
-    OpAssignBitAnd,
-
-    /// Operator `|=`
-    #[token("|=")]
-    OpAssignBitOr,
-
-    /// Operator `~=`
-    #[token("~=")]
-    OpAssignBitNot,
-
-    /// Operator `<<=`
-    #[token("<<=")]
-    OpAssignBitShl,
-
-    /// Operator `>>=`
-    #[token(">>=")]
-    OpAssignBitShr,
-
-    /// Operator `..`
-    #[token("..")]
-    OpRange,
-
-    /// Operator `..=`
-    #[token("..=")]
-    OpRangeInclusive,
-
-    /// Operator `=>`
-    #[token("=>")]
-    OpArrow,
-
-    /// Operator `...`
-    #[token("...")]
-    OpEllipsis,
-
-    /// Operator `|>`
-    #[token("|>")]
-    OpPipe,
+/// A lexer for the zeroql language.
+#[derive(Debug, Clone)]
+pub struct Lexer<'a> {
+    /// The input string.
+    pub(crate) string: &'a str,
+
+    /// The current position in the input string.
+    pub(crate) cursor: usize,
 }
 
 //--------------------------------------------------------------------------------------------------
-// Tests
+// Methods
 //--------------------------------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_lexer_identifier() {
-        // Identifier
-        let mut lexer = Token::lexer("hello World_0 _world _0world");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::Identifier("hello"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::Identifier("World_0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::Identifier("_world"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::Identifier("_0world"))));
+impl<'a> Lexer<'a> {
+    /// Returns the current position in the input string.
+    pub fn cursor(&self) -> usize {
+        self.cursor
     }
 
-    #[test]
-    fn test_lexer_bin_integer() {
-        // Binary integer
-        let mut lexer = Token::lexer("0b0 0b1 0b10 0b11 0b1_000 0b0_111");
+    /// Produces the next token in the input string.
+    fn next_token(&mut self) -> LexerResult<Option<Token<'a>>> {
+        // Check for the end of the input string.
+        if self.cursor >= self.string.len() {
+            return Ok(None);
+        }
 
-        assert_eq!(lexer.next(), Some(Ok(Token::BinIntegerLiteral("0b0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::BinIntegerLiteral("0b1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::BinIntegerLiteral("0b10"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::BinIntegerLiteral("0b11"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::BinIntegerLiteral("0b1_000"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::BinIntegerLiteral("0b0_111"))));
+        // Skip whitespace and comments.
+        let mut remainder = &self.string[self.cursor..];
+        if let Some(m) = WHITESPACE_COMMENT_REGEX.find(remainder) {
+            self.cursor += m.end();
+            remainder = &self.string[self.cursor..];
+        }
+
+        // Check for the end of the input string.
+        if self.cursor >= self.string.len() {
+            return Ok(None);
+        }
+
+        // Check for a token.
+        let token = if let Some(m) = IDENTIFIER_REGEX.find(remainder) {
+            let span = self.advance_by_match(m);
+            let token = m.as_str();
+            match token {
+                "true" => Token::new(span, TokenKind::BooleanLiteral(true)),
+                "false" => Token::new(span, TokenKind::BooleanLiteral(false)),
+                "type" => Token::new(span, TokenKind::KeywordType),
+                "trait" => Token::new(span, TokenKind::KeywordTrait),
+                "import" => Token::new(span, TokenKind::KeywordImport),
+                "export" => Token::new(span, TokenKind::KeywordExport),
+                "let" => Token::new(span, TokenKind::KeywordLet),
+                "in" => Token::new(span, TokenKind::KeywordIn),
+                "transaction" => Token::new(span, TokenKind::KeywordTransaction),
+                "if" => Token::new(span, TokenKind::KeywordIf),
+                "else" => Token::new(span, TokenKind::KeywordElse),
+                "for" => Token::new(span, TokenKind::KeywordFor),
+                "while" => Token::new(span, TokenKind::KeywordWhile),
+                "continue" => Token::new(span, TokenKind::KeywordContinue),
+                "break" => Token::new(span, TokenKind::KeywordBreak),
+                "return" => Token::new(span, TokenKind::KeywordReturn),
+                "match" => Token::new(span, TokenKind::KeywordMatch),
+                "fun" => Token::new(span, TokenKind::KeywordFun),
+                _ => Token::new(span, TokenKind::Identifier(token)),
+            }
+        } else if let Some(m) = BIN_INTEGER_LITERAL_REGEX.find(remainder) {
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::BinIntegerLiteral(m.as_str()),
+            )
+        } else if let Some(m) = OCT_INTEGER_LITERAL_REGEX.find(remainder) {
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::OctIntegerLiteral(m.as_str()),
+            )
+        } else if let Some(m) = HEX_INTEGER_LITERAL_REGEX.find(remainder) {
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::HexIntegerLiteral(m.as_str()),
+            )
+        } else if let Some(m) = FLOAT_LITERAL_REGEX.find(remainder) {
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::FloatLiteral(m.as_str()),
+            )
+        } else if let Some(m) = DEC_INTEGER_LITERAL_REGEX.find(remainder) {
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::DecIntegerLiteral(m.as_str()),
+            )
+        } else if let Some(m) = STRING_LITERAL_REGEX.find(remainder) {
+            // Remove first and last character (quote marks).
+            let trimmed_str = &m.as_str()[1..m.as_str().len() - 1];
+
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::StringLiteral(trimmed_str),
+            )
+        } else if let Some(m) = REGEX_LITERAL_REGEX.find(remainder) {
+            // Remove first two and last two characters (slashes).
+            let trimmed_str = &m.as_str()[2..m.as_str().len() - 2];
+
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::RegexLiteral(trimmed_str),
+            )
+        } else if let Some(m) = SYMBOL_LITERAL_REGEX.find(remainder) {
+            // Remove the first character (@).
+            let trimmed_str = &m.as_str()[1..];
+
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::SymbolLiteral(trimmed_str),
+            )
+        } else {
+            // TODO: Need to consider moving this to the top, since operators are more common than literals.
+            match remainder.chars().next() {
+                // === Three Character Tokens ===
+                Some('-') if remainder.starts_with("-!>") => {
+                    self.cursor += 3;
+                    Token::new(self.cursor - 3..self.cursor, TokenKind::OpRelateNeg)
+                }
+                Some('<') if remainder.starts_with("<<=") => {
+                    self.cursor += 3;
+                    Token::new(self.cursor - 3..self.cursor, TokenKind::OpAssignBitShl)
+                }
+                Some('>') if remainder.starts_with(">>=") => {
+                    self.cursor += 3;
+                    Token::new(self.cursor - 3..self.cursor, TokenKind::OpAssignBitShr)
+                }
+                Some('.') if remainder.starts_with("..=") => {
+                    self.cursor += 3;
+                    Token::new(self.cursor - 3..self.cursor, TokenKind::OpRangeInclusive)
+                }
+                Some('.') if remainder.starts_with("...") => {
+                    self.cursor += 3;
+                    Token::new(self.cursor - 3..self.cursor, TokenKind::OpEllipsis)
+                }
+                // === Two Character Tokens ===
+                Some(':') if remainder.starts_with("::") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpScope)
+                }
+                Some('-') if remainder.starts_with("->") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpArrow)
+                }
+                Some('+') if remainder.starts_with("+=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignAdd)
+                }
+                Some('-') if remainder.starts_with("-=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignSub)
+                }
+                Some('*') if remainder.starts_with("*=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignMul)
+                }
+                Some('/') if remainder.starts_with("/=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignDiv)
+                }
+                Some('%') if remainder.starts_with("%=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignMod)
+                }
+                Some('^') if remainder.starts_with("^=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignPow)
+                }
+                Some('&') if remainder.starts_with("&&") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAnd)
+                }
+                Some('|') if remainder.starts_with("||") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpOr)
+                }
+                Some('=') if remainder.starts_with("==") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpEq)
+                }
+                Some('!') if remainder.starts_with("!=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpNe)
+                }
+                Some('<') if remainder.starts_with("<=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpLe)
+                }
+                Some('>') if remainder.starts_with(">=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpGe)
+                }
+                Some('<') if remainder.starts_with("<<") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpBitShl)
+                }
+                Some('>') if remainder.starts_with(">>") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpBitShr)
+                }
+                Some('&') if remainder.starts_with("&=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignBitAnd)
+                }
+                Some('|') if remainder.starts_with("|=") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpAssignBitOr)
+                }
+                Some('.') if remainder.starts_with("..") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpRange)
+                }
+                Some('|') if remainder.starts_with("|>") => {
+                    self.cursor += 2;
+                    Token::new(self.cursor - 2..self.cursor, TokenKind::OpPipe)
+                }
+                // === One Character Tokens ===
+                Some('+') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpPlus)
+                }
+                Some('-') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpMinus)
+                }
+                Some('*') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpMul)
+                }
+                Some('/') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpDiv)
+                }
+                Some('%') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpMod)
+                }
+                Some('^') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpPow)
+                }
+                Some('.') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpDot)
+                }
+                Some('=') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpAssign)
+                }
+                Some('!') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpNot)
+                }
+                Some('<') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpLt)
+                }
+                Some('>') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpGt)
+                }
+                Some('&') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpBitAnd)
+                }
+                Some('|') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpBitOr)
+                }
+                Some('~') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpBitNot)
+                }
+                Some(',') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpComma)
+                }
+                Some(':') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpColon)
+                }
+                Some(';') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpSemicolon)
+                }
+                Some('(') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpLParen)
+                }
+                Some(')') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpRParen)
+                }
+                Some('[') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpLBracket)
+                }
+                Some(']') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpRBracket)
+                }
+                Some('{') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpLBrace)
+                }
+                Some('}') => {
+                    self.cursor += 1;
+                    Token::new(self.cursor - 1..self.cursor, TokenKind::OpRBrace)
+                }
+                _ => {
+                    return Err(LexerError::UnexpectedCharacter {
+                        span: self.cursor..self.cursor + 1,
+                        character: remainder.chars().next().unwrap(),
+                    });
+                }
+            }
+        };
+
+        Ok(Some(token))
     }
 
-    #[test]
-    fn test_lexer_oct_integer() {
-        // Octal integer
-        let mut lexer = Token::lexer("0o0 0o01234567 0o01_23_45_67");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::OctIntegerLiteral("0o0"))));
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::OctIntegerLiteral("0o01234567")))
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::OctIntegerLiteral("0o01_23_45_67")))
-        );
+    #[inline]
+    fn advance_by_match(&mut self, m: regex::Match) -> Span {
+        let span = self.cursor..self.cursor + m.end();
+        self.cursor += m.end();
+        span
     }
+}
 
-    #[test]
-    fn test_lexer_hex_integer() {
-        // Hexadecimal integer
-        let mut lexer = Token::lexer("0x0 0x0123456789abcdef 0x01_23_45_67_89_ab_cd_ef");
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
 
-        assert_eq!(lexer.next(), Some(Ok(Token::HexIntegerLiteral("0x0"))));
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::HexIntegerLiteral("0x0123456789abcdef")))
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::HexIntegerLiteral("0x01_23_45_67_89_ab_cd_ef")))
-        );
+impl<'a> From<&'a str> for Lexer<'a> {
+    fn from(string: &'a str) -> Self {
+        Self { string, cursor: 0 }
     }
+}
 
-    #[test]
-    fn test_lexer_dec_integer() {
-        // Decimal integer
-        let mut lexer = Token::lexer("0 1234 1_234 0_123_456_789");
+impl<'a> Iterator for Lexer<'a> {
+    type Item = LexerResult<Token<'a>>;
 
-        assert_eq!(lexer.next(), Some(Ok(Token::DecIntegerLiteral("0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::DecIntegerLiteral("1234"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::DecIntegerLiteral("1_234"))));
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::DecIntegerLiteral("0_123_456_789")))
-        );
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.next_token() {
+            Ok(Some(token)) => Some(Ok(token)),
+            Ok(None) => None,
+            Err(e) => Some(Err(e)),
+        }
     }
+}
 
-    #[test]
-    fn test_lexer_float() {
-        // Float with a final dot
-        let mut lexer = Token::lexer("1. 0. 1_000. 0_123.");
+//--------------------------------------------------------------------------------------------------
+// Constants
+//--------------------------------------------------------------------------------------------------
 
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1."))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0."))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1_000."))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0_123."))));
-
-        // Float with a dot followed by exponent part
-        let mut lexer = Token::lexer("1.e1 0.e+0 1_000.e-1_000 0_123.E0_123");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1.e1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0.e+0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1_000.e-1_000"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0_123.E0_123"))));
-
-        // Float with a leading dot
-        let mut lexer = Token::lexer(".1 .0 .1_000 .0_123");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".1_000"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".0_123"))));
-
-        // Float with a leading dot and exponent part
-        let mut lexer = Token::lexer(".1e1 .0e+0 .1_000e-1_000 .0_123E0_123");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".1e1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".0e+0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".1_000e-1_000"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral(".0_123E0_123"))));
-
-        // Float with a dot followed by a fraction part
-        let mut lexer = Token::lexer("1.1 0.0 1_000.1_000 0_123.0_123");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1.1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0.0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1_000.1_000"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0_123.0_123"))));
-
-        // Float with a dot followed by a fraction part and exponent part
-        let mut lexer = Token::lexer("1.1e1 0.0e+0 1_000.1_000e-1_000 0_123.0_123E0_123");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1.1e1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0.0e+0"))));
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::FloatLiteral("1_000.1_000e-1_000")))
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::FloatLiteral("0_123.0_123E0_123")))
-        );
-
-        // Float without fraction part followed by exponent part
-        let mut lexer = Token::lexer("1e1 0e+0 1_000e-1_000 0_123E0_123");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1e1"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0e+0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("1_000e-1_000"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::FloatLiteral("0_123E0_123"))));
-    }
-
-    #[test]
-    fn test_lexer_string() {
-        // Single-quoted string
-        let mut lexer = Token::lexer("'Hello, World!'");
-
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::StringLiteral("Hello, World!".to_string())))
-        );
-
-        // Double-quoted string
-        let mut lexer = Token::lexer(r#""Hello, World!""#);
-
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::StringLiteral("Hello, World!".to_string())))
-        );
-    }
-
-    #[test]
-    fn test_lexer_regex() {
-        // Regex
-        let mut lexer = Token::lexer(r"//[a-zA-Z_][a-zA-Z0-9_]*//");
-
-        assert_eq!(
-            lexer.next(),
-            Some(Ok(Token::RegexLiteral(
-                r"[a-zA-Z_][a-zA-Z0-9_]*".to_string()
-            )))
-        );
-    }
-
-    #[test]
-    fn test_lexer_symbol() {
-        // Symbol
-        let mut lexer = Token::lexer("@hello @World_0 @_world @_0world");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("hello"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("World_0"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("_world"))));
-        assert_eq!(lexer.next(), Some(Ok(Token::SymbolLiteral("_0world"))));
-    }
-
-    #[test]
-    fn test_lexer_boolean() {
-        // Boolean
-        let mut lexer = Token::lexer("true false");
-
-        assert_eq!(lexer.next(), Some(Ok(Token::BooleanLiteral(true))));
-        assert_eq!(lexer.next(), Some(Ok(Token::BooleanLiteral(false))));
-    }
-
-    #[test]
-    fn test_lexer_keyword() {
-        // Keyword
-        let mut lexer = Token::lexer(
-            "type trait import export let in transaction if else for while continue break match fun return",
-        );
-
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordType)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordTrait)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordImport)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordExport)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordLet)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordIn)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordTransaction)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordIf)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordElse)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordFor)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordWhile)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordContinue)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordBreak)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordMatch)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordFun)));
-        assert_eq!(lexer.next(), Some(Ok(Token::KeywordReturn)));
-    }
-
-    #[test]
-    fn test_lexer_operator() {
-        // Operator
-        let mut lexer = Token::lexer(
-            "+ - * / % ^ . :: -> -!> = += -= *= /= %= ^= && || ! == != < <= > >= & | ~ << >> &= |= ~= <<= >>= .. ..= => ... |>",
-        );
-
-        assert_eq!(lexer.next(), Some(Ok(Token::OpPlus)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpMinus)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpMul)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpDiv)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpMod)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpPow)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpDot)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpScope)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpRelate)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpRelateNeg)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssign)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignAdd)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignSub)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignMul)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignDiv)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignMod)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignPow)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAnd)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpOr)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpNot)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpEq)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpNe)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpLt)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpLe)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpGt)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpGe)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpBitAnd)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpBitOr)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpBitNot)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpBitShl)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpBitShr)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitAnd)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitOr)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitNot)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitShl)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpAssignBitShr)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpRange)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpRangeInclusive)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpArrow)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpEllipsis)));
-        assert_eq!(lexer.next(), Some(Ok(Token::OpPipe)));
-    }
+lazy_static! {
+    static ref WHITESPACE_COMMENT_REGEX: Regex = Regex::new(r"(^(\s+|^//.*\n))").unwrap();
+    static ref IDENTIFIER_REGEX: Regex = Regex::new(r"^([_a-zA-Z][_a-zA-Z0-9]*)").unwrap();
+    static ref BIN_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^(0b[01]+(_?[01])*)").unwrap();
+    static ref OCT_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^(0o[0-7]+(_?[0-7])*)").unwrap();
+    static ref HEX_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^(0x[0-9a-fA-F]+(_?[0-9a-fA-F])*)").unwrap();
+    static ref DEC_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^(\d(_?\d)*)").unwrap();
+    static ref FLOAT_LITERAL_REGEX: Regex = Regex::new(r"^(\.\d(_?\d)*([eE][+-]?\d(_?\d)*)?|\d(_?\d)*\.(\d(_?\d)*)?([eE][+-]?\d(_?\d)*)?|\d(_?\d)*([eE][+-]?\d(_?\d)*))").unwrap();
+    static ref STRING_LITERAL_REGEX: Regex = Regex::new(r#"^('([^'\\]|\\t|\\n|\\r|\\\\)*'|"([^"\\]|\\t|\\n|\\r|\\\\)*")"#).unwrap();
+    static ref REGEX_LITERAL_REGEX: Regex = Regex::new(r#"^(//[^/\n]+//)"#).unwrap();
+    static ref SYMBOL_LITERAL_REGEX: Regex = Regex::new(r"^(@[a-zA-Z_][a-zA-Z0-9_]*)").unwrap();
 }
