@@ -6,7 +6,6 @@ members = [
     "zerodb-cli",
     "zeroql",
     "zeroql-macros",
-    "zeroraft",
 ]
 resolver = "2"
 
@@ -36,5 +35,5 @@ tracing-subscriber = "0.3.17"
 typed-builder = "0.18.0"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 zerodb = { path = "zerodb" }
-zeroraft = { path = "zeroraft" }
+zeroraft = { git = "https://github.com/zerocore-ai/zeroraft", rev = "11d61f3" }
 zeroql-macros = { path = "zeroql-macros" }

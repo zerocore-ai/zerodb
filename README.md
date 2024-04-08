@@ -35,14 +35,21 @@
 
 ## Outline
 
-- [Usage](#usage)
 - [Testing the Project](#testing-the-project)
-- [Contributing](#contributing)
-- [Getting Help](#getting-help)
-- [External Resources](#external-resources)
 - [License](#license)
 
-## Usage
+## Testing the Project
+
+- Run tests
+
+  ```console
+  cargo test
+  ```
+
+## License
+
+This project is licensed under the [Apache License 2.0](./LICENSE), or
+[http://www.apache.org/licenses/LICENSE-2.0][apache].
 
 
 [multi_tenant]: https://en.wikipedia.org/wiki/Multitenancy
