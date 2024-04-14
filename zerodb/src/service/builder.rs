@@ -10,7 +10,7 @@ use crate::{
         ConsensusConfig, NetworkConfig, ZerodbConfig, DEFAULT_CLIENT_PORT, DEFAULT_HOST,
         DEFAULT_PEER_PORT,
     },
-    Result, ZerodbNode,
+    Result, ZerodbService,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ use crate::{
 //--------------------------------------------------------------------------------------------------
 
 /// A builder for the `ZerodbNode` type.
-pub struct ZerodbNodeBuilder {
+pub struct ZerodbServiceBuilder {
     id: NodeId,
     name: String,
     host: IpAddr,
@@ -33,7 +33,7 @@ pub struct ZerodbNodeBuilder {
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-impl ZerodbNodeBuilder {
+impl ZerodbServiceBuilder {
     /// Sets the id of the ZerodbNode instance.
     pub fn id(mut self, id: NodeId) -> Self {
         self.id = id;
@@ -83,7 +83,7 @@ impl ZerodbNodeBuilder {
     }
 
     /// Builds the ZerodbNode.
-    pub fn build(self) -> Result<ZerodbNode> {
+    pub fn build(self) -> Result<ZerodbService> {
         let config = ZerodbConfig {
             network: NetworkConfig {
                 id: self.id,
@@ -99,7 +99,7 @@ impl ZerodbNodeBuilder {
             },
         };
 
-        ZerodbNode::with_config(config)
+        ZerodbService::with_config(config)
     }
 }
 
@@ -107,7 +107,7 @@ impl ZerodbNodeBuilder {
 // Traits Implementations
 //--------------------------------------------------------------------------------------------------
 
-impl Default for ZerodbNodeBuilder {
+impl Default for ZerodbServiceBuilder {
     fn default() -> Self {
         Self {
             id: NodeId::new_v4(),

@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use clap::{CommandFactory, Parser};
 use zerodb::{
     configs::{ConsensusConfig, NetworkConfig, ZerodbConfig},
-    NodeId, ZerodbNode,
+    NodeId, ZerodbService,
 };
 use zerodb_cli::{Result, SubCommand, ZerodbArgs};
 
@@ -62,7 +62,7 @@ async fn main() -> zerodb_cli::Result<()> {
                 }
             };
 
-            ZerodbNode::with_config(config)?.start().await?;
+            ZerodbService::with_config(config)?.start().await?;
         }
         None => ZerodbArgs::command().print_help()?,
     }

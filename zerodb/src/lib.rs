@@ -3,7 +3,8 @@
 
 mod errors;
 mod init;
-mod node;
+mod query;
+mod service;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
@@ -15,7 +16,8 @@ pub mod utils;
 
 pub use errors::*;
 pub use init::*;
-pub use node::*;
+pub use query::*;
+pub use service::*;
 pub use stores::*;
 
 //--------------------------------------------------------------------------------------------------

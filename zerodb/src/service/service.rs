@@ -5,7 +5,7 @@ use zeroraft::{channels, ClientRequest, NodeId, PeerRpc, RaftNode};
 
 use crate::{
     configs::ZerodbConfig, server, stores::MemoryStore, Query, QueryResponse, Result,
-    ZerodbNodeBuilder,
+    ZerodbServiceBuilder,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ type OutRpcReciever = Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<Query>)
 type InClientRequestSender = mpsc::UnboundedSender<ClientRequest<Query, QueryResponse>>;
 
 /// A `zerodb` node.
-pub struct ZerodbNode {
+pub struct ZerodbService {
     config: ZerodbConfig,
     node: MemRaftNode<Query, QueryResponse>,
     _in_rpc_tx: mpsc::UnboundedSender<PeerRpc<Query>>,
@@ -32,13 +32,13 @@ pub struct ZerodbNode {
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-impl ZerodbNode {
-    /// Creates a new `ZerodbNode` builder.
-    pub fn builder() -> ZerodbNodeBuilder {
-        ZerodbNodeBuilder::default()
+impl ZerodbService {
+    /// Creates a new `ZerodbService` builder.
+    pub fn builder() -> ZerodbServiceBuilder {
+        ZerodbServiceBuilder::default()
     }
 
-    /// Creates a new `ZerodbNode` instance with the given configuration.
+    /// Creates a new `ZerodbService` instance with the given configuration.
     pub fn with_config(config: ZerodbConfig) -> Result<Self> {
         // Create channels.
         let (raft_channels, outside_channels) = channels::create();
@@ -65,18 +65,18 @@ impl ZerodbNode {
         })
     }
 
-    /// Returns the configuration of the ZerodbNode instance.
+    /// Returns the configuration of the ZerodbService instance.
     pub fn get_config(&self) -> &ZerodbConfig {
         &self.config
     }
 
-    /// Shuts down the ZerodbNode instance.
+    /// Shuts down the ZerodbService instance.
     pub async fn shutdown(&self) -> Result<()> {
         self.node.shutdown().await?;
         Ok(())
     }
 
-    /// Starts the ZerodbNode instance.
+    /// Starts the ZerodbService instance.
     pub async fn start(&self) -> Result<()> {
         // Start Raft Node.
         let raft_handle = self.node.start();

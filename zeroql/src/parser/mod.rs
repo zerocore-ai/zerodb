@@ -1,3 +1,4 @@
+mod errors;
 #[allow(clippy::module_inception)]
 mod parser;
 
@@ -5,4 +6,5 @@ mod parser;
 // Exports
 //--------------------------------------------------------------------------------------------------
 
+pub use errors::*;
 pub use parser::*;

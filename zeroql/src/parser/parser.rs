@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use lru::LruCache;
 use zeroql_macros::{anykey::AnyKey, backtrack, memoize};
 
-use crate::{Ast, Lexer, Token};
+use crate::{Ast, Lexer, ParserResult, Token};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -40,15 +40,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Eat a token from the lexer.
-    pub fn eat_token(&mut self) -> Option<Token<'a>> {
-        // TODO: Handle error?
-        self.lexer.next().map(|result| result.unwrap())
+    pub fn eat_token(&mut self) -> ParserResult<Option<Token<'a>>> {
+        Ok(self.lexer.next().transpose()?)
     }
 
     /// TODO: Implement the parser.
     #[backtrack]
     #[memoize]
-    pub fn parse_list_literal(&mut self) -> Option<Ast> {
+    pub fn parse_ident(&mut self) -> Option<Ast> {
         todo!("Implement the parser")
     }
 }

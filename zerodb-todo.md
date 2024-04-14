@@ -4,6 +4,7 @@
   - [x] Replication Session
   - [x] zeroql: Lexer
   - [ ] zeroql: Parser
+  - [x] zeroql: Reimplement the Lexer
     - [x] `memoize` macro
       - [x] Support use as impl attribute.
       - [x] Change value back to owned
@@ -20,7 +21,7 @@
       - [x] Add tests
       - [x] Add example in doc. Borrow from tests.
     - [ ] Implement parser functions
-  - [ ] zeroql: Reimplement the Lexer
+      - [ ] `parse_ident`
   - [ ] zeroql: AST
 
 
@@ -54,6 +55,9 @@
   - [ ] AST
   - [ ] Semantic Analysis
   - [ ] Wasm Codegen
+  - [ ] Language Server: The db doubling as a language server
+  - [ ] Formatter
+  - [ ] Linter
 
 - [ ] Backing Key-Value Store
 

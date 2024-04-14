@@ -1,7 +1,6 @@
 mod builder;
 #[allow(clippy::module_inception)]
-mod node;
-mod query;
+mod service;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
@@ -10,5 +9,4 @@ mod query;
 pub(crate) mod server;
 
 pub use builder::*;
-pub use node::*;
-pub use query::*;
+pub use service::*;
