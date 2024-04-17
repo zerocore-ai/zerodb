@@ -1411,11 +1411,3 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
 ]
-
-[[package]]
-name = "zerosys_db_client"
-version = "0.1.0"
-
-[[package]]
-name = "zerosys_db_host"
-version = "0.1.0"

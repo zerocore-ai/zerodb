@@ -34,6 +34,10 @@ pub(super) struct MemoizeOptions {
     salt: Option<ExprField>,
 }
 
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
+
 impl Parse for MemoizeOption {
     fn parse(input: ParseStream) -> Result<Self> {
         let lookahead = input.lookahead1();
@@ -50,10 +54,6 @@ impl Parse for MemoizeOption {
         }
     }
 }
-
-//--------------------------------------------------------------------------------------------------
-// Trait Implementations
-//--------------------------------------------------------------------------------------------------
 
 impl Parse for MemoizeOptions {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -142,9 +142,13 @@ fn generate_transformed_fn(
     let fn_vis = &fn_tree.vis;
     let fn_inputs = &fn_tree.sig.inputs;
     let fn_output = &fn_tree.sig.output;
-    let fn_arg_names_no_cache = exclude_base_cache_from_args(&fn_tree.sig.inputs, &options.cache)
-        .collect::<Result<Vec<_>>>()
-        .unwrap();
+    let fn_arg_names_no_cache =
+        match exclude_base_cache_from_args(&fn_tree.sig.inputs, &options.cache)
+            .collect::<Result<Vec<_>>>()
+        {
+            Ok(arg_names) => arg_names,
+            Err(err) => return err.to_compile_error(),
+        };
     let fn_call = utils::fn_call(fn_inputs, fn_updated_name);
 
     let MemoizeOptions {
@@ -158,7 +162,10 @@ fn generate_transformed_fn(
         quote! { &(#fn_name_str, (#(#fn_arg_names_no_cache),*)) }
     };
 
-    let crate_path = utils::crate_path(fn_name).unwrap();
+    let crate_path = match utils::crate_path(fn_name) {
+        Ok(crate_path) => crate_path,
+        Err(err) => return err.to_compile_error(),
+    };
 
     quote! {
         #(#fn_attrs)*

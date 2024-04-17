@@ -24,12 +24,28 @@
   </p> -->
 </div>
 
-**`zerodb`** is a modern [multi-tenant][multi_tenant] [multi-model][multi_model] database for distributed high-performance applications.
+**`zerodb`** is a modern multi-model database for distributed high-performance applications.
 
-##
+### Key Features
+
+This project shares the same [core philosophies][key-features] as zerocore, and in addition to that, it also has these key features:
+
+#### Multi-Model
+
+zerodb supports multiple data models such as relational, key-value, graph, document, and vector. This flexibility allows developers to choose the most suitable model for their specific use case, without the need for multiple databases.
+
+#### Content Addressable
+
+Data in zerodb is stored based on its content, using a unique cryptographic hash. This content-addressable storage (CAS) ensures data integrity and immutability, facilitating efficient deduplication and integrity checks.
+
+#### Versioning
+
+zerodb features robust data versioning where each modification creates a new immutable version of the data, linked through hashes. This design allows for full historical traceability and simple rollback capabilities.
+
+</br>
 
 > [!WARNING]
-> This project is still in the early stages of development and is not yet ready for production use.
+> This project is in early development and is not yet ready for production use.
 
 ##
 
@@ -51,6 +67,4 @@
 This project is licensed under the [Apache License 2.0](./LICENSE), or
 [http://www.apache.org/licenses/LICENSE-2.0][apache].
 
-
-[multi_tenant]: https://en.wikipedia.org/wiki/Multitenancy
-[multi_model]: https://en.wikipedia.org/wiki/Multi-model_database
+[key-features]: https://github.com/zerocore-ai/zerocore/edit/main/README.md#key-features

@@ -1,9 +1,0 @@
-[package]
-name = "zerosys_db_client"
-version.workspace = true
-license.workspace = true
-repository.workspace = true
-authors.workspace = true
-edition.workspace = true
-
-[dependencies]

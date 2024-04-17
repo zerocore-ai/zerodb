@@ -1,14 +1,15 @@
 //! Defines the different configuration used by zerodb.
 
-mod config_zerodb;
-mod defaults;
+#[allow(clippy::module_inception)]
+mod config;
+mod default;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use config_zerodb::*;
-pub use defaults::*;
+pub use config::*;
+pub use default::*;
 
 //--------------------------------------------------------------------------------------------------
 // Re-exports

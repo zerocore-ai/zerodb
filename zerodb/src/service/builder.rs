@@ -6,7 +6,7 @@ use std::{
 use zeroraft::NodeId;
 
 use crate::{
-    configs::{
+    config::{
         ConsensusConfig, NetworkConfig, ZerodbConfig, DEFAULT_CLIENT_PORT, DEFAULT_HOST,
         DEFAULT_PEER_PORT,
     },

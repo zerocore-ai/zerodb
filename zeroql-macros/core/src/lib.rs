@@ -27,7 +27,7 @@ use proc_macro::TokenStream;
 ///     state: usize,
 /// }
 ///
-/// #[backtrack(state = self.state)]
+/// #[backtrack(state = self.state, condition = |r| r.is_none())]
 /// impl Counter {
 ///     #[backtrack]
 ///     fn inc_even(&mut self, n: usize) -> Option<usize> {
@@ -47,7 +47,7 @@ use proc_macro::TokenStream;
 /// You can also use `backtrack` on functions:
 ///
 /// ```no_run
-/// #[backtrack(state = c.state)]
+/// #[backtrack(state = c.state, condition = |r| r.is_none())]
 /// fn inc_even(&mut self, n: usize) -> Option<usize> {
 ///     c.state += n;
 ///     if n % 2 == 0 {
@@ -58,7 +58,10 @@ use proc_macro::TokenStream;
 /// ```
 #[proc_macro_attribute]
 pub fn backtrack(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let options: BacktrackOptions = syn::parse(attr).unwrap();
+    let options: BacktrackOptions = match syn::parse(attr) {
+        Ok(options) => options,
+        Err(err) => return err.to_compile_error().into(),
+    };
 
     if let Ok(impl_tree) = syn::parse::<syn::ItemImpl>(item.clone()) {
         return backtrack::impl_generate(&options, &impl_tree).into();
@@ -113,7 +116,10 @@ pub fn backtrack(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// }
 #[proc_macro_attribute]
 pub fn memoize(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let options: MemoizeOptions = syn::parse(attr).unwrap();
+    let options: MemoizeOptions = match syn::parse(attr) {
+        Ok(options) => options,
+        Err(err) => return err.to_compile_error().into(),
+    };
 
     if let Ok(impl_tree) = syn::parse::<syn::ItemImpl>(item.clone()) {
         return memoize::impl_generate(&options, &impl_tree).into();

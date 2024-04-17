@@ -4,7 +4,7 @@ use tokio::sync::{mpsc, Mutex};
 use zeroraft::{channels, ClientRequest, NodeId, PeerRpc, RaftNode};
 
 use crate::{
-    configs::ZerodbConfig, server, stores::MemoryStore, Query, QueryResponse, Result,
+    config::ZerodbConfig, server, store::MemoryStore, Query, QueryResponse, Result,
     ZerodbServiceBuilder,
 };
 
@@ -14,7 +14,7 @@ use crate::{
 
 // TODO(appcypher): To be replaced by a proper implementation.
 /// This is a convenience type alias for a Raft node with an in-memory store.
-pub type MemRaftNode<R, P> = RaftNode<MemoryStore<R>, R, P>;
+pub type MemRaftNode = RaftNode<MemoryStore<Query>, Query, QueryResponse>;
 
 type OutRpcReciever = Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<Query>)>>>;
 type InClientRequestSender = mpsc::UnboundedSender<ClientRequest<Query, QueryResponse>>;
@@ -22,7 +22,7 @@ type InClientRequestSender = mpsc::UnboundedSender<ClientRequest<Query, QueryRes
 /// A `zerodb` node.
 pub struct ZerodbService {
     config: ZerodbConfig,
-    node: MemRaftNode<Query, QueryResponse>,
+    node: MemRaftNode,
     _in_rpc_tx: mpsc::UnboundedSender<PeerRpc<Query>>,
     out_rpc_rx: OutRpcReciever,
     in_client_request_tx: InClientRequestSender,
@@ -47,7 +47,7 @@ impl ZerodbService {
         let store = MemoryStore::default();
 
         // Create Raft Node.
-        let raft_node = MemRaftNode::<Query, QueryResponse>::builder()
+        let raft_node = MemRaftNode::builder()
             .id(config.network.id)
             .store(store)
             .channels(raft_channels)

@@ -23,6 +23,12 @@
     - [ ] Implement parser functions
       - [ ] `parse_ident`
   - [ ] zeroql: AST
+  - [ ] zeroql: Semantic Analysis
+    - [ ] Symbol Table
+    - [ ] Type checking
+    - [ ] Type inference
+    - [ ] Signature checking
+    - [ ] ...
 
 
 - [x] Distributed Consensus

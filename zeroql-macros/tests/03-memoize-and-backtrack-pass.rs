@@ -62,7 +62,7 @@ fn main() {
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-#[backtrack(state = self.cursor)]
+#[backtrack(state = self.cursor, condition = |r| r.is_none())]
 #[memoize(cache = self.cache, salt = self.cursor)]
 impl<'a> Parser<'a> {
     fn new(tokens: &'a [&'a str]) -> Self {

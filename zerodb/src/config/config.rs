@@ -10,7 +10,7 @@ use structstruck::strike;
 use zeroraft::{NodeId, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
 
 use crate::{
-    configs::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
+    config::{DEFAULT_CLIENT_PORT, DEFAULT_HOST, DEFAULT_PEER_PORT},
     Result, ZerodbError,
 };
 

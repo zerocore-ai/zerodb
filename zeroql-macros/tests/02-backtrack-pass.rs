@@ -28,7 +28,7 @@ fn main() {
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-#[backtrack(state = self.state)]
+#[backtrack(state = self.state, condition = |r| r.is_none())]
 impl Counter {
     fn new() -> Self {
         Self { state: 0 }
@@ -46,7 +46,7 @@ impl Counter {
     }
 }
 
-#[backtrack(state = _c.state)]
+#[backtrack(state = _c.state, condition = |r| r.is_none())]
 fn dec_odd(_c: &mut Counter, n: isize) -> Option<isize> {
     _c.state -= n; // Modify the state ahead of time
 

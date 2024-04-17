@@ -2,7 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use clap::{CommandFactory, Parser};
 use zerodb::{
-    configs::{ConsensusConfig, NetworkConfig, ZerodbConfig},
+    config::{ConsensusConfig, NetworkConfig, ZerodbConfig},
     NodeId, ZerodbService,
 };
 use zerodb_cli::{Result, SubCommand, ZerodbArgs};

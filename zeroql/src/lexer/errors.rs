@@ -8,7 +8,7 @@ use thiserror::Error;
 pub type LexerResult<T> = Result<T, LexerError>;
 
 /// An error that occurred during lexing.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum LexerError {
     /// An unexpected character was encountered.
     #[error("Unexpected character at position {}: {}", span.start, character)]

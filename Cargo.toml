@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "components/zerosys-db/client",
-    "components/zerosys-db/host",
     "zerodb",
     "zerodb-cli",
     "zeroql",

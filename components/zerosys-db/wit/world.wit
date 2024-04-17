@@ -1,8 +1,0 @@
-// This is adapted from https://github.com/WebAssembly/wasi-sql draft and might be replaced by
-// the final version of the spec in the future.
-
-package zerosys:db@0.1.0;
-
-world imports {
-	import query;
-}

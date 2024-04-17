@@ -10,7 +10,7 @@ use crate::LexerError;
 pub type ParserResult<T> = Result<T, ParserError>;
 
 /// An error that occurred during parsing.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum ParserError {
     /// An error that occurred during lexing.
     #[error("Lexer error: {0}")]

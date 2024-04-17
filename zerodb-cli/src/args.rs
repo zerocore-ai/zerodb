@@ -2,7 +2,7 @@ use std::net::IpAddr;
 
 use clap::Parser;
 use zerodb::{
-    configs::{
+    config::{
         DEFAULT_CLIENT_PORT, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL,
         DEFAULT_HOST, DEFAULT_PEER_PORT,
     },

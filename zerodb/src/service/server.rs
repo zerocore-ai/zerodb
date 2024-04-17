@@ -69,7 +69,7 @@ pub(crate) fn start_client_server(
 
 /// Forward outgoing requests.
 pub(crate) fn forward_outgoing_requests(
-    node: MemRaftNode<Query, QueryResponse>,
+    node: MemRaftNode,
     out_rpc_rx: Arc<Mutex<OutRpcReciever>>,
 ) -> JoinHandle<Result<()>> {
     tokio::spawn(async move {
