@@ -15,7 +15,7 @@ path = "src/lib.rs"
 
 [dependencies]
 cbor4ii.workspace = true
-hyper = "1.1.0"
+hyper = "1.2.0"
 rand.workspace = true
 serde.workspace = true
 structstruck.workspace = true
