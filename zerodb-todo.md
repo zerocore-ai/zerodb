@@ -1,5 +1,5 @@
-
 - [ ] Working
+
   - [x] Change Countdown to Timeout
   - [x] Replication Session
   - [x] zeroql: Lexer
@@ -22,6 +22,7 @@
       - [x] Add example in doc. Borrow from tests.
     - [ ] Implement parser functions
       - [ ] `parse_ident`
+      - [ ] Remove infix notation and rely on pipe operator. Infix notation is hard to read when combined with command notation.
   - [ ] zeroql: AST
   - [ ] zeroql: Semantic Analysis
     - [ ] Symbol Table
@@ -29,7 +30,6 @@
     - [ ] Type inference
     - [ ] Signature checking
     - [ ] ...
-
 
 - [x] Distributed Consensus
 
@@ -54,6 +54,17 @@
   - [ ] Implement Log compaction
   - [ ] Implement Configuration changes
 
+- [ ] Replica Set
+
+  - [ ] Each table has a keyspace.
+  - [ ] The keyspace of a table is partitioned and stored in replica sets.
+  - [ ] The replica set is a group of replicas that store the same data.
+  - [ ] A node can be a member of multiple replica sets.
+
+- [ ] Key space
+
+  - [ ] A keyspace can be based on region, time, or any other criteria
+
 - [ ] Query Language
 
   - [x] Grammar
@@ -70,8 +81,25 @@
   - [x] Memstore
   - [ ] RocksDB
 
--  [ ] Data Types
-
+- [ ] Data Types
+  - [ ] float
+  - [ ] int
+  - [ ] u8, u16, u32, u64, u128
+  - [ ] i8, i16, i32, i64, i128
+  - [ ] decimal
+  - [ ] string
+  - [ ] bool
+  - [ ] datetime
+  - [ ] uuid
+  - [ ] array
+  - [ ] vector - vec![]
+  - [ ] stream
+  - [ ] object
+  - [ ] hashset
+  - [ ] hashmap
+  - [ ] tuple
+  - [ ] option
+  - [ ] result
 
 - [ ] Models
 

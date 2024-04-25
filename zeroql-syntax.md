@@ -266,10 +266,10 @@ match age {
 ```
 
 ```rs
-match list {
-    [] => 0,
-    [x] => x,
-    [x, ...xs] => x + sum(xs),
+match array {
+    @[] => 0,
+    @[x] => x,
+    @[x, ...xs] => x + sum(xs),
 }
 ```
 
@@ -360,7 +360,7 @@ let result = try compute(1.0, 2.0)
 
 let result = unwrap compute(1.0, 2.0)
 
-let result = compute(1.0, 2.0) unwrap_or 0.
+let result = compute(1.0, 2.0) |> unwrap_or 0.
 ```
 
 #### Option Type
@@ -374,7 +374,7 @@ fun compute(a: f64, b: f64) -> option<f64> {
 ```js
 let result = unwrap compute(1.0, 2.0)
 
-let result = compute(1.0, 2.0) unwrap_or 0.
+let result = compute(1.0, 2.0) |> unwrap_or 0.
 ```
 
 ---
@@ -485,10 +485,22 @@ false
 //John//
 ```
 
-#### List
+#### Stream
 
 ```rs
 [1, 2, 3]
+```
+
+#### Array
+
+```rs
+@[1, 2, 3]
+```
+
+#### Vector
+
+```rs
+vec![1, 2, 3]
 ```
 
 #### Object
@@ -562,9 +574,9 @@ match age {
 ```js
 fun sum(s: [int]) -> [int] {
     match s {
-        [] => 0,
-        [x] => x,
-        [x, ...xs] => x + sum(xs),
+        @[] => 0,
+        @[x] => x,
+        @[x, ...xs] => x + sum(xs),
     }
 }
 ```

@@ -1,3 +1,5 @@
+//! Abstract Syntax Tree (AST) for the zeroql compiler.
+
 #[allow(clippy::module_inception)]
 mod ast;
 

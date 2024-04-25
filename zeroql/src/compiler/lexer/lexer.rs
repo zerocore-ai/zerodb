@@ -1,13 +1,18 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::{LexerError, LexerResult, Span, Token, TokenKind};
+use crate::{
+    lexer::{LexerError, LexerResult, Token, TokenKind},
+    Span,
+};
 
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
 
-/// A lexer for the zeroql language.
+/// A lexer for the `zeroql` language.
+///
+/// It is based on the grammar defined in the `./lexer.grammar` file.
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     /// The input string.

@@ -1,4 +1,4 @@
-use crate::{Lexer, Token, TokenKind};
+use crate::lexer::{Lexer, Token, TokenKind};
 
 //--------------------------------------------------------------------------------------------------
 // Tests

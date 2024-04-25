@@ -28,17 +28,13 @@
 
 ### Key Features
 
-This project shares the same [core philosophies][key-features] as zerocore, and in addition to that, it also has these key features:
+This project shares the same [core philosophies][key-features] as zerocore, and in addition to that, it is also:
 
 #### Multi-Model
 
 zerodb supports multiple data models such as relational, key-value, graph, document, and vector. This flexibility allows developers to choose the most suitable model for their specific use case, without the need for multiple databases.
 
-#### Content Addressable
-
-Data in zerodb is stored based on its content, using a unique cryptographic hash. This content-addressable storage (CAS) ensures data integrity and immutability, facilitating efficient deduplication and integrity checks.
-
-#### Versioning
+#### Versioned
 
 zerodb features robust data versioning where each modification creates a new immutable version of the data, linked through hashes. This design allows for full historical traceability and simple rollback capabilities.
 
@@ -67,4 +63,4 @@ zerodb features robust data versioning where each modification creates a new imm
 This project is licensed under the [Apache License 2.0](./LICENSE), or
 [http://www.apache.org/licenses/LICENSE-2.0][apache].
 
-[key-features]: https://github.com/zerocore-ai/zerocore/edit/main/README.md#key-features
+[key-features]: https://github.com/zerocore-ai/zerocore/tree/main?tab=readme-ov-file#key-features

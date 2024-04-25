@@ -1,7 +1,12 @@
+//! Parser module for zeroql compiler.
+
+mod errors;
+#[allow(clippy::module_inception)]
+mod parser;
+
 //--------------------------------------------------------------------------------------------------
-// Types
+// Exports
 //--------------------------------------------------------------------------------------------------
 
-/// The abstract syntax tree (AST) of the zeroql language.
-#[derive(Debug, Clone)]
-pub enum Ast {}
+pub use errors::*;
+pub use parser::*;

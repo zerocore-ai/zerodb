@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::LexerError;
+use crate::lexer::LexerError;
 
 //--------------------------------------------------------------------------------------------------
 // Types

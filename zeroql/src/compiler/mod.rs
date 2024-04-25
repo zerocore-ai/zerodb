@@ -1,14 +1,10 @@
-mod errors;
-#[allow(clippy::module_inception)]
-mod lexer;
-#[cfg(test)]
-mod tests;
-mod token;
-
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
-pub use errors::*;
-pub use lexer::*;
-pub use token::*;
+pub mod ast;
+pub mod lexer;
+pub mod parser;
+
+/// A span mostly used to represent the start and end of a token in the input string.
+pub type Span = std::ops::Range<usize>;

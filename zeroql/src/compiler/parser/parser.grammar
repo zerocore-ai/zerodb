@@ -5,9 +5,13 @@
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence#table
  *)
 
-list_literal =
+stream_literal =
     | "[" "]"
     | "[" expression (',' expression)* ","? "]"
+
+array_literal =
+    | "@" "[" "]"
+    | "@" "[" expression (',' expression)* ","? "]"
 
 tuple_literal =
     | "(" expression ',' ")"
@@ -31,7 +35,8 @@ simple_literal =
 literal =
     | identifier
     | simple_literal
-    | list_literal
+    | stream__literal
+    | array_literal
     | tuple_literal
     | range_literal
     | object_literal
@@ -48,7 +53,7 @@ block_expression =
     | "{" statements "}"
 
 match_pattern =
-    | "[" match_pattern ("," match_pattern)* ","? "]"
+    | "@"? "[" match_pattern ("," match_pattern)* ","? "]"
     | "(" match_pattern ("," match_pattern)* ","? ")"
     | "{" match_pattern ("," match_pattern)* ","? "}"
     | simple_literal
@@ -82,7 +87,7 @@ while_expression =
 closure_expression =
     | "|" (identifier ("," identifier)*)? "|" expression
 
-list_comprehension_expression =
+stream_comprehension_expression =
     | "[" expression "for" identifier "in" expression ("," expression)? "]"
 
 transaction_expression =
@@ -90,6 +95,9 @@ transaction_expression =
 
 macro_expression =
     | identifier "!" "(" (expression ("," expression)*)? ")"
+    | identifier "!" "{" (expression ("," expression)*)? "}"
+    | identifier "!" "[" (expression ("," expression)*)? "]"
+    | identifier "!" expression
 
 expression =
     (* Literals *)
@@ -102,7 +110,7 @@ expression =
     | for_expression
     | while_expression
     | closure_expression
-    | list_comprehension_expression
+    | stream_comprehension_expression
     | transaction_expression
     | macro_expression
     (* Control Flow *)
@@ -235,7 +243,7 @@ pipe_operation =
 
 (* INFIXES *)
 
-infix_notation =
+infix_notation = (* To be Removed. Rely on pipes instead *)
     | expression identifier relate_operation
     | relate_operation
 

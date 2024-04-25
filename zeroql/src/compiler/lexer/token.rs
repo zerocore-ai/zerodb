@@ -1,3 +1,5 @@
+use crate::Span;
+
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
@@ -5,8 +7,11 @@
 /// A token produced by the lexer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token<'a> {
-    span: Span,
-    kind: TokenKind<'a>,
+    /// The span of the token in the input string.
+    pub span: Span,
+
+    /// The kind of the token.
+    pub kind: TokenKind<'a>,
 }
 
 /// The kind of a token.
@@ -234,9 +239,6 @@ pub enum TokenKind<'a> {
     /// Operator `}`
     OpRBrace,
 }
-
-/// A span mostly used to represent the start and end of a token in the input string.
-pub type Span = std::ops::Range<usize>;
 
 //--------------------------------------------------------------------------------------------------
 // Methods

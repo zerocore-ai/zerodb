@@ -1,10 +1,16 @@
+//! Lexer module for zeroql compiler.
+
 mod errors;
 #[allow(clippy::module_inception)]
-mod parser;
+mod lexer;
+#[cfg(test)]
+mod tests;
+mod token;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
 
 pub use errors::*;
-pub use parser::*;
+pub use lexer::*;
+pub use token::*;
