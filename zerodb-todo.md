@@ -2,9 +2,22 @@
 
   - [x] Change Countdown to Timeout
   - [x] Replication Session
-  - [x] zeroql: Lexer
-  - [ ] zeroql: Parser
+  - [ ] zeroql: Change syntax to SQL-like
+    - [ ] Surrealdb syntax
+    - [ ] ANSI SQL syntax
+    - [ ] Land on a syntax that is easy to read and write
+      - [ ] General query syntax
+      - [ ] Meta syntax like create, delete, define, insert, etc.
+      - [ ] Text search syntax
+      - [ ] Regex syntax
+      - [ ] JSON syntax
+      - [ ] Vector syntax
+    - [ ] No procedural elements in syntax
+    - [ ] Figure how the language can import functions compiled to wasm
   - [x] zeroql: Reimplement the Lexer
+    - [ ] Change keywords
+    - [ ] Implement new lexer
+  - [ ] zeroql: Parser
     - [x] `memoize` macro
       - [x] Support use as impl attribute.
       - [x] Change value back to owned
@@ -20,13 +33,8 @@
       - [x] Support use as impl attribute.
       - [x] Add tests
       - [x] Add example in doc. Borrow from tests.
-    - [ ] Implement parser functions
-      - [ ] `parse_ident`
-      - [x] Remove infix notation and rely on pipe operator. Infix notation is hard to read when combined with command notation.
-      - [x] Change `...` to `*` for rest syntax.
-      - [ ] Change symbol syntax from `x.@y` to `x:y` and `@y` to `*:y`.
-      - [x] Support `=` in addition to `:` in object syntax.
-  - [ ] zeroql: AST
+
+  - [ ] zeroql: Reimplement AST
   - [ ] zeroql: Semantic Analysis
     - [ ] Symbol Table
     - [ ] Type checking
