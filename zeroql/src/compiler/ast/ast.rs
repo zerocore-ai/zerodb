@@ -5,7 +5,7 @@ use crate::Span;
 //--------------------------------------------------------------------------------------------------
 
 /// The abstract syntax tree (AST) of the zeroql language.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ast<'a> {
     /// The span of the AST node in the input string.
     pub span: Span,
@@ -15,7 +15,7 @@ pub struct Ast<'a> {
 }
 
 /// The kind of an AST node.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AstKind<'a> {
     /// An identifier.
     Identifier(&'a str),

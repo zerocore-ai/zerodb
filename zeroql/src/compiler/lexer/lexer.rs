@@ -117,14 +117,6 @@ impl<'a> Lexer<'a> {
                 self.advance_by_match(m),
                 TokenKind::RegexLiteral(trimmed_str),
             )
-        } else if let Some(m) = SYMBOL_LITERAL_REGEX.find(remainder) {
-            // Remove the first character (@).
-            let trimmed_str = &m.as_str()[1..];
-
-            Token::new(
-                self.advance_by_match(m),
-                TokenKind::SymbolLiteral(trimmed_str),
-            )
         } else {
             // TODO: Need to consider moving this to the top, since operators are more common than literals.
             match remainder.chars().next() {
@@ -144,10 +136,6 @@ impl<'a> Lexer<'a> {
                 Some('.') if remainder.starts_with("..=") => {
                     self.cursor += 3;
                     Token::new(self.cursor - 3..self.cursor, TokenKind::OpRangeInclusive)
-                }
-                Some('.') if remainder.starts_with("...") => {
-                    self.cursor += 3;
-                    Token::new(self.cursor - 3..self.cursor, TokenKind::OpEllipsis)
                 }
                 // === Two Character Tokens ===
                 Some(':') if remainder.starts_with("::") => {
@@ -379,5 +367,4 @@ lazy_static! {
     static ref FLOAT_LITERAL_REGEX: Regex = Regex::new(r"^(\.\d(_?\d)*([eE][+-]?\d(_?\d)*)?|\d(_?\d)*\.(\d(_?\d)*)?([eE][+-]?\d(_?\d)*)?|\d(_?\d)*([eE][+-]?\d(_?\d)*))").unwrap();
     static ref STRING_LITERAL_REGEX: Regex = Regex::new(r#"^('([^'\\]|\\t|\\n|\\r|\\\\)*'|"([^"\\]|\\t|\\n|\\r|\\\\)*")"#).unwrap();
     static ref REGEX_LITERAL_REGEX: Regex = Regex::new(r#"^(//[^/\n]+//)"#).unwrap();
-    static ref SYMBOL_LITERAL_REGEX: Regex = Regex::new(r"^(@[a-zA-Z_][a-zA-Z0-9_]*)").unwrap();
 }

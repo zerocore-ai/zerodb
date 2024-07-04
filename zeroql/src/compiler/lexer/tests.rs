@@ -308,30 +308,6 @@ fn test_lexer_regex() {
 }
 
 #[test]
-fn test_lexer_symbol() {
-    // Symbol
-    let mut lexer = Lexer::from("@hello @World_0 @_world @_0world");
-
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(0..6, TokenKind::SymbolLiteral("hello"))
-    );
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(7..15, TokenKind::SymbolLiteral("World_0"))
-    );
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(16..23, TokenKind::SymbolLiteral("_world"))
-    );
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(24..32, TokenKind::SymbolLiteral("_0world"))
-    );
-    assert!(lexer.next().is_none());
-}
-
-#[test]
 fn test_lexer_boolean() {
     // Boolean
     let mut lexer = Lexer::from("true false");

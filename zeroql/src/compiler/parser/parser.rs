@@ -4,8 +4,8 @@ use lru::LruCache;
 use zeroql_macros::{anykey::AnyKey, backtrack, memoize};
 
 use crate::{
-    ast::{Ast, AstKind},
-    lexer::{Lexer, Token, TokenKind},
+    ast::Ast,
+    lexer::{Lexer, Token},
     parser::ParserResult,
 };
 
@@ -48,20 +48,133 @@ impl<'a> Parser<'a> {
         Ok(self.lexer.next().transpose()?)
     }
 
-    /// Parses an identifier.
+    /// Parses a symbol literal.
     #[backtrack]
     #[memoize]
-    pub fn parse_ident(&mut self) -> ParserResult<Option<Ast<'a>>> {
-        let token = self.eat_token()?;
-
-        if let Some(Token {
-            span,
-            kind: TokenKind::Identifier(ident),
-        }) = token
-        {
-            return Ok(Some(Ast::new(span, AstKind::Identifier(ident))));
-        }
-
-        Ok(None)
+    pub fn parse_symbol_literal(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        todo!("parse_symbol_literal");
     }
 }
+
+// Need macros to help with the boilerplate, opt(?), many_0(*), many_1(+), seq(,), alt(|)
+/*
+seq![p:expression, t:OpDot, t:Identifier]
+let state = self.lexer.cursor;
+let mut result: Option<(Ast, Token, Token)> = None;
+
+if let Some(__expression @ ...) = self.parse_expression() {
+   if let Some(__OpDot @ ...) = self.eat_token() {
+       if let Some(__Identifier @ ...) = self.eat_token() {
+           result = Some((__expression, __OpDot, __Identifier));
+       }
+   }
+}
+
+if result.is_none() {
+   self.lexer.cursor = state;
+   return Ok(None);
+}
+*/
+
+/*
+alt![p:expression, t:OpDot, t:Identifier]
+let state = self.lexer.cursor;
+
+let mut result: Option<(Ast,)> = None;
+if let Some(__expression @ ...) = self.parse_expression() {
+    result = Some((__expression,));
+}
+
+if result.is_none() {
+    let mut result: Option<(Token,)> = None;
+    if let Some(__OpDot @ ...) = self.eat_token() {
+        result = Some((__OpDot,));
+    }
+
+    if result.is_none() {
+        let mut result: Option<(Token,)> = None;
+        if let Some(__Identifier @ ...) = self.eat_token() {
+            result = Some((__Identifier,));
+        }
+
+        if result.is_none() {
+            self.lexer.cursor = state;
+            return Ok(None);
+        }
+    }
+}
+
+
+
+*/
+
+/*
+opt![p:expression, t:OpDot, t:Identifier]
+let state = self.lexer.cursor;
+let mut vars: Option<(Ast, Token, Token)> = None;
+
+if let Some(__expression @ ...) = self.parse_expression() {
+   if let Some(__OpDot @ ...) = self.eat_token() {
+       if let Some(__Identifier @ ...) = self.eat_token() {
+           vars = Some((__expression, __OpDot, __Identifier));
+       }
+   }
+}
+
+if result.is_none() {
+   self.lexer.cursor = state;
+}
+*/
+
+/*
+many_0![p:expression, t:OpDot, t:Identifier]
+let mut result: Vec<(Ast, Token, Token)> = vec![];
+
+loop {
+    let state = self.lexer.cursor;
+    let len = result.len();
+
+    if let Some(__expression @ ...) = self.parse_expression() {
+        if let Some(__OpDot @ ...) = self.eat_token() {
+            if let Some(__Identifier @ ...) = self.eat_token() {
+                vars.push((__expression, __OpDot, __Identifier));
+            }
+        }
+    }
+
+    if result.len() == len {
+        self.lexer.cursor = state;
+        break;
+    }
+}
+*/
+
+/*
+many_1![p:expression, t:OpDot, t:Identifier]
+let mut result: Vec<(Ast, Token, Token)> = vec![];
+let mut count = 0;
+
+loop {
+    let state = self.lexer.cursor;
+    let len = result.len();
+
+    if let Some(__expression @ ...) = self.parse_expression() {
+        if let Some(__OpDot @ ...) = self.eat_token() {
+            if let Some(__Identifier @ ...) = self.eat_token() {
+                vars.push((__expression, __OpDot, __Identifier));
+            }
+        }
+    }
+
+    if result.len() == len {
+        self.lexer.cursor = state;
+        break;
+    }
+
+    count += 1;
+}
+
+if count == 0 {
+    return Ok(None);
+}
+*/

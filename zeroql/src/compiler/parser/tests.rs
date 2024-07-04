@@ -1,15 +1,8 @@
-//! Lexer module for zeroql compiler.
-
-mod errors;
-mod lexer;
-#[cfg(test)]
-mod tests;
-mod token;
-
 //--------------------------------------------------------------------------------------------------
-// Exports
+// Tests
 //--------------------------------------------------------------------------------------------------
 
-pub use errors::*;
-pub use lexer::*;
-pub use token::*;
+#[test]
+fn test_parse_symbol_literal() -> anyhow::Result<()> {
+    Ok(())
+}

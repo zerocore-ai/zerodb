@@ -5,13 +5,18 @@
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence#table
  *)
 
+(* LITERALS *)
+
+symbol_literal =
+    | identifier ":" (identifier | integer_literal)
+
 stream_literal =
+    | "(" ":" ")"
+    | "(" ":" expression (':' expression)* ":"? ")"
+
+list_literal =
     | "[" "]"
     | "[" expression (',' expression)* ","? "]"
-
-array_literal =
-    | "@" "[" "]"
-    | "@" "[" expression (',' expression)* ","? "]"
 
 tuple_literal =
     | "(" expression ',' ")"
@@ -22,7 +27,7 @@ range_literal =
 
 object_literal =
     | "{" ":" "}"
-    | "{" expression ":" expression ("," expression ":" expression)* ","? "}"
+    | "{" identifier (":" | "=") expression ("," identifier (":" | "=") expression)* ","? "}"
 
 simple_literal =
     | integer_literal
@@ -35,8 +40,8 @@ simple_literal =
 literal =
     | identifier
     | simple_literal
-    | stream__literal
-    | array_literal
+    | stream_literal
+    | list_literal
     | tuple_literal
     | range_literal
     | object_literal
@@ -52,14 +57,29 @@ statements =
 block_expression =
     | "{" statements "}"
 
+list_pattern =
+    | "[" collection_item_pattern ("," collection_item_pattern)* ","? "]"
+
+tuple_pattern =
+    | "(" collection_item_pattern ("," collection_item_pattern)* ","? ")"
+
+collection_item_pattern =
+    | match_pattern
+    | "*" identifier?
+
+object_item_pattern =
+    | identifier ((":" | "=") match_pattern)?
+    | "*" identifier?
+
+object_pattern =
+    | "{" object_item_pattern ("," object_item_pattern)* ","? "}"
+
 match_pattern =
-    | "@"? "[" match_pattern ("," match_pattern)* ","? "]"
-    | "(" match_pattern ("," match_pattern)* ","? ")"
-    | "{" match_pattern ("," match_pattern)* ","? "}"
-    | simple_literal
+    | list_pattern
+    | object_pattern
+    | tuple_pattern
     | identifier
-    | "_"
-    | "..." identifier?
+    | simple_literal
     | simple_literal? ".." "="? simple_literal?
 
 match_case_expr =
@@ -88,16 +108,16 @@ closure_expression =
     | "|" (identifier ("," identifier)*)? "|" expression
 
 stream_comprehension_expression =
-    | "[" expression "for" identifier "in" expression ("," expression)? "]"
+    | "(" object_pattern "for" var_pattern "in" expression (";" expression)? ")"
+    | "(" object_pattern "in" expression (";" expression)? ")"
 
 transaction_expression =
     | "transaction" block_expression
 
 macro_expression =
-    | identifier "!" "(" (expression ("," expression)*)? ")"
-    | identifier "!" "{" (expression ("," expression)*)? "}"
-    | identifier "!" "[" (expression ("," expression)*)? "]"
-    | identifier "!" expression
+    | identifier "!" "(" ... ")"
+    | identifier "!" "{" ... "}"
+    | identifier "!" "[" ... "]"
 
 expression =
     (* Literals *)
@@ -159,7 +179,7 @@ unary_expression =
     (* Expressions *)
     | parens_expression
     | block_expression
-    | list_comprehension_expression
+    | stream_comprehension_expression
 
 add_unary =
     | "+" unary_expression
@@ -172,7 +192,7 @@ bitnot_unary =
     | "~" unary_expression
 
 spread_unary =
-    | "..." unary_expression
+    | "*" unary_expression
 
 unary_operation =
     | add_unary
@@ -294,12 +314,35 @@ type_declaration =
 trait =
     | "trait" identifier (generics where_clause?)? (block_signature | tuple_signature)?
 
+list_var_pattern =
+    | "[" collection_var_item_pattern ("," collection_var_item_pattern)* ","? "]"
+
+tuple_var_pattern =
+    | "(" collection_var_item_pattern ("," collection_var_item_pattern)* ","? ")"
+
+collection_var_item_pattern =
+    | var_pattern
+    | "*" identifier?
+
+object_var_item_pattern =
+    | identifier ((":" | "=") var_pattern)?
+    | "*" identifier?
+
+object_var_pattern =
+    | "{" object_var_item_pattern ("," object_var_item_pattern)* ","? "}"
+
+var_pattern =
+    | list_var_pattern
+    | object_var_pattern
+    | tuple_var_pattern
+    | identifier
+
 let_declaration =
-    | "let" identifier (":" type_signature)? "=" expression
-    | "let" identifier ":" type_signature
+    | "let" var_pattern (":" type_signature)? "=" expression
+    | "let" var_pattern ":" type_signature
 
 function_declaration =
-    | "fun" identifier generics? "(" (identifier ":" type_signature ("," identifier ":" type_signature)* ","?)? ")" ("->" type_signature)? where_clause? block_expression
+    | "fun" identifier generics? "(" (var_pattern ":" type_signature ("," var_pattern ":" type_signature)* ","?)? ")" ("->" type_signature)? where_clause? block_expression
 
 interface_items =
     | (idenifier "::")+ ("{" interface_items ("," interface_items)* ","? "}" | "*" | identifier)

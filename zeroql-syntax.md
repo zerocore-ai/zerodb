@@ -3,15 +3,16 @@
 #### Create
 
 ```js
-create_database!(@app_db, {
-    ns: "bf91cccb-81ca-4ebe-9687-a79d7d3debb2"
-})
+create_database! {
+    name: app_db,
+    namespace: "bf91cccb-81ca-4ebe-9687-a79d7d3debb2"
+}
 ```
 
 #### Delete
 
 ```rs
-delete database.@app_db
+delete database:app_db
 ```
 
 ---
@@ -21,39 +22,56 @@ delete database.@app_db
 #### Create Table
 
 ```js
-create_table!(@person, {
-    name: [string, unique, is_valid_name],
-    age: int,
-})
+create_table! {
+    type: person,
+    fields: {
+        name: string @ (is_unique, is_valid_name),
+        age: int,
+    }
+}
+```
+
+#### Nested Objects
+
+```js
+create_table! {
+    type: product,
+    fields: {
+        name: string @ is_unique,
+        price: f64,
+        meta: {
+            color: string,
+            size: string,
+        }
+    }
+}
 ```
 
 #### Create Record
 
 ```rs
-person::create(@john, {
-    name: "John Doe",
-    age: 42,
+person:john.create({
+    name = "John Doe",
+    age = 42,
 })
 ```
 
 #### Update Record
 
 ```rs
-person.@john.update({
-    age: 43,
-})
+person:john.update({ age = 43 })
 ```
 
 #### Delete Record
 
 ```rs
-delete person.@john
+delete person:john
 ```
 
 #### Delete
 
 ```rs
-delete table.@person
+delete table:person
 ```
 
 ---
@@ -91,9 +109,9 @@ let p: person = {
 #### Definition
 
 ```rs
-trait store<t> {
-    fun create(name: string, data: t)
-    fun update(name: string, data: t)
+trait store<T> {
+    fun create(name: string, data: T)
+    fun update(name: string, data: T)
     fun delete(name: string)
 }
 ```
@@ -101,21 +119,55 @@ trait store<t> {
 #### Implementation
 
 ```rs
-type memstore<t> where t: store {
-    data: hashmap<string, t>
+type memstore<T> where T: store {
+    data: hashmap<string, T>
 }
 
-fun create(m: memstore<vec<u8>>, name: string, data: t) {
+fun create(m: memstore<vec<u8>>, name: string, data: vec<u8>) {
     m.data.insert(name, data)
 }
 
-fun update(m: memstore<vec<u8>>, name: string, data: t) {
+fun update(m: memstore<vec<u8>>, name: string, data: vec<u8>) {
     m.data.update(name, data)
 }
 
 fun delete(m: memstore<vec<u8>>, name: string) {
     m.data.remove(name)
 }
+```
+
+---
+
+## Typing
+
+#### Static Typing
+
+```py
+fn print_name(p: person) {
+    print(f"{p.name}")
+}
+
+let p = {
+    name: "John Doe",
+    age: 42,
+}
+
+print_name(p) # Error
+```
+
+#### Structural Typing
+
+```py
+fn print_name(p: { name: string }) {
+    print(f"{p.name}")
+}
+
+let p = {
+    name: "John Doe",
+    age: 42,
+}
+
+print_name(p) # Okay
 ```
 
 ---
@@ -135,23 +187,51 @@ let name: string = "John Doe"
 #### Select
 
 ```rs
-[ { ... } in person ]
+( { * } in person )
 ```
 
 ```rs
-[ { name } in person ]
+( { name } in person )
+```
+
+```rs
+( { $0 } in person )
 ```
 
 #### Guard
 
 ```rs
-[ p in person, p.age > 18 ]
+( p in person; p.age > 18 )
 ```
 
 #### Expanded Form
 
 ```rs
-[ { name: p.name, age: p.age } : p in person, p.age > 18 ]
+( { name: p.name, age: p.age } for p in person; p.age > 18 )
+```
+
+#### Zip
+
+```py
+( { name, manager } in zip(employee, department); e.department_id == d.id ) # zip<T, U>(s1: [T], s2: [U]) -> [(T, U)]
+```
+
+```py
+[ { name: e.name, manager: d.manager } for (e, d) in zip(employee, department); e.department_id == d.id ]
+```
+
+### Aggregation
+
+```py
+customer |> group 'country' # group<T, F, R, U>(s: [T], f: F) -> [{ F: U, data: [R] }] where T: {F, *R}, T[*R]: U
+```
+
+```rs
+( { country, count(data) } in customer |> group 'country' )
+```
+
+```rs
+( { country, count: count(data) } for { country, data } in customer |> group 'country' )
 ```
 
 ---
@@ -161,37 +241,29 @@ let name: string = "John Doe"
 #### Uniform Function Call Syntax
 
 ```rs
-[ { name: uppercase(p.name) } : p in person ]
+( { name: uppercase(p.name) } for p in person )
 
-[ { name: p.name.uppercase() } : p in person ]
+( { name: p.name.uppercase() } for p in person )
 ```
 
 #### Prefix Notation
 
 ```rs
-[ { name: uppercase(p.name) } : p in person ]
+( { name: uppercase(name) } in person )
 
-[ { name: uppercase p.name } : p in person ]
+( { name: uppercase name } in person )
 ```
 
-#### Infix Notation
+#### The Object Field
 
 ```rs
-[ { age: mod(p.age, 18) } : p in person ]
-
-[ { name: p.age mod 18 } : p in person ]
-```
-
-#### The Dot Notation
-
-```rs
-[ { name: .name.uppercase() } in person, [18..20] contains .age ]
+( { name: name.uppercase() } for p in person; [18..20] contains p.age )
 ```
 
 #### The Pipe Operator
 
 ```rs
-[ { name: .name.uppercase() } in person, [18..20] contains .age ] |> order 'asc' |> group_by 'age' |> limit 10
+( { name: name.uppercase() } for p in person; [18..20] contains p.age ) |> order 'asc' |> group 'age' |> limit 10
 ```
 
 ---
@@ -200,16 +272,16 @@ let name: string = "John Doe"
 
 ```rs
 transaction {
-    person::create(@john, {
-        name: "John Doe",
-        age: 42,
-    })
+    person:john.create {
+        name =  "John Doe",
+        age = 42,
+    }
 
-    person.@john.update({
+    person:john.update {
         age: 43,
-    })
+    }
 
-    remove person.@john
+    person:john.remove()
 }
 ```
 
@@ -269,7 +341,7 @@ match age {
 match array {
     @[] => 0,
     @[x] => x,
-    @[x, ...xs] => x + sum(xs),
+    @[x, *xs] => x + sum(xs),
 }
 ```
 
@@ -280,37 +352,37 @@ match array {
 #### Addition
 
 ```rs
-[ { age: .age + 1 } in person ]
+( { age: p.age + 1 } for p in person )
 ```
 
 #### Subtraction
 
 ```rs
-[ { age: .age - 1 } in person ]
+( { age: p.age - 1 } for p in person )
 ```
 
 #### Multiplication
 
 ```rs
-[ { age: .age * 2 } in person ]
+( { age: p.age * 2 } for p in person )
 ```
 
 #### Division
 
 ```rs
-[ { age: .age / 2 } in person ]
+( { age: p.age / 2 } for p in person )
 ```
 
 #### Modulo
 
 ```rs
-[ { age: .age % 2 } in person ]
+( { age: p.age % 2 } for p in person )
 ```
 
 #### Power
 
 ```rs
-[ { age: .age ^ 2 } in person ]
+( { age: p.age ^ 2 } for p in person )
 ```
 
 ---
@@ -334,9 +406,9 @@ fun person::create(id: symbol, data: { name: string, age: int }) -> void {
 #### Usage
 
 ```rs
-[ { age } in person ] |> average
+( { age } in person ) |> average
 
-[ p in person ] |> get_names
+( p in person ) |> get_names
 ```
 
 #### Default Arguments
@@ -404,14 +476,14 @@ let p2: point = {
 let p3 = p1 + p2
 ```
 
-#### Dot
+#### Colon
 
 ```js
-fun __dot_symbol__(p: person, s: symbol) {
+fun __colon_symbol__(p: person, s: symbol) {
     # ...
 }
 
-let p = person.@john;
+let p = person:john;
 ```
 
 ---
@@ -421,23 +493,23 @@ let p = person.@john;
 #### Establishing a Relation
 
 ```rs
-person.@john -> likes -> person.@jane
+person:john -> likes -> person:jane
 ```
 
 #### Removing a Relation
 
 ```rs
-person.@john -!> likes -!> person.@jane
+person:john -!> likes -!> person:jane
 ```
 
 #### Querying a Relation
 
 ```rs
-[ { name } in person.@john -> likes -> * ]
-[ { name } in * -> likes -> person.@jane ]
-[ { name } in * -> likes -> * ]
-[ { name } in * -> likes ]
-[ { name } in likes -> * ]
+( { name } in person:john -> likes -> * )
+( { name } in * -> likes -> person:jane )
+( { name } in * -> likes -> * )
+( { name } in * -> likes )
+( { name } in likes -> * )
 ```
 
 ---
@@ -472,6 +544,13 @@ person.@john -!> likes -!> person.@jane
 'Hello World'
 ```
 
+#### Symbol
+
+```py
+"Hello World" # String literals are also Symbols
+'Hello World'
+```
+
 #### Boolean
 
 ```rs
@@ -488,19 +567,13 @@ false
 #### Stream
 
 ```rs
+(:1 :2 :3)
+```
+
+#### List
+
+```rs
 [1, 2, 3]
-```
-
-#### Array
-
-```rs
-@[1, 2, 3]
-```
-
-#### Vector
-
-```rs
-vec![1, 2, 3]
 ```
 
 #### Object
@@ -574,9 +647,9 @@ match age {
 ```js
 fun sum(s: [int]) -> [int] {
     match s {
-        @[] => 0,
-        @[x] => x,
-        @[x, ...xs] => x + sum(xs),
+        [] => 0,
+        [x] => x,
+        [x, *xs] => x + sum(xs),
     }
 }
 ```
@@ -587,7 +660,7 @@ fun sum(s: [int]) -> [int] {
 
 ```rs
 #[zql::import]
-fn average(s: IntList) -> Int {
+fn average(s: IntStream) -> Int {
     // ...
 }
 
@@ -596,7 +669,7 @@ zql! {
     import person::*
     import store::{ create, update, delete }
 
-    [ { age } in person ] |> average
+    ( { age } in person ) |> average
 }
 ```
 

@@ -22,7 +22,10 @@
       - [x] Add example in doc. Borrow from tests.
     - [ ] Implement parser functions
       - [ ] `parse_ident`
-      - [ ] Remove infix notation and rely on pipe operator. Infix notation is hard to read when combined with command notation.
+      - [x] Remove infix notation and rely on pipe operator. Infix notation is hard to read when combined with command notation.
+      - [x] Change `...` to `*` for rest syntax.
+      - [ ] Change symbol syntax from `x.@y` to `x:y` and `@y` to `*:y`.
+      - [x] Support `=` in addition to `:` in object syntax.
   - [ ] zeroql: AST
   - [ ] zeroql: Semantic Analysis
     - [ ] Symbol Table
@@ -30,6 +33,7 @@
     - [ ] Type inference
     - [ ] Signature checking
     - [ ] ...
+  - [ ] zerodb: Use libp2p for comms
 
 - [x] Distributed Consensus
 
@@ -82,6 +86,7 @@
   - [ ] RocksDB
 
 - [ ] Data Types
+
   - [ ] float
   - [ ] int
   - [ ] u8, u16, u32, u64, u128

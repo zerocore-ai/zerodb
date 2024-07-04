@@ -1,8 +1,9 @@
 //! Parser module for zeroql compiler.
 
 mod errors;
-#[allow(clippy::module_inception)]
 mod parser;
+#[cfg(test)]
+mod tests;
 
 //--------------------------------------------------------------------------------------------------
 // Exports

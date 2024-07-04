@@ -38,6 +38,10 @@ zerodb supports multiple data models such as relational, key-value, graph, docum
 
 zerodb features robust data versioning where each modification creates a new immutable version of the data, linked through hashes. This design allows for full historical traceability and simple rollback capabilities.
 
+#### Developer Experience
+
+The database comes packed with an interactive shell, LSP server, linter, formatter, and more.
+
 </br>
 
 > [!WARNING]
