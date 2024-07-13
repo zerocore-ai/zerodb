@@ -24,7 +24,7 @@ pub enum ZerodbCliError {
 
     /// A UUID error.
     #[error(transparent)]
-    NodeId(#[from] zerodb::NodeIdError),
+    NodeId(#[from] zerodb::raft::NodeIdError),
 
     /// A SocketAddr error.
     #[error(transparent)]

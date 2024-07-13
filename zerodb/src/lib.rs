@@ -24,4 +24,12 @@ pub use store::*;
 // Re-exports
 //--------------------------------------------------------------------------------------------------
 
-pub use zeroraft::{self, NodeId, NodeIdError};
+/// Re-exports for `zeroraft` types and traits.
+pub mod raft {
+    pub use zeroraft::*;
+}
+
+/// Re-exports for `zeroutils_config` types and traits.
+pub mod common_config {
+    pub use zeroutils_config::*;
+}

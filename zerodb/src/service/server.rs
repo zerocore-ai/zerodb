@@ -12,7 +12,7 @@ use zeroraft::{
     RequestVoteRequest, RequestVoteResponse,
 };
 
-use crate::{MemRaftNode, Query, QueryResponse, Result, ZerodbError};
+use crate::{MemRaftNode, Query, QueryResponse, ZerodbError, ZerodbResult};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -36,7 +36,7 @@ enum Rpc {
 pub(crate) fn start_client_server(
     addr: SocketAddr,
     in_client_request_tx: mpsc::UnboundedSender<ClientRequest<Query, QueryResponse>>,
-) -> JoinHandle<Result<()>> {
+) -> JoinHandle<ZerodbResult<()>> {
     tokio::spawn(async move {
         let listener = TcpListener::bind(addr).await?;
 
@@ -71,7 +71,7 @@ pub(crate) fn start_client_server(
 pub(crate) fn forward_outgoing_requests(
     node: MemRaftNode,
     out_rpc_rx: Arc<Mutex<OutRpcReciever>>,
-) -> JoinHandle<Result<()>> {
+) -> JoinHandle<ZerodbResult<()>> {
     tokio::spawn(async move {
         while let Some((peer, request)) = out_rpc_rx.lock().await.recv().await {
             let addr = node

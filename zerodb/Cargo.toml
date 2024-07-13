@@ -27,5 +27,7 @@ tracing-subscriber.workspace = true
 typed-builder.workspace = true
 uuid.workspace = true
 zeroraft.workspace = true
+zeroutils-config.workspace = true
 anyhow.workspace = true
 logos = "0.14.0"
+zeroutils-did-wk.workspace = true

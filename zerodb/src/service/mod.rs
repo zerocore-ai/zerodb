@@ -1,4 +1,4 @@
-mod builder;
+// mod _builder;
 #[allow(clippy::module_inception)]
 mod service;
 
@@ -8,5 +8,5 @@ mod service;
 
 pub(crate) mod server;
 
-pub use builder::*;
+// pub use _builder::*;
 pub use service::*;

@@ -7,7 +7,7 @@ use thiserror::Error;
 //--------------------------------------------------------------------------------------------------
 
 /// A specialized `Result` type for zerodb crate.
-pub type Result<T> = std::result::Result<T, ZerodbError>;
+pub type ZerodbResult<T> = std::result::Result<T, ZerodbError>;
 
 /// The main error type of the zerodb crate.
 #[derive(Debug, Error)]
@@ -95,6 +95,6 @@ where
 
 /// Creates a new `Ok` result.
 #[allow(non_snake_case)]
-pub fn Ok<T>(value: T) -> Result<T> {
+pub fn Ok<T>(value: T) -> ZerodbResult<T> {
     Result::Ok(value)
 }

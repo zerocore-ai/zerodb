@@ -34,10 +34,6 @@ This project shares the same [core philosophies][key-features] as zerocore, and 
 
 zerodb supports multiple data models such as relational, key-value, graph, document, and vector. This flexibility allows developers to choose the most suitable model for their specific use case, without the need for multiple databases.
 
-#### Versioned
-
-zerodb features robust data versioning where each modification creates a new immutable version of the data, linked through hashes. This design allows for full historical traceability and simple rollback capabilities.
-
 #### Developer Experience
 
 The database comes packed with an interactive shell, LSP server, linter, formatter, and more.

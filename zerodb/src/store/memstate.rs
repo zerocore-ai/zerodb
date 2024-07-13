@@ -3,18 +3,18 @@ use std::{
     net::SocketAddr,
 };
 
-use zeroraft::{LogEntry, NodeId, Request, Snapshot, Store, ZeroraftError};
+use zeroraft::{LogEntry, NodeId, Request, Snapshot, State, ZeroraftError};
 
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
 
-/// `MemoryStore` is a struct representing the log and memory of a Raft node stored in memory.
+/// `MemoryState` is a struct representing the log and memory of a Raft node stored in memory.
 ///
 /// It contains a vector of `LogEntry` instances. Each `LogEntry` contains a term number and a command.
-/// The `MemoryStore` struct is parameterized over a type `C` that implements the `Request` trait, allowing for flexibility in the specific commands that can be included in a log entry.
+/// The `MemoryState` struct is parameterized over a type `C` that implements the `Request` trait, allowing for flexibility in the specific commands that can be included in a log entry.
 #[derive(Debug)]
-pub struct MemoryStore<R>
+pub struct MemoryState<R>
 where
     R: Request,
 {
@@ -61,7 +61,7 @@ pub struct MemorySnapshot {
 
 impl Snapshot for MemorySnapshot {}
 
-impl<R> Store<R> for MemoryStore<R>
+impl<R> State<R> for MemoryState<R>
 where
     R: Request + Send + Sync,
 {
@@ -162,7 +162,7 @@ where
     }
 }
 
-impl<R> Default for MemoryStore<R>
+impl<R> Default for MemoryState<R>
 where
     R: Request,
 {
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_memstore_append_entries() -> anyhow::Result<()> {
-        let mut store = MemoryStore::default();
+        let mut store = MemoryState::default();
 
         store.append_entries(vec![LogEntry {
             term: 1,

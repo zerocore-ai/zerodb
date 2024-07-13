@@ -3,10 +3,7 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use zeroraft::{channels, ClientRequest, NodeId, PeerRpc, RaftNode};
 
-use crate::{
-    config::ZerodbConfig, server, store::MemoryStore, Query, QueryResponse, Result,
-    ZerodbServiceBuilder,
-};
+use crate::{config::ZerodbConfig, server, MemoryState, Query, QueryResponse, ZerodbResult};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -14,7 +11,7 @@ use crate::{
 
 // TODO(appcypher): To be replaced by a proper implementation.
 /// This is a convenience type alias for a Raft node with an in-memory store.
-pub type MemRaftNode = RaftNode<MemoryStore<Query>, Query, QueryResponse>;
+pub type MemRaftNode = RaftNode<MemoryState<Query>, Query, QueryResponse>;
 
 type OutRpcReciever = Arc<Mutex<mpsc::UnboundedReceiver<(NodeId, PeerRpc<Query>)>>>;
 type InClientRequestSender = mpsc::UnboundedSender<ClientRequest<Query, QueryResponse>>;
@@ -33,27 +30,29 @@ pub struct ZerodbService {
 //--------------------------------------------------------------------------------------------------
 
 impl ZerodbService {
-    /// Creates a new `ZerodbService` builder.
-    pub fn builder() -> ZerodbServiceBuilder {
-        ZerodbServiceBuilder::default()
-    }
+    // TODO(appcypher): Need to support did IDs in zeroraft.
+    // /// Creates a new `ZerodbService` builder.
+    // pub fn builder() -> ZerodbServiceBuilder {
+    //     ZerodbServiceBuilder::default()
+    // }
 
     /// Creates a new `ZerodbService` instance with the given configuration.
-    pub fn with_config(config: ZerodbConfig) -> Result<Self> {
+    pub fn with_config(config: ZerodbConfig) -> ZerodbResult<Self> {
         // Create channels.
         let (raft_channels, outside_channels) = channels::create();
 
-        // Create in-memory store.
-        let store = MemoryStore::default();
+        // Create in-memory state.
+        let state = MemoryState::default();
 
+        // TODO(appcypher): Need to support did IDs in zeroraft.
         // Create Raft Node.
         let raft_node = MemRaftNode::builder()
-            .id(config.network.id)
-            .store(store)
+            // .id(config.network.id)
             .channels(raft_channels)
+            .state(state)
             .election_timeout_range(config.network.consensus.election_timeout_range)
             .heartbeat_interval(config.network.consensus.heartbeat_interval)
-            .seeds(config.network.seeds.clone())
+            // .seeds(config.network.seeds.clone())
             .build()?;
 
         Ok(Self {
@@ -71,19 +70,19 @@ impl ZerodbService {
     }
 
     /// Shuts down the ZerodbService instance.
-    pub async fn shutdown(&self) -> Result<()> {
+    pub async fn shutdown(&self) -> ZerodbResult<()> {
         self.node.shutdown().await?;
         Ok(())
     }
 
     /// Starts the ZerodbService instance.
-    pub async fn start(&self) -> Result<()> {
+    pub async fn start(&self) -> ZerodbResult<()> {
         // Start Raft Node.
         let raft_handle = self.node.start();
 
         // TCP server for client connections.
         server::start_client_server(
-            self.config.network.get_client_address(),
+            self.config.network.get_user_address(),
             self.in_client_request_tx.clone(),
         );
 

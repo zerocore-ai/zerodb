@@ -2,11 +2,9 @@ use std::net::IpAddr;
 
 use clap::Parser;
 use zerodb::{
-    config::{
-        DEFAULT_CLIENT_PORT, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL,
-        DEFAULT_HOST, DEFAULT_PEER_PORT,
-    },
-    NodeId,
+    common_config::{default::DEFAULT_HOST, network::PortDefaults},
+    config::{DbPortDefaults, DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL},
+    raft::NodeId,
 };
 
 use crate::styles;
@@ -46,12 +44,12 @@ pub enum SubCommand {
         host: IpAddr,
 
         /// The port to listen on for peer requests.
-        #[arg(long, default_value_t = DEFAULT_PEER_PORT)]
+        #[arg(long, default_value_t = DbPortDefaults::default_peer_port())]
         peer_port: u16,
 
-        /// The port to listen on for client requests.
-        #[arg(long, default_value_t = DEFAULT_CLIENT_PORT)]
-        client_port: u16,
+        /// The port to listen on for user requests.
+        #[arg(long, default_value_t = DbPortDefaults::default_user_port())]
+        user_port: u16,
 
         /// The list of seed nodes to connect to.
         #[arg(short, long, num_args(1..))]

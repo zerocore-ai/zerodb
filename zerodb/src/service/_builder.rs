@@ -4,13 +4,14 @@ use std::{
 };
 
 use zeroraft::NodeId;
+use zeroutils_config::{
+    default::DEFAULT_HOST,
+    network::{ConsensusConfig, NetworkConfig, PortDefaults},
+};
 
 use crate::{
-    config::{
-        ConsensusConfig, NetworkConfig, ZerodbConfig, DEFAULT_CLIENT_PORT, DEFAULT_HOST,
-        DEFAULT_PEER_PORT,
-    },
-    Result, ZerodbService,
+    config::{DbPortDefaults, ZerodbConfig},
+    ZerodbResult, ZerodbService,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -23,7 +24,7 @@ pub struct ZerodbServiceBuilder {
     name: String,
     host: IpAddr,
     peer_port: u16,
-    client_port: u16,
+    user_port: u16,
     seeds: HashMap<NodeId, SocketAddr>,
     raft_heartbeat_interval: u64,
     raft_election_timeout: (u64, u64),
@@ -58,9 +59,9 @@ impl ZerodbServiceBuilder {
         self
     }
 
-    /// Sets the client port of the ZerodbNode instance.
-    pub fn client_port(mut self, client_port: u16) -> Self {
-        self.client_port = client_port;
+    /// Sets the user port of the ZerodbNode instance.
+    pub fn user_port(mut self, user_port: u16) -> Self {
+        self.user_port = user_port;
         self
     }
 
@@ -83,15 +84,15 @@ impl ZerodbServiceBuilder {
     }
 
     /// Builds the ZerodbNode.
-    pub fn build(self) -> Result<ZerodbService> {
+    pub fn build(self) -> ZerodbResult<ZerodbService> {
         let config = ZerodbConfig {
             network: NetworkConfig {
-                id: self.id,
+                // id: self.id,
                 name: self.name,
                 host: self.host,
                 peer_port: self.peer_port,
-                client_port: self.client_port,
-                seeds: self.seeds,
+                user_port: self.user_port,
+                // seeds: self.seeds,
                 consensus: ConsensusConfig {
                     heartbeat_interval: self.raft_heartbeat_interval,
                     election_timeout_range: self.raft_election_timeout,
@@ -113,8 +114,8 @@ impl Default for ZerodbServiceBuilder {
             id: NodeId::new_v4(),
             name: String::default(),
             host: DEFAULT_HOST,
-            peer_port: DEFAULT_PEER_PORT,
-            client_port: DEFAULT_CLIENT_PORT,
+            peer_port: DbPortDefaults::default_peer_port(),
+            user_port: DbPortDefaults::default_user_port(),
             seeds: HashMap::new(),
             raft_heartbeat_interval: 0,
             raft_election_timeout: (0, 0),

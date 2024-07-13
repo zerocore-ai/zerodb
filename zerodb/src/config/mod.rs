@@ -15,4 +15,4 @@ pub use default::*;
 // Re-exports
 //--------------------------------------------------------------------------------------------------
 
-pub use zeroraft::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
+pub use zeroutils_config::default::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
