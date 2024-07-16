@@ -345,7 +345,7 @@ function_declaration =
     | "fun" identifier generics? "(" (var_pattern ":" type_signature ("," var_pattern ":" type_signature)* ","?)? ")" ("->" type_signature)? where_clause? block_expression
 
 interface_items =
-    | (idenifier "::")+ ("{" interface_items ("," interface_items)* ","? "}" | "*" | identifier)
+    | (identifier "::")+ ("{" interface_items ("," interface_items)* ","? "}" | "*" | identifier)
 
 import_declaration =
     | "import" interface_items

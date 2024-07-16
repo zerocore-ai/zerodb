@@ -1,0 +1,640 @@
+
+(*
+ * This is a lexer grammar for the zeroql language.
+ *
+ * The lexer supports special tokens like `eof` and `cont`.
+ * It relies on context-sensitive rules to handle special cases like code blocks.
+ *)
+
+(* COMMENTS *)
+
+comment =
+    | "--" /[^\n]*/
+
+doc_comment =
+    | "---" /[^\n]*/
+
+(* TERMINATORS *)
+
+newline =
+    | "\n" /\s*/
+    | "\r\n" /\s*/
+
+terminator =
+    | ";" /\s*/ newline* eof?
+    | newline+ eof?
+    | <eof>
+
+(* CONTINUATION *)
+
+cont = (* ignored *)
+    | <preceded by unmatched "{" or "[" or "(" or "," or "="> /\s*/ newline+
+    | "\\" /\s*/ newline+
+    | /s+/
+
+(* IDENTIFIER *)
+
+identifier =
+    | /[a-zA-Z_][a-zA-Z0-9_]*/
+    | "`" /[a-zA-Z_][a-zA-Z0-9_]*/ "`"
+
+variable =
+    | "$" identifier
+
+(* LITERALS *)
+
+digit =
+    | /[0-9]/
+
+bin_digit =
+    | "0"
+    | "1"
+
+oct_digit =
+    | /[0-7]/
+
+hex_digit =
+    | /[0-9a-fA-F]/
+    | /[a-f]/
+    | /[A-F]/
+
+digit_part =
+    | digit ("_"? digit)*
+
+exponent =
+    | ("e" | "E") ("+" | "-")? digit_part
+
+fraction =
+    | "." digit_part
+
+point_float =
+    | digit_part? fraction
+    | digit_part "."
+
+exponent_float =
+    | (digit_part | point_float) exponent
+
+dec_integer_lit =
+    | digit ("_"? digit)*
+
+bin_integer_lit =
+    | "0b" bin_digit+ ("_"? bin_digit)*
+
+oct_integer_lit =
+    | "0o" oct_digit+ ("_"? oct_digit)*
+
+hex_integer_lit =
+    | "0x" hex_digit+ ("_"? hex_digit)*
+
+integer_lit =
+    | dec_integer_lit
+    | hex_integer_lit
+    | bin_integer_lit
+    | oct_integer_lit
+
+float_lit =
+    | point_float
+    | exponent_float
+
+string_char =
+    | <any source character except "\\" or newline or the quote>
+
+string_escape_seq_char =
+    | "t"
+    | "n"
+    | "r"
+    | "'"
+    | "\""
+
+string_escape_seq =
+    | "\\" string_escape_seq_char
+    | "\\" "x" hex_digit hex_digit
+    | "\\" "u" hex_digit hex_digit hex_digit hex_digit
+    | "\\" "U" hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit
+
+string_item =
+    | string_char
+    | string_escape_seq
+
+string_lit =
+    | "'" string_item* "'"
+    | '"' string_item* '"'
+
+regex_char =
+    | <any source character except newline or "/">
+
+regex_escape_seq =
+    | "\\/"
+    | "\\" /./
+
+regex_item =
+    | regex_char
+    | regex_escape_seq
+
+regex_lit =
+    | "//" regex_item* "//" ("i" "g"? | "g" "i"?)
+
+byte_string_lit =
+    | "b'" byte_lit* "'"
+    | 'b"' byte_lit* '"'
+
+boolean_lit =
+    | ("true" | "TRUE")
+    | ("false" | "FALSE")
+
+
+none_lit =
+    | "none"
+    | "NONE"
+
+(* BLOCKS *)
+
+code_char =
+    | <any source character except a matching "}">
+
+code_block =
+    | <preceded by (kw_define cont kw_module cont identifier)> "{" code_char* "}"
+
+(* KEYWORDS *)
+
+kw_create =
+    | "create"
+    | "CREATE"
+
+kw_relate =
+    | "relate"
+    | "RELATE"
+
+kw_delete =
+    | "delete"
+    | "DELETE"
+
+kw_update =
+    | "update"
+    | "UPDATE"
+
+kw_select =
+    | "select"
+    | "SELECT"
+
+kw_distinct = (* reserved for future use *)
+    | "distinct"
+    | "DISTINCT"
+
+kw_only = (* reserved for future use *)
+    | "only"
+    | "ONLY"
+
+kw_fold =
+    | "fold"
+    | "FOLD"
+
+kw_omit =
+    | "omit"
+    | "OMIT"
+
+kw_return = (* reserved for future use *)
+    | "return"
+    | "RETURN"
+
+kw_break =
+    | "break"
+    | "BREAK"
+
+kw_continue =
+    | "continue"
+    | "CONTINUE"
+
+kw_set =
+    | "set"
+    | "SET"
+
+kw_begin =
+    | "begin"
+    | "BEGIN"
+
+kw_end = (* reserved for future use *)
+    | "end"
+    | "END"
+
+kw_import = (* reserved for future use *)
+    | "import"
+    | "IMPORT"
+
+kw_export = (* reserved for future use *)
+    | "export"
+    | "EXPORT"
+
+kw_block = (* reserved for future use *)
+    | "block"
+    | "BLOCK"
+
+kw_transaction =
+    | "transaction"
+    | "TRANSACTION"
+
+kw_commit =
+    | "commit"
+    | "COMMIT"
+
+kw_cancel =
+    | "cancel"
+    | "CANCEL"
+
+kw_define =
+    | "define"
+    | "DEFINE"
+
+kw_redefine =
+    | "redefine"
+    | "REDEFINE"
+
+kw_remove =
+    | "remove"
+    | "REMOVE"
+
+kw_describe =
+    | "describe"
+    | "DESCRIBE"
+
+kw_namespace =
+    | "namespace"
+    | "NAMESPACE"
+
+kw_ns =
+    | "ns"
+    | "NS"
+
+kw_database =
+    | "database"
+    | "DATABASE"
+
+kw_db =
+    | "db"
+    | "DB"
+
+kw_table =
+    | "table"
+    | "TABLE"
+
+kw_field = (* reserved for future use *)
+    | "field"
+    | "FIELD"
+
+kw_fields =
+    | "fields"
+    | "FIELDS"
+
+kw_index =
+    | "index"
+    | "INDEX"
+
+kw_type =
+    | "type"
+    | "TYPE"
+
+kw_enum =
+    | "enum"
+    | "ENUM"
+
+kw_edge =
+    | "edge"
+    | "EDGE"
+
+kw_module =
+    | "module"
+    | "MODULE"
+
+kw_param =
+    | "param"
+    | "PARAM"
+
+kw_mod =
+    | "mod"
+    | "MOD"
+
+kw_value =
+    | "value"
+    | "VALUE"
+
+kw_values =
+    | "values"
+    | "VALUES"
+
+kw_variants =
+    | "variants"
+    | "VARIANTS"
+
+kw_assert =
+    | "assert"
+    | "ASSERT"
+
+kw_readonly =
+    | "readonly"
+    | "READONLY"
+
+kw_unique =
+    | "unique"
+    | "UNIQUE"
+
+kw_use =
+    | "use"
+    | "USE"
+
+kw_if =
+    | "if"
+    | "IF"
+
+kw_else =
+    | "else"
+    | "ELSE"
+
+kw_then =
+    | "then"
+    | "THEN"
+
+kw_for =
+    | "for"
+    | "FOR"
+
+kw_not =
+    | "not"
+    | "NOT"
+
+kw_exists =
+    | "exists"
+    | "EXISTS"
+
+kw_with =
+    | "with"
+    | "WITH"
+
+kw_on =
+    | "on"
+    | "ON"
+
+kw_let =
+    | "let"
+    | "LET"
+
+kw_relate =
+    | "relate"
+    | "RELATE"
+
+kw_where =
+    | "where"
+    | "WHERE"
+
+kw_group =
+    | "group"
+    | "GROUP"
+
+kw_limit =
+    | "limit"
+    | "LIMIT"
+
+kw_start =
+    | "start"
+    | "START"
+
+kw_order =
+    | "order"
+    | "ORDER"
+
+kw_by =
+    | "by"
+    | "BY"
+
+kw_at =
+    | "at"
+    | "AT"
+
+kw_as =
+    | "as"
+    | "AS"
+
+(* OPERATORS *)
+
+op_plus =
+    | "+"
+
+op_minus =
+    | "-"
+
+op_mul =
+    | "*"
+    | "×"
+
+op_div =
+    | "/"
+    | "÷"
+
+op_mod =
+    | "%"
+
+op_pow =
+    | "**"
+
+op_dot =
+    | "."
+
+op_scope =
+    | "::"
+
+op_arrow_right =
+    | "->"
+
+op_arrow_left =
+    | "<-"
+
+op_arrow_both =
+    | "<->"
+
+op_assign =
+    | "="
+
+op_assign_plus =
+    | "+="
+
+op_assign_minus =
+    | "-="
+
+op_assign_mul =
+    | "*="
+    | "×="
+
+op_assign_div =
+    | "/="
+    | "÷="
+
+op_assign_mod =
+    | "%="
+
+op_assign_pow =
+    | "**="
+
+op_and =
+    | "&&"
+    | "AND"
+
+op_or =
+    | "||"
+    | "OR"
+
+op_is =
+    | "="
+    | "IS"
+
+op_is_not =
+    | "!="
+    | "IS" cont "NOT"
+
+op_not =
+    | "!"
+    | "NOT"
+
+op_in =
+    | "in"
+    | "IN"
+
+op_not_in =
+    | "not in"
+    | "NOT" cont "IN"
+
+op_contains =
+    | "contains"
+    | "CONTAINS"
+    | "∋"
+
+op_not_contains =
+    | "not" cont "contains"
+    | "not" cont "CONTAINS"
+    | "NOT" cont "CONTAINS"
+    | "NOT" cont "contains"
+    | "∌"
+
+op_contains_none =
+    | "contains" cont "none"
+    | "contains" cont "NONE"
+    | "CONTAINS" cont "NONE"
+    | "CONTAINS" cont "none"
+    | "⊅"
+
+op_contains_all =
+    | "contains" cont "all"
+    | "contains" cont "ALL"
+    | "CONTAINS" cont "ALL"
+    | "CONTAINS" cont "all"
+    | "⊇"
+
+op_contains_any =
+    | "contains" cont "any"
+    | "contains" cont "ANY"
+    | "CONTAINS" cont "ANY"
+    | "CONTAINS" cont "any"
+    | "⊃"
+
+op_match =
+    | "~"
+
+op_not_match =
+    | "!~"
+
+op_eq =
+    | "=="
+
+op_lt =
+    | "<"
+
+op_gt =
+    | ">"
+
+op_lte =
+    | "<="
+
+op_gte =
+    | ">="
+
+op_bit_and =
+    | "&"
+
+op_bit_or =
+    | "|"
+
+op_bit_xor =
+    | "^"
+
+op_bit_not =
+    | "~"
+
+op_shl =
+    | "<<"
+
+op_shr =
+    | ">>"
+
+op_assign_shl =
+    | "<<="
+
+op_assign_shr =
+    | ">>="
+
+op_assign_bit_and =
+    | "&="
+
+op_assign_bit_or =
+    | "|="
+
+op_assign_bit_xor =
+    | "^="
+
+op_assign_bit_not =
+    | "~="
+
+op_assign_shl =
+    | "<<="
+
+op_assign_shr =
+    | ">>="
+
+op_safe_nav =
+    | "??."
+
+op_null_coalesce =
+    | "??"
+
+op_assign_null_coalesce =
+    | "??="
+
+op_range =
+    | ".."
+
+op_range_incl =
+    | "..="
+
+op_comma =
+    | ","
+
+op_semicolon =
+    | ";"
+
+op_colon =
+    | ":"
+
+op_star =
+    | "*"
+
+op_arrow =
+    | op_arrow_left
+    | op_arrow_right
+    | op_arrow_both
+
+(* BRACKETS *)
+
+brackets =
+    | "("
+    | ")"
+    | "["
+    | "]"
+    | "{"
+    | "}"

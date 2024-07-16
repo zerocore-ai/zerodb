@@ -47,16 +47,12 @@ The database comes packed with an interactive shell, LSP server, linter, formatt
 
 ## Outline
 
-- [Testing the Project](#testing-the-project)
+- [Acknowledgments](#acknowledgments)
 - [License](#license)
 
-## Testing the Project
+## Acknowledgments
 
-- Run tests
-
-  ```console
-  cargo test
-  ```
+The query language is inspired by the [SurrealQL][surrealql] language.
 
 ## License
 
@@ -64,3 +60,4 @@ This project is licensed under the [Apache License 2.0](./LICENSE), or
 [http://www.apache.org/licenses/LICENSE-2.0][apache].
 
 [key-features]: https://github.com/zerocore-ai/zerocore/tree/main?tab=readme-ov-file#key-features
+[surrealdb]: https://github.com/surrealdb/surrealdb

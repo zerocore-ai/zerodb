@@ -18,6 +18,7 @@
     - [ ] Change keywords
     - [ ] Implement new lexer
   - [ ] zeroql: Parser
+
     - [x] `memoize` macro
       - [x] Support use as impl attribute.
       - [x] Change value back to owned
@@ -105,7 +106,7 @@
   - [ ] datetime
   - [ ] uuid
   - [ ] array
-  - [ ] vector - vec![]
+  - [ ] list
   - [ ] stream
   - [ ] object
   - [ ] hashset
