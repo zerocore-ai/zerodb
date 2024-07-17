@@ -58,7 +58,12 @@ RELATE person:alice -> buys -> product:apple SET {
 
 ```surql
 LET $age = 40
+
 CREATE person:alice SET age = $age
+
+SET $age = 20
+
+UPDATE person:alice SET age = $age
 ```
 
 ```surql
@@ -126,7 +131,7 @@ LET $person TYPE (string, u8) = ("alice", 40)
 LET $name TYPE regex = //a.*//
 ```
 
-#### TYPE
+#### OBJECT
 
 ```surql
 LET $alice TYPE person = {
@@ -188,10 +193,92 @@ SELECT * FROM person:alice
 person:alice
 ```
 
+#### FIELDS & INDICES
+
+```surql
+SELECT main_address.coords FROM person
+```
+
+```surql
+SELECT addresses[0].coords FROM person
+```
+
+#### FOLDING TABLES
+
+```surql
+SELECT FOLD distinct(age) FROM person
+```
+
+#### SUBQUERIES
+
+```surql
+SELECT FOLD sum(age) FROM (SELECT FOLD distinct(age) FROM person)
+```
+
+```surql
+SELECT (SELECT coords FROM addresses) AS coords FROM person
+```
+
+#### FROM RELATION
+
+```surql
+SELECT * FROM person -> reacted_to -> post WHERE type = 'celebrate'
+```
+
+```surql
+SELECT p.name FROM person:tobie -> likes -> (person AS p)
+```
+
+#### OMIT FIELDS
+
+```surql
+SELECT * OMIT age FROM person
+```
+
 #### WHERE CLAUSE
 
 ```surql
 SELECT * FROM person WHERE age > 40
+```
+
+```surql
+SELECT name FROM person WHERE age > 40 AND name ~ //^[aA].*//
+```
+
+#### WITH INDEX
+
+```surql
+SELECT * FROM person WITH INDICES idx_name
+```
+
+#### WITH NO INDEX
+
+```surql
+SELECT * FROM person WITH NO INDEX
+```
+
+#### GROUP BY
+
+```surql
+SELECT * FROM product GROUP BY family
+```
+
+#### ORDER BY
+
+```surql
+SELECT * FROM person ORDER BY age DESC
+```
+
+#### START AT
+
+```surql
+SELECT * FROM person ORDER BY age DESC START AT 10
+```
+
+#### LIMIT TO
+
+```surql
+SELECT * FROM person START AT 10 LIMIT TO 100
 ```
 
 <!-- --- -->
@@ -395,26 +482,6 @@ DEFINE PARAM branch IF NOT EXISTS VALUE "main"
 
 ```surql
 DEFINE PARAM age TYPE u8 IF NOT EXISTS
-```
-
-#### DEFINE TYPE
-
-```surql
-DEFINE TYPE person {
-    name: string,
-    age: u8,
-}
-```
-
-```surql
-DEFINE TYPE color =
-    | TYPE red
-    | TYPE green
-    | TYPE blue
-```
-
-```surql
-DEFINE TYPE singleton
 ```
 
 <!-- --- -->

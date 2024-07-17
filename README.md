@@ -60,4 +60,4 @@ This project is licensed under the [Apache License 2.0](./LICENSE), or
 [http://www.apache.org/licenses/LICENSE-2.0][apache].
 
 [key-features]: https://github.com/zerocore-ai/zerocore/tree/main?tab=readme-ov-file#key-features
-[surrealdb]: https://github.com/surrealdb/surrealdb
+[surrealql]: https://github.com/surrealdb/surrealdb

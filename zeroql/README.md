@@ -36,7 +36,7 @@
 
 ## Acknowledgments
 
-The query language is inspired by the [SurrealQL][surrealdb] language.
+The query language is inspired by the [SurrealQL][surrealql] language.
 
 ## License
 
@@ -44,4 +44,4 @@ This project is licensed under the [Apache License 2.0](./LICENSE), or
 [http://www.apache.org/licenses/LICENSE-2.0][apache].
 
 [apache]: https://www.apache.org/licenses/LICENSE-2.0
-[surrealdb]: https://github.com/surrealdb/surrealdb
+[surrealql]: https://github.com/surrealdb/surrealdb

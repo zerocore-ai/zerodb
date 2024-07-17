@@ -60,27 +60,31 @@
     - [x] Peer RPC comms
     - [x] Timeouts
 
-- [ ] Raft continuation
+- [ ] Distributed Design
 
-  - [ ] Use binary search with some lower bound paired with exponential backoff to find the next index to send to a follower
-  - [ ] Implement Install Snapshot
-  - [ ] Implement Log compaction
-  - [ ] Implement Configuration changes
+  - [ ] Devices
 
-- [ ] Replica Set
+    - [ ] Edge Devices
+    - [ ] Cloud Devices
+    - [ ] Clients
 
-  - [ ] Each table has a keyspace.
-  - [ ] The keyspace of a table is partitioned and stored in replica sets.
-  - [ ] The replica set is a group of replicas that store the same data.
-  - [ ] A node can be a member of multiple replica sets.
+  - [ ] Replication Methods
 
-- [ ] Key space
+    - [ ] CRDT - System (FS, DB, etc.) Level - Edge Devices
+    - [ ] RAFT - RPC Level - Cloud Devices
+      - [ ] Leaders participate in CRDT network
+      - [ ] Leaders communicate CRDT merge results as RPCs to their followers
 
-  - [ ] A keyspace can be based on region, time, or any other criteria
+  - [ ] CRDT Merge
+
+    - [ ] Filesystem can merge meaningful changes at the filesystem level like file creation
+    - [ ] It lets applications handle conflicts.
+    - [ ] If you try to access a conflicting file from regular WASI A
 
 - [ ] Query Language
 
   - [x] Grammar
+  - [ ] Lexer
   - [ ] Parser
   - [ ] AST
   - [ ] Semantic Analysis
@@ -127,7 +131,6 @@
 
   - [ ] Vertices are also records
   - [ ] Json record
-  - [ ] Schemafull and schemaless support
   - [ ] Multi-tenancy with namespaces
   - [ ] Strong and eventual consistency support per namespace
 

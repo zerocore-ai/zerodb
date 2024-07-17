@@ -1,7 +1,7 @@
 (*
  * This is a parser grammar for the zeroql language.
  *
- * The precedence of the operators and notations is based on the following table:
+ * The precedence of the operators and notations is mostly based on the following table:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence#table
  *
  * Symbols grouped in << and >> are permutable.
@@ -16,6 +16,7 @@ raw_lit =
     | regex_lit
     | byte_lit
     | byte_string_lit
+    | cid_string_lit
     | boolean_lit
 
 list_lit =
@@ -30,9 +31,9 @@ tuple_lit =
 
 lit =
     | raw_lit
-    | op_star
     | list_lit
     | object_lit
+    | tuple_lit
 
 (* STATEMENTS *)
 
@@ -48,9 +49,6 @@ if_not_exists =
 
 if_exists =
     | kw_if kw_exists
-
-where_guard =
-    | kw_where op
 
 on_namespace =
     | kw_on (kw_namespace | kw_ns)? identifier
@@ -158,28 +156,35 @@ stmt =
 
 (* OPERATIONS *)
 
-scope_op =
-    | identifier (op_scope identifier)+
-    | identifier
-
 block_op =
     | "{" (stmt | exp) (terminator (stmt | exp))* terminator? "}"
 
 parens_op =
     | "(" exp ")"
 
+group_op =
+    | block_op
+    | parens_op
+
+scope_op =
+    | identifier (op_scope identifier)+
+    | identifier
+
 atom_op =
     | lit
     | scope_op
+    | group_op
     | id_exp
     | variable
-    | parens_op
-    | block_op
+
+access_op =
+    | index_op (op_dot | op_safe_nav) identifier
+    | atom_op
 
 index_op =
-    | atom_op "[" exp "]"
-    | atom_op "[" exp "]"
-    | atom_op
+    | access_op "[" exp "]"
+    | access_op "[" exp "]"
+    | access_op
 
 function_arg =
     | (identifier op_assign)? op
@@ -188,45 +193,120 @@ function_call_op =
     | index_op "(" (function_arg ("," function_arg)* ","?)? ")"
     | index_op
 
+not_op =
+    | (op_not | op_bit_not) atom_op
+    | function_call_op
+
+unary_op =
+    | (op_plus | op_minus) atom_op
+
+unary_not_op =
+    | not_op
+    | unary_op
+    | function_call_op
+
+pow_op =
+    | unary_not_op op_pow op
+    | unary_not_op
+
+mul_op =
+    | op (op_mul | op_div | op_mod) pow_op
+    | pow_op
+
+add_op =
+    | op (op_plus | op_minus) mul_op
+    | mul_op
+
+shift_op =
+    | op (op_shl | op_shr) add_op
+    | add_op
+
+match_op =
+    | op (op_match | op_not_match) shift_op
+    | shift_op
+
+rel_op =
+    | op (op_lt | op_gt | op_lte | op_gte | op_in | op_not_in | op_contains | op_not_contains | op_contains_none | op_contains_all | op_contains_any) match_op
+    | match_op
+
+eq_op =
+    | op (op_eq | op_is | op_is_not) rel_op
+    | rel_op
+
+bit_and_op =
+    | op op_bit_and eq_op
+    | eq_op
+
+bit_xor_op =
+    | op op_bit_xor bit_and_op
+    | bit_and_op
+
+bit_or_op =
+    | op op_bit_or bit_xor_op
+    | bit_xor_op
+
+and_op =
+    | op op_and bit_or_op
+    | bit_or_op
+
+or_null_coalesce_op =
+    | op (op_or | op_null_coalesce) and_op
+    | and_op
+
+range_op =
+    | op? (op_range | op_range_incl) or_null_coalesce_op?
+    | or_null_coalesce_op
+
 op =
-    | TODO
+    | range_op
+    | relate_exp
 
 (* EXPRESSIONS *)
 
+op_assign_any =
+    | op_assign
+    | op_assign_plus
+    | op_assign_minus
+    | op_assign_mul
+    | op_assign_div
+    | op_assign_mod
+    | op_assign_pow
+    | op_assign_bit_and
+    | op_assign_bit_or
+    | op_assign_bit_xor
+    | op_assign_bit_not
+    | op_assign_shl
+    | op_assign_shr
+    | op_assign_null_coalesce
+
 assign =
-    | identifier op_assign op
-    | identifier op_assign_plus op
-    | identifier op_assign_minus op
-    | identifier op_assign_mul op
-    | identifier op_assign_div op
-    | identifier op_assign_mod op
-    | identifier op_assign_pow op
-    | identifier op_assign_bit_and op
-    | identifier op_assign_bit_or op
-    | identifier op_assign_bit_xor op
-    | identifier op_assign_bit_not op
-    | identifier op_assign_shl op
-    | identifier op_assign_shr op
-    | identifier op_assign_null_coalesce op
+    | identifier op_assign_any op
+
+where_guard =
+    | kw_where op
+    | kw_where op_star
 
 id_exp =
-    | identifier ":" raw_lit
+    | identifier ":" lit
     | identifier ":" identifier
+    | identifier ":" variable
+    | identifier ":" op_star
     | identifier
 
-single_relate_id =
+single_relation_id =
     | id_exp
     | atom_op
+    | op_star
 
-multi_relate_id =
-    | "[" single_relate_id ("," single_relate_id)* ","? "]"
+multi_relation_id =
+    | "[" single_relation_id ("," single_relation_id)* ","? "]"
 
-relate_id =
-    | multi_relate_id
-    | single_relate_id
+relation_id =
+    | multi_relation_id
+    | single_relation_id
 
-relate_exp =
-    | relate_id op_arrow relate_id
+relation_exp =
+    | (relation_id op_arrow)+ relation_id
 
 create_exp =
     | kw_create id_exp kw_set object_lit
@@ -240,28 +320,73 @@ relate_set_comma =
     | kw_set identifier assign op ("," identifier assign op)*
 
 relate_exp =
-    | kw_relate relate_exp << where_guard? relate_set_object? >>
-    | kw_relate relate_exp << where_guard? relate_set_comma? >>
+    | kw_relate relation_exp << where_guard? relate_set_object? >>
+    | kw_relate relation_exp << where_guard? relate_set_comma? >>
+
+target =
+    | relation_exp
+    | id_exp
 
 delete_exp =
-    | kw_delete (id_exp | relate_exp) where_guard?
+    | kw_delete target where_guard?
 
 update_exp =
-    | kw_update (id_exp | relate_exp) << where_guard? relate_set_object >>
-    | kw_update (id_exp | relate_exp) << where_guard? relate_set_comma >>
+    | kw_update target << where_guard? relate_set_object >>
+    | kw_update target << where_guard? relate_set_comma >>
 
 select_field_fold =
     | kw_fold function_call_op
 
+select_as =
+    | kw_as identifier
+
 select_field =
-    | select_field_fold
-    | op
+    | select_field_fold select_as?
+    | op select_as?
+    | identifier op_dot op_star
+    | op_star
+
+select_omit =
+    | kw_omit identifier ("," identifier)*
 
 select_fields =
-    | TODO
+    | select_field ("," select_field)* (","? select_omit)?
+
+select_from_table_relate_id_as =
+    | relate_id select_as?
+
+select_from_table_relate =
+    | (select_from_table_relate_id_as op_arrow)+ select_from_table_relate_id_as
+
+select_from_table =
+    | op select_as?
+    | select_from_table_relate
+
+select_from_tables =
+    | select_from_table ("," select_from_table)*
+
+select_from =
+    | kw_from select_from_tables
+    | kw_from op_star
+
+select_with_indices =
+    | kw_with kw_indices identifier ("," identifier)*
+    | kw_with kw_no kw_index
+
+select_group_by =
+    | kw_group kw_by? identifier ("," identifier)*
+
+select_order_by =
+    | kw_order kw_by? identifier ("," identifier)* (kw_asc | kw_desc)?
+
+select_start_at =
+    | kw_start kw_at? op
+
+select_limit_to =
+    | kw_limit kw_to? op
 
 select_exp =
-    | TODO
+    | kw_select select_fields select_from << where_guard? select_with_indices? select_group_by? select_order_by? select_start_at? select_limit_to? >>
 
 remove_namespace_exp =
     | kw_remove kw_namespace if_exists? identifier
@@ -379,8 +504,11 @@ if_else_exp =
 let_exp =
     | kw_let variable (kw_type type_sig)? op_assign exp
 
+set_exp =
+    | kw_set variable op_assign_any exp
+
 exp =
-    | op
+    | relate_exp
     | create_exp
     | delete_exp
     | update_exp
@@ -393,6 +521,8 @@ exp =
     | for_exp
     | if_else_exp
     | let_exp
+    | set_exp
+    | op
 
 (* PROGRAM *)
 
