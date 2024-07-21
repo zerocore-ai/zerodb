@@ -219,6 +219,15 @@ SELECT FOLD sum(age) FROM (SELECT FOLD distinct(age) FROM person)
 SELECT (SELECT coords FROM addresses) AS coords FROM person
 ```
 
+#### RECORD LINKING
+
+```surql
+CREATE person:alice SET name = "alice"
+CREATE car:tesla SET owner = person:alice
+
+SELECT owner.person.* FROM car:tesla
+```
+
 #### FROM RELATION
 
 ```surql
@@ -279,6 +288,90 @@ SELECT * FROM person ORDER BY age DESC START AT 10
 
 ```surql
 SELECT * FROM person START AT 10 LIMIT TO 100
+```
+
+<!-- --- -->
+
+## GRAPH QUERIES
+
+#### SIMPLE QUERIES
+
+```surql
+person -> likes -> product -- any person that likes any product
+```
+
+```surql
+person:* -> likes -> product:*
+```
+
+#### REFLECTION
+
+```surql
+person:alice -> likes <- person -- any person alice likes that likes alice back
+```
+
+#### CONJUNCTION
+
+```surql
+person:alice -> likes OR plays -> person
+```
+
+```surql
+person:alice -> likes AND plays -> person
+```
+
+```surql
+person:alice -> NOT likes -> person
+```
+
+```surql
+[person, animal] -> owns AND plays -> [game, toy]
+```
+
+#### TABLE RELATION
+
+```surql
+RELATE car ->> is_a ->> thing
+
+RELATE driver ->> is_a ->> person
+
+RELATE driver:james -> owns -> car:tesla
+
+-- any [record] that is a person that owns any [record] that is a thing
+(* -> is_a -> person) -> owns -> (* -> is_a -> thing)
+```
+
+### LEVELS
+
+```surql
+RELATE animal ->> is_a ->> thing
+RELATE bird ->> is_a ->> animal
+```
+
+```surql
+animal -> is_a -> thing -- Level 0
+```
+
+```surql
+bird -> is_a -> animal -> is_a -> thing -- Level 1
+```
+
+```surql
+bird -> is_a[1] -> thing -- Level 1
+-- bird -> is_a -> * -> is_a -> thing
+```
+
+```surql
+bird -> is_a[0..2] -> thing -- Level 0 to 1
+-- bird -> is_a -> thing
+-- bird -> is_a -> * -> is_a -> thing
+```
+
+```surql
+bird -> is_a[*] -> thing -- Level 0 to infinity
+-- bird -> is_a -> thing
+-- bird -> is_a -> * -> is_a -> thing
+-- ...
 ```
 
 <!-- --- -->
@@ -459,11 +552,11 @@ DEFINE INDEX idx_name ON TABLE person FIELDS name WITH index::hnsw(m = 16, ef = 
 #### DEFINE MODULE
 
 ```surql
-DEFINE MODULE test ON DB app {
+DEFINE MODULE test ON DB app WITH
     export function name(): String {
         return "Alice"
     }
-}
+END
 
 UPDATE person:alice SET name = test::name()
 ```
@@ -681,21 +774,21 @@ DESCRIBE PARAM endpoint IF EXISTS
 ## FOR
 
 ```surql
-FOR $id IN ["alice", "bob"] {
+FOR $id IN ["alice", "bob"] DO
     CREATE person SET id = $id IF NOT EXISTS
-}
+END
 ```
 
 ```surql
-FOR $id IN ["alice", "bob"] {
+FOR $id IN ["alice", "bob"] DO
     CREATE person:$id IF NOT EXISTS
-}
+END
 ```
 
 ```surql
-FOR $id IN (SELECT id FROM person WHERE age > 40) {
+FOR $id IN (SELECT id FROM person WHERE age > 40) DO
     RELATE person:$id -> buys -> product:apple
-}
+END
 ```
 
 <!-- --- -->
@@ -703,13 +796,13 @@ FOR $id IN (SELECT id FROM person WHERE age > 40) {
 ## IF
 
 ```surql
-IF $age > 40 {
+IF $age > 40 THEN
     CREATE person:alice SET age = 40
-} ELSE IF $age > 30 {
+ELSE IF $age > 30 THEN
     CREATE person:alice SET age = 30
-} ELSE {
+ELSE
     CREATE person:alice SET age = 20
-}
+END
 ```
 
 <!-- --- -->

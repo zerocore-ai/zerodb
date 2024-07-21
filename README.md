@@ -32,11 +32,15 @@ This project shares the same [core philosophies][key-features] as zerocore, and 
 
 #### Multi-Model
 
-zerodb supports multiple data models such as relational, key-value, graph, document, and vector. This flexibility allows developers to choose the most suitable model for their specific use case, without the need for multiple databases.
+`zerodb` supports multiple data models including relational, key-value, graph, document, and vector. This allows developers to select the most suitable model for their specific use case, eliminating the need to use multiple databases.
+
+#### Local-First Partition
+
+This feature enables data to be stored locally, reducing reliance on network requests. It is particularly beneficial for mobile and edge devices where network connectivity may be limited, ensuring better performance and offline access.
 
 #### Developer Experience
 
-The database comes packed with an interactive shell, LSP server, linter, formatter, and more.
+`zerodb` enhances productivity with an interactive shell, Language Server Protocol (LSP) server, linter, and formatter, providing a comprehensive set of tools for a seamless development experience.
 
 </br>
 
@@ -52,7 +56,7 @@ The database comes packed with an interactive shell, LSP server, linter, formatt
 
 ## Acknowledgments
 
-The query language is inspired by the [SurrealQL][surrealql] language.
+The query language is inspired by the [SurrealQL][surrealql] syntax.
 
 ## License
 

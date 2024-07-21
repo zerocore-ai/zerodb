@@ -2,6 +2,7 @@
 
 #![warn(missing_docs)]
 #![allow(clippy::module_inception)]
+#![recursion_limit = "256"]
 
 mod compiler;
 mod error;

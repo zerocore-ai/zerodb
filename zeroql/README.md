@@ -36,7 +36,7 @@
 
 ## Acknowledgments
 
-The query language is inspired by the [SurrealQL][surrealql] language.
+The query language is inspired by the [SurrealQL][surrealql] syntax.
 
 ## License
 

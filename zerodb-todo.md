@@ -60,27 +60,6 @@
     - [x] Peer RPC comms
     - [x] Timeouts
 
-- [ ] Distributed Design
-
-  - [ ] Devices
-
-    - [ ] Edge Devices
-    - [ ] Cloud Devices
-    - [ ] Clients
-
-  - [ ] Replication Methods
-
-    - [ ] CRDT - System (FS, DB, etc.) Level - Edge Devices
-    - [ ] RAFT - RPC Level - Cloud Devices
-      - [ ] Leaders participate in CRDT network
-      - [ ] Leaders communicate CRDT merge results as RPCs to their followers
-
-  - [ ] CRDT Merge
-
-    - [ ] Filesystem can merge meaningful changes at the filesystem level like file creation
-    - [ ] It lets applications handle conflicts.
-    - [ ] If you try to access a conflicting file from regular WASI A
-
 - [ ] Query Language
 
   - [x] Grammar

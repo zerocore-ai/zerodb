@@ -30,4 +30,4 @@ zeroraft.workspace = true
 zeroutils-config.workspace = true
 anyhow.workspace = true
 logos = "0.14.0"
-zeroutils-did-wk.workspace = true
+zeroutils-did.workspace = true

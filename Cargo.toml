@@ -28,14 +28,8 @@ tracing-subscriber = "0.3.17"
 typed-builder = "0.18.0"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 zerodb = { path = "zerodb" }
-# zeroraft = { git = "https://github.com/zerocore-ai/zeroraft", rev = "677b262" }
-# zeroutils-did-wk = { git = "https://github.com/zerocore-ai/zeroutils", rev = "eb2915a" }
-# zeroutils-ucan = { git = "https://github.com/zerocore-ai/zeroutils", rev = "eb2915a" }
-# zeroutils-key = { git = "https://github.com/zerocore-ai/zeroutils", rev = "eb2915a" }
-# zeroutils-config = { git = "https://github.com/zerocore-ai/zeroutils", rev = "eb2915a" }
-# zeroutils-store = { git = "https://github.com/zerocore-ai/zeroutils", rev = "eb2915a" }
 zeroraft = { path = "../zeroraft/zeroraft" }
-zeroutils-did-wk = { path = "../zeroutils/zeroutils-did-wk" }
+zeroutils-did = { path = "../zeroutils/zeroutils-did" }
 zeroutils-ucan = { path = "../zeroutils/zeroutils-ucan" }
 zeroutils-key = { path = "../zeroutils/zeroutils-key" }
 zeroutils-config = { path = "../zeroutils/zeroutils-config" }

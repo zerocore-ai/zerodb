@@ -21,3 +21,4 @@ zeroql-macros.workspace = true
 lru = "0.12.3"
 regex.workspace = true
 lazy_static = "1.4.0"
+bitflags = "2.6.0"

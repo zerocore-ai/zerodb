@@ -73,7 +73,7 @@ mod tests {
     };
 
     use zeroutils_config::default::{DEFAULT_ELECTION_TIMEOUT_RANGE, DEFAULT_HEARTBEAT_INTERVAL};
-    use zeroutils_did_wk::WrappedDidWebKey;
+    use zeroutils_did::did_wk::WrappedDidWebKey;
 
     use super::*;
 

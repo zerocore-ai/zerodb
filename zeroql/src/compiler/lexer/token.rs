@@ -1,3 +1,7 @@
+use std::fmt::Display;
+
+use bitflags::bitflags;
+
 use crate::Span;
 
 //--------------------------------------------------------------------------------------------------
@@ -17,8 +21,17 @@ pub struct Token<'a> {
 /// The kind of a token.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind<'a> {
-    /// An identifier.
-    Identifier(&'a str),
+    /// Terminator
+    Terminator,
+
+    /// A plain identifier like "foo".
+    PlainIdentifier(&'a str),
+
+    /// An escaped identifier like "`foo`".
+    EscapedIdentifier(&'a str),
+
+    /// A variable.
+    Variable(&'a str),
 
     /// A binary integer literal.
     BinIntegerLiteral(&'a str),
@@ -39,205 +52,217 @@ pub enum TokenKind<'a> {
     StringLiteral(&'a str),
 
     /// A regular expression literal.
-    RegexLiteral(&'a str),
+    RegexLiteral(&'a str, RegexFlags),
 
-    /// A symbol literal.
-    SymbolLiteral(&'a str),
+    /// A module block.
+    ModuleBlock(&'a str),
 
-    /// A boolean literal.
-    BooleanLiteral(bool),
+    /// "(" bracket.
+    OpOpenParen,
 
-    /// Keyword `type`
-    KeywordType,
+    /// ")" bracket.
+    OpCloseParen,
 
-    /// Keyword `trait`
-    KeywordTrait,
+    /// "{" bracket.
+    OpOpenBrace,
 
-    /// Keyword `import`
-    KeywordImport,
+    /// "}" bracket.
+    OpCloseBrace,
 
-    /// Keyword `export`
-    KeywordExport,
+    /// "[" bracket.
+    OpOpenSquareBracket,
 
-    /// Keyword `let`
-    KeywordLet,
+    /// "]" bracket.
+    OpCloseSquareBracket,
 
-    /// Keyword `in`
-    KeywordIn,
-
-    /// Keyword `transaction`
-    KeywordTransaction,
-
-    /// Keyword `if`
-    KeywordIf,
-
-    /// Keyword `else`
-    KeywordElse,
-
-    /// Keyword `for`
-    KeywordFor,
-
-    /// Keyword `while`
-    KeywordWhile,
-
-    /// Keyword `continue`
-    KeywordContinue,
-
-    /// Keyword `break`
-    KeywordBreak,
-
-    /// Keyword `return`
-    KeywordReturn,
-
-    /// Keyword `match`
-    KeywordMatch,
-
-    /// Keyword `fun`
-    KeywordFun,
-
-    /// Operator `+`
-    OpPlus,
-
-    /// Operator `-`
-    OpMinus,
-
-    /// Operator `*`
-    OpMul,
-
-    /// Operator `/`
-    OpDiv,
-
-    /// Operator `%`
-    OpMod,
-
-    /// Operator `^`
-    OpPow,
-
-    /// Operator `.`
-    OpDot,
-
-    /// Operator `::`
-    OpScope,
-
-    /// Operator `->`
-    OpArrow,
-
-    /// Operator `-!>`
-    OpRelateNeg,
-
-    /// Operator `=`
-    OpAssign,
-
-    /// Operator `+=`
-    OpAssignAdd,
-
-    /// Operator `-=`
-    OpAssignSub,
-
-    /// Operator `*=`
-    OpAssignMul,
-
-    /// Operator `/=`
-    OpAssignDiv,
-
-    /// Operator `%=`
-    OpAssignMod,
-
-    /// Operator `^=`
-    OpAssignPow,
-
-    /// Operator `&&`
-    OpAnd,
-
-    /// Operator `||`
-    OpOr,
-
-    /// Operator `!`
-    OpNot,
-
-    /// Operator `==`
-    OpEq,
-
-    /// Operator `!=`
-    OpNe,
-
-    /// Operator `<`
-    OpLt,
-
-    /// Operator `<=`
-    OpLe,
-
-    /// Operator `>`
-    OpGt,
-
-    /// Operator `>=`
-    OpGe,
-
-    /// Operator `&`
-    OpBitAnd,
-
-    /// Operator `|`
-    OpBitOr,
-
-    /// Operator `~`
-    OpBitNot,
-
-    /// Operator `<<`
-    OpBitShl,
-
-    /// Operator `>>`
-    OpBitShr,
-
-    /// Operator `&=`
-    OpAssignBitAnd,
-
-    /// Operator `|=`
-    OpAssignBitOr,
-
-    /// Operator `<<=`
-    OpAssignBitShl,
-
-    /// Operator `>>=`
-    OpAssignBitShr,
-
-    /// Operator `..`
-    OpRange,
-
-    /// Operator `..=`
-    OpRangeInclusive,
-
-    /// Operator `...`
-    OpEllipsis,
-
-    /// Operator `|>`
-    OpPipe,
-
-    /// Operator `,`
+    /// "," operator.
     OpComma,
 
-    /// Operator `:`
+    /// "::" operator.
+    OpScope,
+
+    /// ":" operator.
     OpColon,
 
-    /// Operator `;`
-    OpSemicolon,
+    /// "+=" operator.
+    OpAssignPlus,
 
-    /// Operator `(`
-    OpLParen,
+    /// "-=" operator.
+    OpAssignMinus,
 
-    /// Operator `)`
-    OpRParen,
+    /// "*=" operator.
+    OpAssignMul,
 
-    /// Operator `[`
-    OpLBracket,
+    /// "/=" operator.
+    OpAssignDiv,
 
-    /// Operator `]`
-    OpRBracket,
+    /// "%=" operator.
+    OpAssignMod,
 
-    /// Operator `{`
-    OpLBrace,
+    /// "**=" operator.
+    OpAssignPow,
 
-    /// Operator `}`
-    OpRBrace,
+    /// "<<=" operator.
+    OpAssignShl,
+
+    /// ">>=" operator.
+    OpAssignShr,
+
+    /// "&=" operator.
+    OpAssignBitAnd,
+
+    /// "|=" operator.
+    OpAssignBitOr,
+
+    /// "^=" operator.
+    OpAssignBitXor,
+
+    /// "~=" operator.
+    OpAssignBitNot,
+
+    /// "??=" operator.
+    OpAssignNullCoalesce,
+
+    /// "->>" operator.
+    OpMultiArrowRight,
+
+    /// "<<-" operator.
+    OpMultiArrowLeft,
+
+    /// "->" operator.
+    OpArrowRight,
+
+    /// "<-" operator.
+    OpArrowLeft,
+
+    /// "**" operator.
+    OpPow,
+
+    /// "+" operator.
+    OpPlus,
+
+    /// "-" operator.
+    OpMinus,
+
+    /// "×" operator.
+    OpMulLexer,
+
+    /// "/" operator.
+    OpDiv,
+
+    /// "%" operator.
+    OpMod,
+
+    /// "~" operator.
+    OpMatchLexer,
+
+    /// "!~" operator.
+    OpNotMatchLexer,
+
+    /// "<>" operator.
+    OpSimilarity,
+
+    /// "&&" operator.
+    OpAndLexer,
+
+    /// "||" operator.
+    OpOrLexer,
+
+    /// "==" operator.
+    OpEq,
+
+    /// "=" operator.
+    OpIsLexer,
+
+    /// "!=" operator.
+    OpIsNotLexer,
+
+    /// "!=" operator.
+    OpNotLexer,
+
+    /// "<=" operator.
+    OpLte,
+
+    /// ">=" operator.
+    OpGte,
+
+    /// "<" operator.
+    OpLt,
+
+    /// ">" operator.
+    OpGt,
+
+    /// "∋" operator.
+    OpContainsLexer,
+
+    /// "∌" operator.
+    OpNotContainsLexer,
+
+    /// "⊅" operator.
+    OpContainsNoneLexer,
+
+    /// "⊇" operator.
+    OpContainsAllLexer,
+
+    /// "⊃" operator.
+    OpContainsAnyLexer,
+
+    /// "??." operator.
+    OpSafeNav,
+
+    /// "??" operator.
+    OpNullCoalesce,
+
+    /// "<<" operator.
+    OpShl,
+
+    /// ">>" operator.
+    OpShr,
+
+    /// "&" operator.
+    OpBitAnd,
+
+    /// "|" operator.
+    OpBitOr,
+
+    /// "^" operator.
+    OpBitXor,
+
+    /// "..=" operator.
+    OpRangeIncl,
+
+    /// ".." operator.
+    OpRange,
+
+    /// "*" operator.
+    OpStar,
+
+    /// "." operator.
+    OpDot,
+}
+
+bitflags! {
+    /// Flags for a regular expression literal.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct RegexFlags: u8 {
+        /// Global flag.
+        const G_GLOBAL = 0b00000001;
+
+        /// Ignore case flag.
+        const I_IGNORE_CASE = 0b00000010;
+
+        /// Multiline flag.
+        const M_MULTILINE = 0b00000100;
+
+        /// Singleline flag.
+        const S_SINGLELINE = 0b00001000;
+
+        /// Unicode flag.
+        const U_UNICODE = 0b00010000;
+
+        /// Extended flag.
+        const X_EXTENDED = 0b00100000;
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -258,5 +283,147 @@ impl<'a> Token<'a> {
     /// Returns the kind of the token.
     pub fn kind(&self) -> &TokenKind<'a> {
         &self.kind
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
+
+impl<'a> Display for TokenKind<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::Terminator => write!(f, ";"),
+            TokenKind::PlainIdentifier(s) => write!(f, "{}", s),
+            TokenKind::EscapedIdentifier(s) => write!(f, "`{}`", s),
+            TokenKind::Variable(s) => write!(f, "${}", s),
+            TokenKind::BinIntegerLiteral(s) => write!(f, "0b{}", s),
+            TokenKind::OctIntegerLiteral(s) => write!(f, "0o{}", s),
+            TokenKind::HexIntegerLiteral(s) => write!(f, "0x{}", s),
+            TokenKind::DecIntegerLiteral(s) => write!(f, "{}", s),
+            TokenKind::FloatLiteral(s) => write!(f, "{}", s),
+            TokenKind::StringLiteral(s) => write!(f, "'{}'", s),
+            TokenKind::RegexLiteral(s, flags) => {
+                write!(f, "//{}//{}", s, flags)
+            }
+            TokenKind::ModuleBlock(s) => write!(f, "{}", s),
+            TokenKind::OpOpenParen => write!(f, "("),
+            TokenKind::OpCloseParen => write!(f, ")"),
+            TokenKind::OpOpenBrace => write!(f, "{{"),
+            TokenKind::OpCloseBrace => write!(f, "}}"),
+            TokenKind::OpOpenSquareBracket => write!(f, "[["),
+            TokenKind::OpCloseSquareBracket => write!(f, "]]"),
+            TokenKind::OpComma => write!(f, ","),
+            TokenKind::OpScope => write!(f, "::"),
+            TokenKind::OpColon => write!(f, ":"),
+            TokenKind::OpAssignPlus => write!(f, "+="),
+            TokenKind::OpAssignMinus => write!(f, "-="),
+            TokenKind::OpAssignMul => write!(f, "×="),
+            TokenKind::OpAssignDiv => write!(f, "/="),
+            TokenKind::OpAssignMod => write!(f, "%="),
+            TokenKind::OpAssignPow => write!(f, "**="),
+            TokenKind::OpAssignShl => write!(f, "<<="),
+            TokenKind::OpAssignShr => write!(f, ">>="),
+            TokenKind::OpAssignBitAnd => write!(f, "&="),
+            TokenKind::OpAssignBitOr => write!(f, "|="),
+            TokenKind::OpAssignBitXor => write!(f, "^="),
+            TokenKind::OpAssignBitNot => write!(f, "~="),
+            TokenKind::OpAssignNullCoalesce => write!(f, "??="),
+            TokenKind::OpMultiArrowRight => write!(f, "->>"),
+            TokenKind::OpMultiArrowLeft => write!(f, "<<-"),
+            TokenKind::OpArrowRight => write!(f, "->"),
+            TokenKind::OpArrowLeft => write!(f, "<-"),
+            TokenKind::OpPow => write!(f, "**"),
+            TokenKind::OpPlus => write!(f, "+"),
+            TokenKind::OpMinus => write!(f, "-"),
+            TokenKind::OpMulLexer => write!(f, "×"),
+            TokenKind::OpDiv => write!(f, "/"),
+            TokenKind::OpMod => write!(f, "%"),
+            TokenKind::OpMatchLexer => write!(f, "~"),
+            TokenKind::OpNotMatchLexer => write!(f, "!~"),
+            TokenKind::OpSimilarity => write!(f, "<>"),
+            TokenKind::OpAndLexer => write!(f, "&&"),
+            TokenKind::OpOrLexer => write!(f, "||"),
+            TokenKind::OpEq => write!(f, "=="),
+            TokenKind::OpIsLexer => write!(f, "="),
+            TokenKind::OpIsNotLexer => write!(f, "!="),
+            TokenKind::OpNotLexer => write!(f, "!"),
+            TokenKind::OpLte => write!(f, "<="),
+            TokenKind::OpGte => write!(f, ">="),
+            TokenKind::OpLt => write!(f, "<"),
+            TokenKind::OpGt => write!(f, ">"),
+            TokenKind::OpContainsLexer => write!(f, "∋"),
+            TokenKind::OpNotContainsLexer => write!(f, "∌"),
+            TokenKind::OpContainsNoneLexer => write!(f, "⊅"),
+            TokenKind::OpContainsAllLexer => write!(f, "⊇"),
+            TokenKind::OpContainsAnyLexer => write!(f, "⊃"),
+            TokenKind::OpSafeNav => write!(f, "??."),
+            TokenKind::OpNullCoalesce => write!(f, "??"),
+            TokenKind::OpShl => write!(f, "<<"),
+            TokenKind::OpShr => write!(f, ">>"),
+            TokenKind::OpBitAnd => write!(f, "&"),
+            TokenKind::OpBitOr => write!(f, "|"),
+            TokenKind::OpBitXor => write!(f, "^"),
+            TokenKind::OpRangeIncl => write!(f, "..="),
+            TokenKind::OpRange => write!(f, ".."),
+            TokenKind::OpStar => write!(f, "*"),
+            TokenKind::OpDot => write!(f, "."),
+        }
+    }
+}
+
+impl From<&str> for RegexFlags {
+    fn from(s: &str) -> Self {
+        let mut flags = RegexFlags::empty();
+        if s.contains('g') {
+            flags.set(RegexFlags::G_GLOBAL, true);
+        }
+        if s.contains('i') {
+            flags.set(RegexFlags::I_IGNORE_CASE, true);
+        }
+        if s.contains('m') {
+            flags.set(RegexFlags::M_MULTILINE, true);
+        }
+        if s.contains('s') {
+            flags.set(RegexFlags::S_SINGLELINE, true);
+        }
+        if s.contains('u') {
+            flags.set(RegexFlags::U_UNICODE, true);
+        }
+        if s.contains('x') {
+            flags.set(RegexFlags::X_EXTENDED, true);
+        }
+        flags
+    }
+}
+
+impl Default for RegexFlags {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl Display for RegexFlags {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = String::new();
+        if self.contains(RegexFlags::G_GLOBAL) {
+            s.push('g');
+        }
+        if self.contains(RegexFlags::I_IGNORE_CASE) {
+            s.push('i');
+        }
+        if self.contains(RegexFlags::M_MULTILINE) {
+            s.push('m');
+        }
+        if self.contains(RegexFlags::S_SINGLELINE) {
+            s.push('s');
+        }
+        if self.contains(RegexFlags::U_UNICODE) {
+            s.push('u');
+        }
+        if self.contains(RegexFlags::X_EXTENDED) {
+            s.push('x');
+        }
+        write!(f, "{}", s)
     }
 }
