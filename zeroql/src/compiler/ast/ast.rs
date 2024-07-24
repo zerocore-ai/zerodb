@@ -19,6 +19,7 @@ pub struct Ast<'a> {
 pub enum AstKind<'a> {
     /// An identifier.
     Identifier(&'a str),
+
     // /// A binary integer literal.
     // BinIntegerLiteral(&'a str),
 
@@ -27,16 +28,13 @@ pub enum AstKind<'a> {
 
     // /// A hexadecimal integer literal.
     // HexIntegerLiteral(&'a str),
-
-    // /// A decimal integer literal.
-    // DecIntegerLiteral(&'a str),
+    /// A decimal integer literal.
+    DecIntegerLiteral(&'a str),
 
     // /// A floating-point literal.
     // FloatLiteral(&'a str),
-
-    // /// A string literal.
-    // StringLiteral(&'a str),
-
+    /// A string literal.
+    StringLiteral(&'a str),
     // /// A regular expression literal.
     // RegexLiteral(&'a str),
 

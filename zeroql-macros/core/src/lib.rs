@@ -2,13 +2,13 @@ mod backtrack;
 mod memoize;
 mod utils;
 
-//--------------------------------------------------------------------------------------------------
-// Procedural Macros
-//--------------------------------------------------------------------------------------------------
-
 use backtrack::BacktrackOptions;
 use memoize::MemoizeOptions;
 use proc_macro::TokenStream;
+
+//--------------------------------------------------------------------------------------------------
+// Attribute Procedural Macros
+//--------------------------------------------------------------------------------------------------
 
 /// Backtracks the function, allowing the function to return to a previous state.
 ///

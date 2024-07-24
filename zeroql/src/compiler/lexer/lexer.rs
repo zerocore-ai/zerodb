@@ -14,7 +14,7 @@ use crate::{
 
 /// A lexer for the `zeroql` language.
 ///
-/// It is based on the grammar defined in the `./lexer.grammar` file.
+/// It is based on the grammar defined in the [`./lexer.grammar`](./lexer.grammar) file.
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     /// The input string.

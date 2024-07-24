@@ -9,18 +9,22 @@ use crate::{
     parser::ParserResult,
 };
 
+use super::StateCapture;
+
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
 
-/// A packrat parser for the `zeroql` language.
+/// A [packrat parser][packrat] for the `zeroql` language.
 ///
 /// It is essentially a recursive descent parser that memoizes the results of parsing subexpressions,
 /// which allows it to parse any context-free grammar in linear time.
 ///
 /// In addition, the parser also uses state backtracking to handle ambiguous grammars.
 ///
-/// It is based on the grammar defined in the `./parser.grammar` file.
+/// It is based on the grammar defined in the [`./parser.grammar`](./parser.grammar) file.
+///
+/// [packrat]: https://en.wikipedia.org/wiki/Packrat_parser
 pub struct Parser<'a> {
     /// This caches results of parsing subexpressions.
     cache: LruCache<Box<dyn AnyKey>, ParserResult<Option<Ast<'a>>>>,
@@ -48,133 +52,26 @@ impl<'a> Parser<'a> {
         Ok(self.lexer.next().transpose()?)
     }
 
-    /// Parses a symbol literal.
-    #[backtrack]
-    #[memoize]
-    pub fn parse_symbol_literal(&mut self) -> ParserResult<Option<Ast<'a>>> {
-        todo!("parse_symbol_literal");
-    }
+    // /// Parses a symbol literal.
+    // #[backtrack]
+    // #[memoize]
+    // pub fn parse_symbol_literal(&mut self) -> ParserResult<Option<Ast<'a>>> {
+    //     todo!("parse_symbol_literal");
+    // }
 }
 
-// Need macros to help with the boilerplate, opt(?), many_0(*), many_1(+), seq(,), alt(|)
-/*
-seq![p:expression, t:OpDot, t:Identifier]
-let state = self.lexer.cursor;
-let mut result: Option<(Ast, Token, Token)> = None;
+//--------------------------------------------------------------------------------------------------
+// Trait Implementations
+//--------------------------------------------------------------------------------------------------
 
-if let Some(__expression @ ...) = self.parse_expression() {
-   if let Some(__OpDot @ ...) = self.eat_token() {
-       if let Some(__Identifier @ ...) = self.eat_token() {
-           result = Some((__expression, __OpDot, __Identifier));
-       }
-   }
-}
+impl<'a> StateCapture for Parser<'a> {
+    type State = usize;
 
-if result.is_none() {
-   self.lexer.cursor = state;
-   return Ok(None);
-}
-*/
-
-/*
-alt![p:expression, t:OpDot, t:Identifier]
-let state = self.lexer.cursor;
-
-let mut result: Option<(Ast,)> = None;
-if let Some(__expression @ ...) = self.parse_expression() {
-    result = Some((__expression,));
-}
-
-if result.is_none() {
-    let mut result: Option<(Token,)> = None;
-    if let Some(__OpDot @ ...) = self.eat_token() {
-        result = Some((__OpDot,));
+    fn get_state(&self) -> Self::State {
+        self.lexer.cursor
     }
 
-    if result.is_none() {
-        let mut result: Option<(Token,)> = None;
-        if let Some(__Identifier @ ...) = self.eat_token() {
-            result = Some((__Identifier,));
-        }
-
-        if result.is_none() {
-            self.lexer.cursor = state;
-            return Ok(None);
-        }
-    }
-}
-
-
-
-*/
-
-/*
-opt![p:expression, t:OpDot, t:Identifier]
-let state = self.lexer.cursor;
-let mut vars: Option<(Ast, Token, Token)> = None;
-
-if let Some(__expression @ ...) = self.parse_expression() {
-   if let Some(__OpDot @ ...) = self.eat_token() {
-       if let Some(__Identifier @ ...) = self.eat_token() {
-           vars = Some((__expression, __OpDot, __Identifier));
-       }
-   }
-}
-
-if result.is_none() {
-   self.lexer.cursor = state;
-}
-*/
-
-/*
-many_0![p:expression, t:OpDot, t:Identifier]
-let mut result: Vec<(Ast, Token, Token)> = vec![];
-
-loop {
-    let state = self.lexer.cursor;
-    let len = result.len();
-
-    if let Some(__expression @ ...) = self.parse_expression() {
-        if let Some(__OpDot @ ...) = self.eat_token() {
-            if let Some(__Identifier @ ...) = self.eat_token() {
-                vars.push((__expression, __OpDot, __Identifier));
-            }
-        }
-    }
-
-    if result.len() == len {
+    fn set_state(&mut self, state: Self::State) {
         self.lexer.cursor = state;
-        break;
     }
 }
-*/
-
-/*
-many_1![p:expression, t:OpDot, t:Identifier]
-let mut result: Vec<(Ast, Token, Token)> = vec![];
-let mut count = 0;
-
-loop {
-    let state = self.lexer.cursor;
-    let len = result.len();
-
-    if let Some(__expression @ ...) = self.parse_expression() {
-        if let Some(__OpDot @ ...) = self.eat_token() {
-            if let Some(__Identifier @ ...) = self.eat_token() {
-                vars.push((__expression, __OpDot, __Identifier));
-            }
-        }
-    }
-
-    if result.len() == len {
-        self.lexer.cursor = state;
-        break;
-    }
-
-    count += 1;
-}
-
-if count == 0 {
-    return Ok(None);
-}
-*/
