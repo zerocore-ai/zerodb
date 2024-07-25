@@ -22,7 +22,6 @@ impl<'a> Parser<'a> {
             kind: TokenKind::PlainIdentifier(ident),
         }) = token
         {
-            #[allow(clippy::if_same_then_else)]
             if ident == string.to_uppercase() || ident == string.to_lowercase() {
                 return Ok(Some(Ast::new(span, AstKind::Temp)));
             }
