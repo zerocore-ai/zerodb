@@ -19,7 +19,7 @@ pub struct Token<'a> {
 }
 
 /// The kind of a token.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TokenKind<'a> {
     /// Terminator
     Terminator,
@@ -50,6 +50,9 @@ pub enum TokenKind<'a> {
 
     /// A string literal.
     StringLiteral(&'a str),
+
+    /// A byte string literal.
+    ByteStringLiteral(&'a str),
 
     /// A regular expression literal.
     RegexLiteral(&'a str, RegexFlags),
@@ -243,7 +246,7 @@ pub enum TokenKind<'a> {
 
 bitflags! {
     /// Flags for a regular expression literal.
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
     pub struct RegexFlags: u8 {
         /// Global flag.
         const G_GLOBAL = 0b00000001;
@@ -303,6 +306,7 @@ impl<'a> Display for TokenKind<'a> {
             TokenKind::DecIntegerLiteral(s) => write!(f, "{}", s),
             TokenKind::FloatLiteral(s) => write!(f, "{}", s),
             TokenKind::StringLiteral(s) => write!(f, "'{}'", s),
+            TokenKind::ByteStringLiteral(s) => write!(f, "b'{}'", s),
             TokenKind::RegexLiteral(s, flags) => {
                 write!(f, "//{}//{}", s, flags)
             }

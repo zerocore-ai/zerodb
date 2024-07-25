@@ -1,4 +1,4 @@
-use crate::Span;
+use crate::{lexer::RegexFlags, Span};
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -17,32 +17,29 @@ pub struct Ast<'a> {
 /// The kind of an AST node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AstKind<'a> {
+    /// For intermediate nodes that won't make it into the final AST.
+    Temp,
+
     /// An identifier.
     Identifier(&'a str),
 
-    // /// A binary integer literal.
-    // BinIntegerLiteral(&'a str),
+    /// A binary integer literal.
+    IntegerLiteral(u128),
 
-    // /// An octal integer literal.
-    // OctIntegerLiteral(&'a str),
+    /// A floating-point literal.
+    FloatLiteral(&'a str),
 
-    // /// A hexadecimal integer literal.
-    // HexIntegerLiteral(&'a str),
-    /// A decimal integer literal.
-    DecIntegerLiteral(&'a str),
-
-    // /// A floating-point literal.
-    // FloatLiteral(&'a str),
     /// A string literal.
     StringLiteral(&'a str),
-    // /// A regular expression literal.
-    // RegexLiteral(&'a str),
 
-    // /// A symbol literal.
-    // SymbolLiteral(&'a str),
+    /// A byte string literal.
+    ByteStringLiteral(&'a str),
 
-    // /// A boolean literal.
-    // BooleanLiteral(bool),
+    /// A regular expression literal.
+    RegexLiteral(&'a str, RegexFlags),
+
+    /// A boolean literal.
+    BooleanLiteral(bool),
 }
 
 //--------------------------------------------------------------------------------------------------

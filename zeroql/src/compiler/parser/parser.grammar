@@ -213,10 +213,6 @@ kw_let =
     | plain_identifier["let"]
     | plain_identifier["LET"]
 
-kw_relate =
-    | plain_identifier["relate"]
-    | plain_identifier["RELATE"]
-
 kw_where =
     | plain_identifier["where"]
     | plain_identifier["WHERE"]
@@ -374,7 +370,6 @@ raw_lit =
     | float_lit
     | string_lit
     | regex_lit
-    | byte_lit
     | byte_string_lit
     | boolean_lit
 

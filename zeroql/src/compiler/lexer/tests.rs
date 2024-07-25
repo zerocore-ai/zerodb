@@ -527,21 +527,54 @@ fn test_lexer_float() {
 #[test]
 fn test_lexer_string() {
     // Single-quoted string
-    let mut lexer = Lexer::from("'Hello, World!'");
+    let mut lexer = Lexer::from("'Hello, World!' ''");
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
         Token::new(0..15, TokenKind::StringLiteral("Hello, World!"))
     );
 
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(16..18, TokenKind::StringLiteral(""))
+    );
+
     assert!(lexer.next().is_none());
 
     // Double-quoted string
-    let mut lexer = Lexer::from(r#""Hello, World!""#);
+    let mut lexer = Lexer::from(r#""Hello, World!" """#);
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
         Token::new(0..15, TokenKind::StringLiteral("Hello, World!"))
+    );
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(16..18, TokenKind::StringLiteral(""))
+    );
+
+    assert!(lexer.next().is_none());
+}
+
+#[test]
+fn test_lexer_byte_string() {
+    // Single-quoted byte string
+    let mut lexer = Lexer::from("b'Hello, World!'");
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(0..16, TokenKind::ByteStringLiteral("Hello, World!"))
+    );
+
+    assert!(lexer.next().is_none());
+
+    // Double-quoted byte string
+    let mut lexer = Lexer::from(r#"b"Hello, World!""#);
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(0..16, TokenKind::ByteStringLiteral("Hello, World!"))
     );
 
     assert!(lexer.next().is_none());

@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use thiserror::Error;
 
 use crate::lexer::LexerError;
@@ -15,4 +17,8 @@ pub enum ParserError {
     /// An error that occurred during lexing.
     #[error("Lexer error: {0}")]
     LexerError(#[from] LexerError),
+
+    /// An error parsing u128 integer literal.
+    #[error("Invalid integer literal: {0}")]
+    InvalidIntegerLiteral(ParseIntError),
 }

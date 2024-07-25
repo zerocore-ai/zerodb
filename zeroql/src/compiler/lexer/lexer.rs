@@ -91,6 +91,14 @@ impl<'a> Lexer<'a> {
         // Check for other tokens.
         let token = if let Some(m) = TERMINATOR_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::Terminator)
+        } else if let Some(m) = BYTE_STRING_LITERAL_REGEX.find(remainder) {
+            // Remove first two characters (`b` and quote marks).
+            let trimmed_str = &m.as_str()[2..m.end() - 1];
+
+            Token::new(
+                self.advance_by_match(m),
+                TokenKind::ByteStringLiteral(trimmed_str),
+            )
         } else if let Some(m) = PLAIN_IDENTIFIER_REGEX.find(remainder) {
             let identifier = m.as_str();
 
@@ -496,6 +504,7 @@ lazy_static! {
     static ref PLAIN_IDENTIFIER_REGEX: Regex = Regex::new(r"^([_a-zA-Z][_a-zA-Z0-9]*)").unwrap();
     static ref ESCAPED_IDENTIFIER_REGEX: Regex = Regex::new(r"^(`[_a-zA-Z][_a-zA-Z0-9]*`)").unwrap();
     static ref STRING_LITERAL_REGEX: Regex = Regex::new(r#"^('([^'\\]|\\t|\\n|\\r|\\\\)*'|"([^"\\]|\\t|\\n|\\r|\\\\)*")"#).unwrap();
+    static ref BYTE_STRING_LITERAL_REGEX: Regex = Regex::new(r#"^b('([^'\\]|\\t|\\n|\\r|\\\\)*'|"([^"\\]|\\t|\\n|\\r|\\\\)*")"#).unwrap();
 
     static ref OP_OPEN_PAREN_REGEX: Regex = Regex::new(r"^\(").unwrap();
     static ref OP_CLOSE_PAREN_REGEX: Regex = Regex::new(r"^\)").unwrap();

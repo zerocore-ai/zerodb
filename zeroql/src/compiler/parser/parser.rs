@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 
 use lru::LruCache;
-use zeroql_macros::{anykey::AnyKey, backtrack, memoize};
+use zeroql_macros::anykey::AnyKey;
 
 use crate::{
     ast::Ast,
@@ -27,18 +27,16 @@ use super::StateCapture;
 /// [packrat]: https://en.wikipedia.org/wiki/Packrat_parser
 pub struct Parser<'a> {
     /// This caches results of parsing subexpressions.
-    cache: LruCache<Box<dyn AnyKey>, ParserResult<Option<Ast<'a>>>>,
+    pub(crate) cache: LruCache<Box<dyn AnyKey>, ParserResult<Option<Ast<'a>>>>,
 
     /// The lexer that produces tokens from the input stream.
-    lexer: Lexer<'a>,
+    pub(crate) lexer: Lexer<'a>,
 }
 
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-#[backtrack(state = self.lexer.cursor, condition = |r| matches!(r, Ok(None)))]
-#[memoize(cache = self.cache, salt = self.lexer.cursor)]
 impl<'a> Parser<'a> {
     /// Creates a new parser for the given input.
     pub fn new(input: &'a str, cache_size: usize) -> Self {
@@ -47,17 +45,10 @@ impl<'a> Parser<'a> {
         Self { cache, lexer }
     }
 
-    /// Eat a token from the lexer.
+    /// Eats a token from the lexer.
     pub fn eat_token(&mut self) -> ParserResult<Option<Token<'a>>> {
         Ok(self.lexer.next().transpose()?)
     }
-
-    // /// Parses a symbol literal.
-    // #[backtrack]
-    // #[memoize]
-    // pub fn parse_symbol_literal(&mut self) -> ParserResult<Option<Ast<'a>>> {
-    //     todo!("parse_symbol_literal");
-    // }
 }
 
 //--------------------------------------------------------------------------------------------------

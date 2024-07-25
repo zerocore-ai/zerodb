@@ -4,17 +4,28 @@
 
 /// The result of a combinator expression.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Combinator<T> {
+pub enum Combinator<T> {
+    /// A single `T` value.
     Solo(T),
+
+    /// A vector of repeated `T` values.
     Many(Vec<Combinator<T>>),
+
+    /// A sequence of two `T` values.
     Seq2(Box<Combinator<T>>, Box<Combinator<T>>),
+
+    /// A sequence of three `T` values.
     Seq3(Box<Combinator<T>>, Box<Combinator<T>>, Box<Combinator<T>>),
+
+    /// A sequence of four `T` values.
     Seq4(
         Box<Combinator<T>>,
         Box<Combinator<T>>,
         Box<Combinator<T>>,
         Box<Combinator<T>>,
     ),
+
+    /// A sequence of five `T` values.
     Seq5(
         Box<Combinator<T>>,
         Box<Combinator<T>>,
@@ -22,6 +33,8 @@ pub(crate) enum Combinator<T> {
         Box<Combinator<T>>,
         Box<Combinator<T>>,
     ),
+
+    /// A sequence of six `T` values.
     Seq6(
         Box<Combinator<T>>,
         Box<Combinator<T>>,
@@ -30,6 +43,8 @@ pub(crate) enum Combinator<T> {
         Box<Combinator<T>>,
         Box<Combinator<T>>,
     ),
+
+    /// A sequence of seven `T` values.
     Seq7(
         Box<Combinator<T>>,
         Box<Combinator<T>>,
@@ -39,6 +54,8 @@ pub(crate) enum Combinator<T> {
         Box<Combinator<T>>,
         Box<Combinator<T>>,
     ),
+
+    /// A sequence of eight `T` values.
     Seq8(
         Box<Combinator<T>>,
         Box<Combinator<T>>,
@@ -49,20 +66,139 @@ pub(crate) enum Combinator<T> {
         Box<Combinator<T>>,
         Box<Combinator<T>>,
     ),
+
+    /// An absent value for optional combinators.
     Void,
+}
+
+//--------------------------------------------------------------------------------------------------
+// Methods
+//--------------------------------------------------------------------------------------------------
+
+impl<T> Combinator<T> {
+    /// Unwraps the combinator as a single value.
+    pub fn unwrap_solo(self) -> T {
+        match self {
+            Combinator::Solo(x) => x,
+            _ => panic!("Combinator::unwrap_solo: combinator is not a single value"),
+        }
+    }
+
+    /// Unwraps the combinator as a vector of repeated values.
+    pub fn unwrap_many(self) -> Vec<T> {
+        match self {
+            Combinator::Many(x) => x.into_iter().map(|x| x.unwrap_solo()).collect(),
+            _ => panic!("Combinator::unwrap_many: combinator is not a vector of repeated values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of two values.
+    pub fn unwrap_seq2(self) -> (T, T) {
+        match self {
+            Combinator::Seq2(x, y) => (x.unwrap_solo(), y.unwrap_solo()),
+            _ => panic!("Combinator::unwrap_seq2: combinator is not a sequence of two values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of three values.
+    pub fn unwrap_seq3(self) -> (T, T, T) {
+        match self {
+            Combinator::Seq3(x, y, z) => (x.unwrap_solo(), y.unwrap_solo(), z.unwrap_solo()),
+            _ => panic!("Combinator::unwrap_seq3: combinator is not a sequence of three values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of four values.
+    pub fn unwrap_seq4(self) -> (T, T, T, T) {
+        match self {
+            Combinator::Seq4(x, y, z, w) => (
+                x.unwrap_solo(),
+                y.unwrap_solo(),
+                z.unwrap_solo(),
+                w.unwrap_solo(),
+            ),
+            _ => panic!("Combinator::unwrap_seq4: combinator is not a sequence of four values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of five values.
+    pub fn unwrap_seq5(self) -> (T, T, T, T, T) {
+        match self {
+            Combinator::Seq5(x, y, z, w, v) => (
+                x.unwrap_solo(),
+                y.unwrap_solo(),
+                z.unwrap_solo(),
+                w.unwrap_solo(),
+                v.unwrap_solo(),
+            ),
+            _ => panic!("Combinator::unwrap_seq5: combinator is not a sequence of five values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of six values.
+    pub fn unwrap_seq6(self) -> (T, T, T, T, T, T) {
+        match self {
+            Combinator::Seq6(x, y, z, w, v, u) => (
+                x.unwrap_solo(),
+                y.unwrap_solo(),
+                z.unwrap_solo(),
+                w.unwrap_solo(),
+                v.unwrap_solo(),
+                u.unwrap_solo(),
+            ),
+            _ => panic!("Combinator::unwrap_seq6: combinator is not a sequence of six values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of seven values.
+    pub fn unwrap_seq7(self) -> (T, T, T, T, T, T, T) {
+        match self {
+            Combinator::Seq7(x, y, z, w, v, u, t) => (
+                x.unwrap_solo(),
+                y.unwrap_solo(),
+                z.unwrap_solo(),
+                w.unwrap_solo(),
+                v.unwrap_solo(),
+                u.unwrap_solo(),
+                t.unwrap_solo(),
+            ),
+            _ => panic!("Combinator::unwrap_seq7: combinator is not a sequence of seven values"),
+        }
+    }
+
+    /// Unwraps the combinator of a sequence of eight values.
+    pub fn unwrap_seq8(self) -> (T, T, T, T, T, T, T, T) {
+        match self {
+            Combinator::Seq8(x, y, z, w, v, u, t, s) => (
+                x.unwrap_solo(),
+                y.unwrap_solo(),
+                z.unwrap_solo(),
+                w.unwrap_solo(),
+                v.unwrap_solo(),
+                u.unwrap_solo(),
+                t.unwrap_solo(),
+                s.unwrap_solo(),
+            ),
+            _ => panic!("Combinator::unwrap_seq8: combinator is not a sequence of eight values"),
+        }
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
 // Macros
 //--------------------------------------------------------------------------------------------------
 
-/// TODO
-#[macro_export]
+/// A parser combinator macro.
+#[macro_export(local_inner_macros)]
 macro_rules! parse {
     // a => a
     ($parser:expr $(, $path:ident)? => $parse:ident) => {
         $( $path :: )? $parse($parser)?.map(|x| $crate::compiler::parser::Combinator::Solo(x))
     };
+    // (arg a b ...) => [ a(b, ...) ]
+    ($parser:expr $(, $path:ident)? => (arg $parse:ident $( $parse_args:tt )+)) => {{
+        $( $path :: )? $parse($parser $(, $parse_args )+)?.map(|x| $crate::compiler::parser::Combinator::Solo(x))
+    }};
     // (opt a) => a?
     ($parser:expr $(, $path:ident)? => (opt $parse:tt)) => {{
         match parse!($parser $(, $path)? => $parse) {
@@ -92,9 +228,14 @@ macro_rules! parse {
     }};
     // (alt a b) => a | b
     ($parser:expr $(, $path:ident)? => (alt $parse_a:tt $parse_b:tt)) => {{
+        use $crate::compiler::parser::capture::StateCapture;
+        let state = $parser.get_state();
         if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
             Some(__result_a)
-        } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
+        } else if let Some(__result_b) = {
+            $parser.set_state(state);
+            parse!($parser $(, $path)? => $parse_b)
+        } {
             Some(__result_b)
         } else {
             None
@@ -102,28 +243,23 @@ macro_rules! parse {
     }};
     // (seq a b c ...) => a b c ...
     ($parser:expr $(, $path:ident)? => (seq $( $parse:tt )+)) => {{
-        use $crate::compiler::parser::capture::StateCapture;
-        let state = $parser.get_state();
-        if let Some(x) = seq!($parser $(, $path)? => $( $parse )+) {
-            Some(x)
-        } else {
-            $parser.set_state(state);
-            None
-        }
+        seq!($parser $(, $path)? => $( $parse )+)
     }};
     // (perm a b c) => << a b c >>
     ($parser:expr $(, $path:ident)? => (perm $( $parse:tt )+)) => {{
-        use $crate::compiler::parser::capture::StateCapture;
-        let state = $parser.get_state();
-        if let Some(x) = perm!($parser $(, $path)? => $( $parse )+) {
-            Some(x)
-        } else {
-            $parser.set_state(state);
-            None
-        }
+        // use $crate::compiler::parser::capture::StateCapture;
+        // let state = $parser.get_state();
+        // if let Some(x) = perm!($parser $(, $path)? => $( $parse )+) {
+        //     Some(x)
+        // } else {
+        //     $parser.set_state(state);
+        //     None
+        // }
     }};
 }
 
+/// Sequence combinator macro.
+#[macro_export(local_inner_macros)]
 macro_rules! seq {
     // Sequence(2) => a b
     ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
@@ -211,150 +347,11 @@ macro_rules! seq {
     }};
 }
 
-macro_rules! perm {
-    // Permutation(2) => a b
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
-        if let Some(__result) = seq!($parser $(, $path)? => $parse_a $parse_b) {
-            Some(__result)
-        } else if let Some(__result) = seq!($parser $(, $path)? => $parse_b $parse_a) {
-            Some(__result)
-        } else {
-            None
-        }
-    }};
-    // Permutation(3) => a b c
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq2(__result_t, __result_u)) = perm!($parser $(, $path)? => $parse_b $parse_c) {
-                Some($crate::compiler::parser::Combinator::Seq3(Box::new(__result_a), __result_t, __result_u))
-            } else {
-                None
-            }
-        } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
-            if let Some($crate::compiler::parser::Combinator::Seq2(__result_t, __result_u)) = perm!($parser $(, $path)? => $parse_a $parse_c) {
-                Some($crate::compiler::parser::Combinator::Seq3(Box::new(__result_b), __result_t, __result_u))
-            } else {
-                None
-            }
-        } else if let Some(__result_c) = parse!($parser $(, $path)? => $parse_c) {
-            if let Some($crate::compiler::parser::Combinator::Seq2(__result_t, __result_u)) = perm!($parser $(, $path)? => $parse_a $parse_b) {
-                Some($crate::compiler::parser::Combinator::Seq3(Box::new(__result_c), __result_t, __result_u))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }};
-    // Permutation(4) => a b c d
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq3(__result_t, __result_u, __result_v)) = perm!($parser $(, $path)? => $parse_b $parse_c $parse_d) {
-                Some($crate::compiler::parser::Combinator::Seq4(Box::new(__result_a), __result_t, __result_u, __result_v))
-            } else {
-                None
-            }
-        } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
-            if let Some($crate::compiler::parser::Combinator::Seq3(__result_t, __result_u, __result_v)) = perm!($parser $(, $path)? => $parse_a $parse_c $parse_d) {
-                Some($crate::compiler::parser::Combinator::Seq4(Box::new(__result_b), __result_t, __result_u, __result_v))
-            } else {
-                None
-            }
-        } else if let Some(__result_c) = parse!($parser $(, $path)? => $parse_c) {
-            if let Some($crate::compiler::parser::Combinator::Seq3(__result_t, __result_u, __result_v)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_d) {
-                Some($crate::compiler::parser::Combinator::Seq4(Box::new(__result_c), __result_t, __result_u, __result_v))
-            } else {
-                None
-            }
-        } else if let Some(__result_d) = parse!($parser $(, $path)? => $parse_d) {
-            if let Some($crate::compiler::parser::Combinator::Seq3(__result_t, __result_u, __result_v)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_c) {
-                Some($crate::compiler::parser::Combinator::Seq4(Box::new(__result_d), __result_t, __result_u, __result_v))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }};
-    // Permutation(5) => a b c d e
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq4(__result_t, __result_u, __result_v, __result_w)) = perm!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e) {
-                Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_a), __result_t, __result_u, __result_v, __result_w))
-            } else {
-                None
-            }
-        } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
-            if let Some($crate::compiler::parser::Combinator::Seq4(__result_t, __result_u, __result_v, __result_w)) = perm!($parser $(, $path)? => $parse_a $parse_c $parse_d $parse_e) {
-                Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_b), __result_t, __result_u, __result_v, __result_w))
-            } else {
-                None
-            }
-        } else if let Some(__result_c) = parse!($parser $(, $path)? => $parse_c) {
-            if let Some($crate::compiler::parser::Combinator::Seq4(__result_t, __result_u, __result_v, __result_w)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_d $parse_e) {
-                Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_c), __result_t, __result_u, __result_v, __result_w))
-            } else {
-                None
-            }
-        } else if let Some(__result_d) = parse!($parser $(, $path)? => $parse_d) {
-            if let Some($crate::compiler::parser::Combinator::Seq4(__result_t, __result_u, __result_v, __result_w)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_e) {
-                Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_d), __result_t, __result_u, __result_v, __result_w))
-            } else {
-                None
-            }
-        } else if let Some(__result_e) = parse!($parser $(, $path)? => $parse_e) {
-            if let Some($crate::compiler::parser::Combinator::Seq4(__result_t, __result_u, __result_v, __result_w)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d) {
-                Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_e), __result_t, __result_u, __result_v, __result_w))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }};
-    // Permutation(6) => a b c d e f
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_t, __result_u, __result_v, __result_w, __result_x)) = perm!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_a), __result_t, __result_u, __result_v, __result_w, __result_x))
-            } else {
-                None
-            }
-        } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_t, __result_u, __result_v, __result_w, __result_x)) = perm!($parser $(, $path)? => $parse_a $parse_c $parse_d $parse_e $parse_f) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_b), __result_t, __result_u, __result_v, __result_w, __result_x))
-            } else {
-                None
-            }
-        } else if let Some(__result_c) = parse!($parser $(, $path)? => $parse_c) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_t, __result_u, __result_v, __result_w, __result_x)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_d $parse_e $parse_f) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_c), __result_t, __result_u, __result_v, __result_w, __result_x))
-            } else {
-                None
-            }
-        } else if let Some(__result_d) = parse!($parser $(, $path)? => $parse_d) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_t, __result_u, __result_v, __result_w, __result_x)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_e $parse_f) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_d), __result_t, __result_u, __result_v, __result_w, __result_x))
-            } else {
-                None
-            }
-        } else if let Some(__result_e) = parse!($parser $(, $path)? => $parse_e) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_t, __result_u, __result_v, __result_w, __result_x)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_f) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_e), __result_t, __result_u, __result_v, __result_w, __result_x))
-            } else {
-                None
-            }
-        } else if let Some(__result_f) = parse!($parser $(, $path)? => $parse_f) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_t, __result_u, __result_v, __result_w, __result_x)) = perm!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_f), __result_t, __result_u, __result_v, __result_w, __result_x))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }};
-}
+// macro_rules! perm {
+//     ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
+//         todo!()
+//     }};
+// }
 
 //--------------------------------------------------------------------------------------------------
 // Tests
@@ -363,59 +360,58 @@ macro_rules! perm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use itertools::Itertools;
     use mock::*;
     use tracing::info;
 
     #[test_log::test]
     fn test_combinator_perm() -> anyhow::Result<()> {
-        let mut parser = &mut Parser::new(['a', 'b']);
-        let result = parse!(&mut parser, Parser => (perm parse_a parse_b));
-        info!(
-            "input = {:?} | (perm parse_a parse_b) = {:?}",
-            parser.input, result
-        );
-        assert_eq!(
-            result,
-            Some(Combinator::Seq2(
-                Box::new(Combinator::Solo(Ast::A)),
-                Box::new(Combinator::Solo(Ast::B))
-            ))
-        );
+        // let mut parser = &mut Parser::new(['a', 'b']);
+        // let result = parse!(&mut parser, Parser => (perm parse_a parse_b));
+        // info!(
+        //     "input = {:?} | (perm parse_a parse_b) = {:?}",
+        //     parser.input, result
+        // );
+        // assert_eq!(
+        //     result,
+        //     Some(Combinator::Seq2(
+        //         Box::new(Combinator::Solo(Ast::A)),
+        //         Box::new(Combinator::Solo(Ast::B))
+        //     ))
+        // );
 
-        let mut parser = &mut Parser::new(['b', 'a']);
-        let result = perm!(&mut parser, Parser => parse_a parse_b);
-        info!(
-            "input = {:?} | (perm parse_a parse_b) = {:?}",
-            parser.input, result
-        );
-        assert_eq!(
-            result,
-            Some(Combinator::Seq2(
-                Box::new(Combinator::Solo(Ast::B)),
-                Box::new(Combinator::Solo(Ast::A))
-            ))
-        );
+        // let mut parser = &mut Parser::new(['b', 'a']);
+        // let result = perm!(&mut parser, Parser => parse_a parse_b);
+        // info!(
+        //     "input = {:?} | (perm parse_a parse_b) = {:?}",
+        //     parser.input, result
+        // );
+        // assert_eq!(
+        //     result,
+        //     Some(Combinator::Seq2(
+        //         Box::new(Combinator::Solo(Ast::B)),
+        //         Box::new(Combinator::Solo(Ast::A))
+        //     ))
+        // );
 
-        for i in ('a'..='c').permutations(3) {
-            let mut parser = &mut Parser::new(i);
-            let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c));
-            info!(
-                "input = {:?} | (perm parse_a parse_b parse_c) = {:?}",
-                parser.input, result
-            );
-            assert!(matches!(result, Some(Combinator::Seq3(_, _, _))));
-        }
+        // for i in ('a'..='c').permutations(3) {
+        //     let mut parser = &mut Parser::new(i);
+        //     let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c));
+        //     info!(
+        //         "input = {:?} | (perm parse_a parse_b parse_c) = {:?}",
+        //         parser.input, result
+        //     );
+        //     assert!(matches!(result, Some(Combinator::Seq3(_, _, _))));
+        // }
 
-        for i in ('a'..='d').permutations(4) {
-            let mut parser = &mut Parser::new(i);
-            let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c parse_d));
-            info!(
-                "input = {:?} | (perm parse_a parse_b parse_c parse_d) = {:?}",
-                parser.input, result
-            );
-            assert!(matches!(result, Some(Combinator::Seq4(_, _, _, _))));
-        }
+        // for i in ('a'..='d').permutations(4) {
+        //     let mut parser = &mut Parser::new(i);
+        //     let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c parse_d));
+        //     info!(
+        //         "input = {:?} | (perm parse_a parse_b parse_c parse_d) = {:?}",
+        //         parser.input, result
+        //     );
+        //     assert!(matches!(result, Some(Combinator::Seq4(_, _, _, _))));
+        // }
 
         // for i in ('a'..='e').permutations(5) {
         //     let mut parser = &mut Parser::new(i);
@@ -443,6 +439,28 @@ mod tests {
         let mut parser = Parser::new(['b']);
         let result = parse!(&mut parser, Parser => parse_a);
         info!("input = {:?} | parse_a = {:?}", parser.input, result);
+        assert_eq!(result, None);
+
+        Ok(())
+    }
+
+    #[test_log::test]
+    fn test_combinator_arg() -> anyhow::Result<()> {
+        let mut parser = Parser::new(['a']);
+        let result = parse!(&mut parser, Parser => (arg parse_char 'a'));
+        info!(
+            "input = {:?} | (arg parse_char 'a') = {:?}",
+            parser.input, result
+        );
+        assert_eq!(result, Some(Combinator::Solo(Ast::Some('a'))));
+
+        // Fail Cases
+        let mut parser = Parser::new(['b']);
+        let result = parse!(&mut parser, Parser => (arg parse_char 'a'));
+        info!(
+            "input = {:?} | (arg parse_char 'a') = {:?}",
+            parser.input, result
+        );
         assert_eq!(result, None);
 
         Ok(())
@@ -731,19 +749,20 @@ mod tests {
         );
         assert_eq!(result, Some(Combinator::Solo(Ast::A)));
 
-        let parser = &mut Parser::new(['a', 'b', 'c']);
-        let result = parse!(parser, Parser => (seq (opt parse_a) (seq parse_b parse_c)));
+        let parser = &mut Parser::new(['a', 'b', 'c', 'd']);
+        let result = parse!(parser, Parser => (seq (opt parse_a) (seq (arg parse_char 'b') (arg parse_char 'c') parse_d)));
         info!(
-            "input = {:?} | (seq (opt parse_a) (seq parse_b parse_c)) = {:?}",
+            "input = {:?} | (seq (opt parse_a) (seq (arg parse_char 'b') (arg parse_char 'c') parse_d))) = {:?}",
             parser.input, result
         );
         assert_eq!(
             result,
             Some(Combinator::Seq2(
                 Box::new(Combinator::Solo(Ast::A)),
-                Box::new(Combinator::Seq2(
-                    Box::new(Combinator::Solo(Ast::B)),
-                    Box::new(Combinator::Solo(Ast::C))
+                Box::new(Combinator::Seq3(
+                    Box::new(Combinator::Solo(Ast::Some('b'))),
+                    Box::new(Combinator::Solo(Ast::Some('c'))),
+                    Box::new(Combinator::Solo(Ast::D)),
                 ))
             ))
         );
@@ -834,12 +853,13 @@ mod mock {
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Ast {
+        Some(char),
         A,
         B,
         C,
         D,
-        E,
-        F,
+        // E,
+        // F,
     }
 
     //--------------------------------------------------------------------------------------------------
@@ -852,6 +872,17 @@ mod mock {
                 input: input.into(),
                 cursor: 0,
             }
+        }
+
+        pub(super) fn parse_char(&mut self, c: char) -> anyhow::Result<Option<Ast>> {
+            if let Some(ch) = self.input.get(self.cursor) {
+                if ch == &c {
+                    self.cursor += 1;
+                    return Ok(Some(Ast::Some(c)));
+                }
+            }
+
+            Ok(None)
         }
 
         pub(super) fn parse_a(&mut self) -> anyhow::Result<Option<Ast>> {
@@ -894,25 +925,25 @@ mod mock {
             }
         }
 
-        pub(super) fn parse_e(&mut self) -> anyhow::Result<Option<Ast>> {
-            match self.input.get(self.cursor) {
-                Some('e') => {
-                    self.cursor += 1;
-                    Ok(Some(Ast::E))
-                }
-                _ => Ok(None),
-            }
-        }
+        // pub(super) fn parse_e(&mut self) -> anyhow::Result<Option<Ast>> {
+        //     match self.input.get(self.cursor) {
+        //         Some('e') => {
+        //             self.cursor += 1;
+        //             Ok(Some(Ast::E))
+        //         }
+        //         _ => Ok(None),
+        //     }
+        // }
 
-        pub(super) fn parse_f(&mut self) -> anyhow::Result<Option<Ast>> {
-            match self.input.get(self.cursor) {
-                Some('f') => {
-                    self.cursor += 1;
-                    Ok(Some(Ast::F))
-                }
-                _ => Ok(None),
-            }
-        }
+        // pub(super) fn parse_f(&mut self) -> anyhow::Result<Option<Ast>> {
+        //     match self.input.get(self.cursor) {
+        //         Some('f') => {
+        //             self.cursor += 1;
+        //             Ok(Some(Ast::F))
+        //         }
+        //         _ => Ok(None),
+        //     }
+        // }
     }
 
     //--------------------------------------------------------------------------------------------------
