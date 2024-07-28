@@ -52,7 +52,7 @@ fn test_lexer_whitespace() {
         Token::new(23..27, TokenKind::PlainIdentifier("Next"))
     );
 
-    assert!(!lexer.continuation_precedent);
+    assert!(!lexer.state.continuation_precedent);
 
     assert!(lexer.next().is_none());
 
@@ -74,7 +74,7 @@ fn test_lexer_whitespace() {
         Token::new(26..30, TokenKind::PlainIdentifier("Next"))
     );
 
-    assert!(!lexer.continuation_precedent);
+    assert!(!lexer.state.continuation_precedent);
 
     assert!(lexer.next().is_none());
 
@@ -91,21 +91,21 @@ fn test_lexer_whitespace() {
         Token::new(19..20, TokenKind::OpOpenSquareBracket)
     );
 
-    assert_eq!(lexer.bracket_stack.len(), 1);
+    assert_eq!(lexer.state.bracket_stack.len(), 1);
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
         Token::new(20..21, TokenKind::OpOpenParen)
     );
 
-    assert_eq!(lexer.bracket_stack.len(), 2);
+    assert_eq!(lexer.state.bracket_stack.len(), 2);
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
         Token::new(21..22, TokenKind::OpCloseParen)
     );
 
-    assert_eq!(lexer.bracket_stack.len(), 1);
+    assert_eq!(lexer.state.bracket_stack.len(), 1);
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
@@ -117,7 +117,7 @@ fn test_lexer_whitespace() {
         Token::new(31..32, TokenKind::OpCloseSquareBracket)
     );
 
-    assert_eq!(lexer.bracket_stack.len(), 0);
+    assert_eq!(lexer.state.bracket_stack.len(), 0);
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
@@ -239,32 +239,32 @@ fn test_lexer_bin_integer() {
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(0..3, TokenKind::BinIntegerLiteral("0b0"))
+        Token::new(0..3, TokenKind::BinIntegerLiteral("0"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(4..7, TokenKind::BinIntegerLiteral("0b1"))
+        Token::new(4..7, TokenKind::BinIntegerLiteral("1"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(8..12, TokenKind::BinIntegerLiteral("0b10"))
+        Token::new(8..12, TokenKind::BinIntegerLiteral("10"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(13..17, TokenKind::BinIntegerLiteral("0b11"))
+        Token::new(13..17, TokenKind::BinIntegerLiteral("11"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(19..26, TokenKind::BinIntegerLiteral("0b1_000"))
+        Token::new(19..26, TokenKind::BinIntegerLiteral("1_000"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(28..35, TokenKind::BinIntegerLiteral("0b0_111"))
+        Token::new(28..35, TokenKind::BinIntegerLiteral("0_111"))
     );
 
     assert!(lexer.next().is_none());
@@ -277,17 +277,17 @@ fn test_lexer_oct_integer() {
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(0..3, TokenKind::OctIntegerLiteral("0o0"))
+        Token::new(0..3, TokenKind::OctIntegerLiteral("0"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(4..14, TokenKind::OctIntegerLiteral("0o01234567"))
+        Token::new(4..14, TokenKind::OctIntegerLiteral("01234567"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(16..29, TokenKind::OctIntegerLiteral("0o01_23_45_67"))
+        Token::new(16..29, TokenKind::OctIntegerLiteral("01_23_45_67"))
     );
 
     assert!(lexer.next().is_none());
@@ -300,12 +300,12 @@ fn test_lexer_hex_integer() {
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(0..3, TokenKind::HexIntegerLiteral("0x0"))
+        Token::new(0..3, TokenKind::HexIntegerLiteral("0"))
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(4..22, TokenKind::HexIntegerLiteral("0x0123456789abcdef"))
+        Token::new(4..22, TokenKind::HexIntegerLiteral("0123456789abcdef"))
     );
 
     assert_eq!(
@@ -317,7 +317,7 @@ fn test_lexer_hex_integer() {
         lexer.next().unwrap().unwrap(),
         Token::new(
             25..50,
-            TokenKind::HexIntegerLiteral("0x01_23_45_67_89_ab_cd_ef")
+            TokenKind::HexIntegerLiteral("01_23_45_67_89_ab_cd_ef")
         )
     );
 

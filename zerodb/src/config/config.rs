@@ -132,8 +132,8 @@ mod tests {
         let config: ZerodbConfig = toml::from_str("")?;
 
         assert_eq!(config.network.host, IpAddr::V4(Ipv4Addr::LOCALHOST));
-        assert_eq!(config.network.peer_port, 6600);
-        assert_eq!(config.network.user_port, 6611);
+        assert_eq!(config.network.peer_port, 7700);
+        assert_eq!(config.network.user_port, 7711);
         assert!(config.network.seeds.is_empty());
         assert_eq!(
             config.network.consensus.heartbeat_interval,

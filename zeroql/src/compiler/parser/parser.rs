@@ -5,11 +5,10 @@ use zeroql_macros::anykey::AnyKey;
 
 use crate::{
     ast::Ast,
-    lexer::{Lexer, Token},
+    compiler::reversible::Reversible,
+    lexer::{Lexer, LexerState, Token},
     parser::ParserResult,
 };
-
-use super::StateCapture;
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -47,7 +46,7 @@ impl<'a> Parser<'a> {
 
     /// Eats a token from the lexer.
     pub fn eat_token(&mut self) -> ParserResult<Option<Token<'a>>> {
-        Ok(self.lexer.next().transpose()?)
+        Ok(self.lexer.next_token()?)
     }
 }
 
@@ -55,14 +54,14 @@ impl<'a> Parser<'a> {
 // Trait Implementations
 //--------------------------------------------------------------------------------------------------
 
-impl<'a> StateCapture for Parser<'a> {
-    type State = usize;
+impl<'a> Reversible for Parser<'a> {
+    type State = LexerState;
 
     fn get_state(&self) -> Self::State {
-        self.lexer.cursor
+        self.lexer.get_state()
     }
 
     fn set_state(&mut self, state: Self::State) {
-        self.lexer.cursor = state;
+        self.lexer.set_state(state);
     }
 }

@@ -246,7 +246,7 @@ pub enum TokenKind<'a> {
 
 bitflags! {
     /// Flags for a regular expression literal.
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
     pub struct RegexFlags: u8 {
         /// Global flag.
         const G_GLOBAL = 0b00000001;

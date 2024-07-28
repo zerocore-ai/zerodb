@@ -2,6 +2,7 @@ use zeroql_macros::{backtrack, memoize};
 
 use crate::{
     ast::{Ast, AstKind},
+    compiler::reversible::Reversible,
     lexer::{Token, TokenKind},
 };
 
@@ -11,22 +12,23 @@ use super::{Parser, ParserResult};
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-#[backtrack(state = self.lexer.cursor, condition = |r| matches!(r, Ok(None)))]
-#[memoize(cache = self.cache, salt = self.lexer.cursor)]
+#[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
+#[memoize(cache = self.cache, salt = self.lexer.state)]
 impl<'a> Parser<'a> {
     /// Parses a keyword.
     pub(super) fn parse_kw(&mut self, string: &'a str) -> ParserResult<Option<Ast<'a>>> {
-        let token = self.eat_token()?;
+        let state = self.get_state();
         if let Some(Token {
             span,
             kind: TokenKind::PlainIdentifier(ident),
-        }) = token
+        }) = self.eat_token()?
         {
             if ident == string.to_uppercase() || ident == string.to_lowercase() {
                 return Ok(Some(Ast::new(span, AstKind::Temp)));
             }
         }
 
+        self.set_state(state);
         Ok(None)
     }
 
@@ -36,12 +38,14 @@ impl<'a> Parser<'a> {
         string_a: &'a str,
         string_b: &'a str,
     ) -> ParserResult<Option<Ast<'a>>> {
+        let state = self.get_state();
         if let Some(Ast { span: span_a, .. }) = self.parse_kw(string_a)? {
             if let Some(Ast { span: span_b, .. }) = self.parse_kw(string_b)? {
                 return Ok(Some(Ast::new(span_a.start..span_b.end, AstKind::Temp)));
             }
         }
 
+        self.set_state(state);
         Ok(None)
     }
 

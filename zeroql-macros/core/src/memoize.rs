@@ -157,7 +157,7 @@ fn generate_transformed_fn(
     } = options;
 
     let hashable_key = if salt.is_some() {
-        quote! { &(#fn_name_str, (#(#fn_arg_names_no_cache),*), #salt) }
+        quote! { &(#fn_name_str, (#(#fn_arg_names_no_cache),*), #salt.clone()) }
     } else {
         quote! { &(#fn_name_str, (#(#fn_arg_names_no_cache),*)) }
     };

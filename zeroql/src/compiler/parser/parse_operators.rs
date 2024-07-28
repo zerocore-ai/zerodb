@@ -1,7 +1,9 @@
+use itertools::Either;
 use zeroql_macros::{backtrack, memoize};
 
 use crate::{
     ast::{Ast, AstKind},
+    compiler::reversible::Reversible,
     lexer::{
         Token,
         TokenKind::{self, *},
@@ -15,18 +17,19 @@ use super::{Parser, ParserResult};
 // Methods
 //--------------------------------------------------------------------------------------------------
 
-#[backtrack(state = self.lexer.cursor, condition = |r| matches!(r, Ok(None)))]
-#[memoize(cache = self.cache, salt = self.lexer.cursor)]
+#[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
+#[memoize(cache = self.cache, salt = self.lexer.state)]
 impl<'a> Parser<'a> {
     /// Parses a token of the given kind.
     pub fn parse_tok(&mut self, token_kind: TokenKind) -> ParserResult<Option<Ast<'a>>> {
-        let token = self.eat_token()?;
-        if let Some(Token { span, kind }) = token {
+        let state = self.get_state();
+        if let Some(Token { span, kind }) = self.eat_token()? {
             if kind == token_kind {
                 return Ok(Some(Ast::new(span, AstKind::Temp)));
             }
         }
 
+        self.set_state(state);
         Ok(None)
     }
 
@@ -45,7 +48,12 @@ impl<'a> Parser<'a> {
             (arg parse_tok OpStar)
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a logical AND operator.
@@ -64,7 +72,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw "and")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a logical OR operator.
@@ -83,7 +96,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw "or")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is an IS operator.
@@ -102,7 +120,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw "is")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is an IS operator.
@@ -121,7 +144,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw2 "is" "not")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
     /// Parses an operator that is a NOT operator.
     ///
@@ -139,7 +167,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw "not")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is an IN operator.
@@ -186,7 +219,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw "contains")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a NOT CONTAINS operator.
@@ -207,7 +245,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw2 "not" "contains")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a CONTAINS NONE operator.
@@ -228,7 +271,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw2 "contains" "none")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a CONTAINS ALL operator.
@@ -249,7 +297,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw2 "contains" "all")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a CONTAINS ANY operator.
@@ -270,7 +323,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw2 "contains" "any")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a MATCH operator.
@@ -289,7 +347,12 @@ impl<'a> Parser<'a> {
             (arg parse_kw "match")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 
     /// Parses an operator that is a NOT MATCH operator.
@@ -310,6 +373,11 @@ impl<'a> Parser<'a> {
             (arg parse_kw2 "not" "match")
         ));
 
-        Ok(result.map(|x| x.unwrap_solo()))
+        let result = result.map(|x| match x.unwrap_choice() {
+            Either::Left(x) => x.unwrap_single(),
+            Either::Right(x) => x.unwrap_single(),
+        });
+
+        Ok(result)
     }
 }

@@ -24,7 +24,7 @@
   </p> -->
 </div>
 
-**`zerodb`** is a modern multi-model database for distributed high-performance applications.
+**`zerodb`** is a modern multi-model local-first database for distributed high-performance applications.
 
 ### Key Features
 
@@ -40,7 +40,7 @@ This feature enables data to be stored locally, reducing reliance on network req
 
 #### Developer Experience
 
-`zerodb` enhances productivity with an interactive shell, Language Server Protocol (LSP) server, linter, and formatter, providing a comprehensive set of tools for a seamless development experience.
+`zerodb` enhances productivity with an interactive shell, Language Server Protocol (LSP) server, and formatter, providing a comprehensive set of tools for a seamless development experience.
 
 </br>
 

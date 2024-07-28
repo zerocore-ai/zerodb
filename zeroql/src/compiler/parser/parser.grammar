@@ -372,15 +372,18 @@ raw_lit =
     | regex_lit
     | byte_string_lit
     | boolean_lit
+    | none_lit
 
 list_lit =
     | "[" "]"
     | "[" op ("," op)* ","? "]"
 
 object_lit =
+    | "{" "}"
     | "{" identifier ":" op ("," identifier ":" op)* ","? "}"
 
 tuple_lit =
+    | "(" ")"
     | "(" op ("," op)* ","? ")"
 
 lit =
@@ -388,125 +391,6 @@ lit =
     | list_lit
     | object_lit
     | tuple_lit
-
-(* STATEMENTS *)
-
-type_sig =
-    | "[" type_sig ";" integer_lit "]" "?"*
-    | "[" type_sig "]" "?"*
-    | "(" type_sig ("," type_sig)* ","? ")" "?"*
-    | scope_op "<" type_sig ("," type_sig)* ","? ">" "?"*
-    | scope_op "?"*
-
-if_not_exists =
-    | kw_if kw_not kw_exists
-
-if_exists =
-    | kw_if kw_exists
-
-on_namespace =
-    | kw_on (kw_namespace | kw_ns)? identifier
-
-on_database =
-    | kw_on (kw_database | kw_db)? identifier
-
-on_table =
-    | kw_on kw_table identifier
-
-define_namespace_stmt =
-    | kw_define (kw_namespace | kw_ns) if_not_exists? identifier
-    | kw_define (kw_namespace | kw_ns) identifier if_not_exists?
-
-define_database_stmt =
-    | kw_define (kw_database | kw_db) if_not_exists? identifier on_namespace?
-    | kw_define (kw_database | kw_db) identifier << if_not_exists? on_namespace? >>
-
-define_table_field_type =
-    | kw_type type_sig
-
-define_table_field_value =
-    | kw_value op
-
-define_table_field_assert =
-    | kw_assert op
-
-define_table_field =
-    | identifier << define_table_field_type define_table_field_value? define_table_field_assert* kw_readonly? kw_unique? >>
-
-define_table_fields =
-    | kw_fields define_table_field ("," define_table_field)*
-
-define_table_stmt =
-    | kw_define kw_table if_not_exists? identifier on_database? define_table_fields?
-    | kw_define kw_table identifier << if_not_exists? on_database? define_table_fields? >>
-
-define_edge_stmt =
-    | kw_define kw_edge if_not_exists? identifier on_database? define_table_fields?
-    | kw_define kw_edge identifier << if_not_exists? on_database? define_table_fields? >>
-
-define_type_field =
-    | identifier define_table_field_type
-
-define_type_fields =
-    | kw_fields define_type_field ("," define_type_field)*
-
-define_type_stmt =
-    | kw_define kw_type if_not_exists? identifier on_database? define_type_fields?
-    | kw_define kw_type identifier << if_not_exists? on_database? define_type_fields? >>
-
-define_enum_variants =
-    | kw_variants identifier ("," identifier)*
-
-define_enum_stmt =
-    | kw_define kw_enum if_not_exists? identifier on_database? define_enum_variants?
-    | kw_define kw_enum identifier << if_not_exists? on_database? define_enum_variants? >>
-
-define_type_stmt =
-    | kw_define kw_type if_not_exists? identifier on_database? define_table_fields?
-    | kw_define kw_type identifier << if_not_exists? on_database? define_table_fields? >>
-
-define_index_fields =
-    | kw_fields identifier ("," identifier)*
-
-define_index_with =
-    | kw_with function_call_op
-
-define_index_stmt =
-    | kw_define kw_index if_not_exists? identifier << on_database? on_table? define_index_fields define_index_with? >>
-    | kw_define kw_index identifier << if_not_exists? on_database? on_table? define_index_fields define_index_with? >>
-
-define_module_block =
-    | kw_with module_block kw_end
-
-define_module_stmt =
-    | kw_define (kw_module | kw_mod) if_not_exists? identifier << define_module_block on_database? >>
-    | kw_define (kw_module | kw_mod) identifier << if_not_exists? define_module_block on_database? >>
-
-define_param_stmt =
-    | kw_define kw_param if_not_exists? identifier << on_database? define_table_field_type? define_table_field_value >>
-    | kw_define kw_param identifier << if_not_exists? on_database? define_table_field_type? define_table_field_value >>
-
-define_stmt =
-    | define_namespace_stmt
-    | define_database_stmt
-    | define_table_stmt
-    | define_edge_stmt
-    | define_type_stmt
-    | define_enum_stmt
-    | define_index_stmt
-    | define_module_stmt
-    | define_param_stmt
-
-use_stmt =
-    | kw_use (kw_namespace | kw_ns) identifier ((kw_database | kw_db) identifier
-    | kw_use (kw_database | kw_db) identifier
-    | kw_use kw_table identifier
-
-stmt =
-    | define_stmt
-    | use_stmt
-    | kw_break
-    | kw_continue
 
 (* OPERATIONS *)
 
@@ -892,6 +776,125 @@ exp =
     | let_exp
     | set_exp
     | op
+
+(* STATEMENTS *)
+
+type_sig =
+    | "[" type_sig ";" integer_lit "]" "?"*
+    | "[" type_sig "]" "?"*
+    | "(" type_sig ("," type_sig)* ","? ")" "?"*
+    | scope_op "<" type_sig ("," type_sig)* ","? ">" "?"*
+    | scope_op "?"*
+
+if_not_exists =
+    | kw_if kw_not kw_exists
+
+if_exists =
+    | kw_if kw_exists
+
+on_namespace =
+    | kw_on (kw_namespace | kw_ns)? identifier
+
+on_database =
+    | kw_on (kw_database | kw_db)? identifier
+
+on_table =
+    | kw_on kw_table identifier
+
+define_namespace_stmt =
+    | kw_define (kw_namespace | kw_ns) if_not_exists? identifier
+    | kw_define (kw_namespace | kw_ns) identifier if_not_exists?
+
+define_database_stmt =
+    | kw_define (kw_database | kw_db) if_not_exists? identifier on_namespace?
+    | kw_define (kw_database | kw_db) identifier << if_not_exists? on_namespace? >>
+
+define_table_field_type =
+    | kw_type type_sig
+
+define_table_field_value =
+    | kw_value op
+
+define_table_field_assert =
+    | kw_assert op
+
+define_table_field =
+    | identifier << define_table_field_type define_table_field_value? define_table_field_assert* kw_readonly? kw_unique? >>
+
+define_table_fields =
+    | kw_fields define_table_field ("," define_table_field)*
+
+define_table_stmt =
+    | kw_define kw_table if_not_exists? identifier on_database? define_table_fields?
+    | kw_define kw_table identifier << if_not_exists? on_database? define_table_fields? >>
+
+define_edge_stmt =
+    | kw_define kw_edge if_not_exists? identifier on_database? define_table_fields?
+    | kw_define kw_edge identifier << if_not_exists? on_database? define_table_fields? >>
+
+define_type_field =
+    | identifier define_table_field_type
+
+define_type_fields =
+    | kw_fields define_type_field ("," define_type_field)*
+
+define_type_stmt =
+    | kw_define kw_type if_not_exists? identifier on_database? define_type_fields?
+    | kw_define kw_type identifier << if_not_exists? on_database? define_type_fields? >>
+
+define_enum_variants =
+    | kw_variants identifier ("," identifier)*
+
+define_enum_stmt =
+    | kw_define kw_enum if_not_exists? identifier on_database? define_enum_variants?
+    | kw_define kw_enum identifier << if_not_exists? on_database? define_enum_variants? >>
+
+define_type_stmt =
+    | kw_define kw_type if_not_exists? identifier on_database? define_table_fields?
+    | kw_define kw_type identifier << if_not_exists? on_database? define_table_fields? >>
+
+define_index_fields =
+    | kw_fields identifier ("," identifier)*
+
+define_index_with =
+    | kw_with function_call_op
+
+define_index_stmt =
+    | kw_define kw_index if_not_exists? identifier << on_database? on_table? define_index_fields define_index_with? >>
+    | kw_define kw_index identifier << if_not_exists? on_database? on_table? define_index_fields define_index_with? >>
+
+define_module_block =
+    | kw_with module_block kw_end
+
+define_module_stmt =
+    | kw_define (kw_module | kw_mod) if_not_exists? identifier << define_module_block on_database? >>
+    | kw_define (kw_module | kw_mod) identifier << if_not_exists? define_module_block on_database? >>
+
+define_param_stmt =
+    | kw_define kw_param if_not_exists? identifier << on_database? define_table_field_type? define_table_field_value >>
+    | kw_define kw_param identifier << if_not_exists? on_database? define_table_field_type? define_table_field_value >>
+
+define_stmt =
+    | define_namespace_stmt
+    | define_database_stmt
+    | define_table_stmt
+    | define_edge_stmt
+    | define_type_stmt
+    | define_enum_stmt
+    | define_index_stmt
+    | define_module_stmt
+    | define_param_stmt
+
+use_stmt =
+    | kw_use (kw_namespace | kw_ns) identifier ((kw_database | kw_db) identifier
+    | kw_use (kw_database | kw_db) identifier
+    | kw_use kw_table identifier
+
+stmt =
+    | define_stmt
+    | use_stmt
+    | kw_break
+    | kw_continue
 
 (* PROGRAM *)
 

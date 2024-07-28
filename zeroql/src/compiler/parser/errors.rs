@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::num::{ParseFloatError, ParseIntError};
 
 use thiserror::Error;
 
@@ -19,6 +19,10 @@ pub enum ParserError {
     LexerError(#[from] LexerError),
 
     /// An error parsing u128 integer literal.
-    #[error("Invalid integer literal: {0}")]
-    InvalidIntegerLiteral(ParseIntError),
+    #[error("Invalid integer literal: {0}, value = {1}")]
+    InvalidIntegerLiteral(ParseIntError, String),
+
+    /// An error parsing f64 float literal.
+    #[error("Invalid float literal: {0}, value = {1}")]
+    InvalidFloatLiteral(ParseFloatError, String),
 }

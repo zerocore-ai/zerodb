@@ -4,6 +4,7 @@ use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 
 use crate::{
+    compiler::reversible::Reversible,
     lexer::{LexerError, LexerResult, Token, TokenKind},
     Span,
 };
@@ -20,6 +21,13 @@ pub struct Lexer<'a> {
     /// The input string.
     pub(crate) string: &'a str,
 
+    /// The state of the lexer.
+    pub(crate) state: LexerState,
+}
+
+/// The state of the lexer.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+pub struct LexerState {
     /// The current position in the input string.
     pub(crate) cursor: usize,
 
@@ -36,7 +44,7 @@ pub struct Lexer<'a> {
 }
 
 /// A bracket.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Bracket {
     /// An opening parenthesis.
     OpenParen,
@@ -62,29 +70,24 @@ pub enum Bracket {
 //--------------------------------------------------------------------------------------------------
 
 impl<'a> Lexer<'a> {
-    /// Returns the current position in the input string.
-    pub fn cursor(&self) -> usize {
-        self.cursor
-    }
-
     /// Produces the next token in the input string.
-    fn next_token(&mut self) -> LexerResult<Option<Token<'a>>> {
+    pub fn next_token(&mut self) -> LexerResult<Option<Token<'a>>> {
         // Check for the end of the input string.
-        if self.cursor >= self.string.len() {
+        if self.state.cursor >= self.string.len() {
             return Ok(None);
         }
 
         // Handle the module block precedent.
-        if self.module_block_precedent == 4 {
+        if self.state.module_block_precedent == 4 {
             return Ok(Some(self.lex_module_block()?));
         }
 
         // Skip continuations, whitespaces and comments.
-        self.cursor += self.skip_superfluous();
-        let remainder = &self.string[self.cursor..];
+        self.state.cursor += self.skip_superfluous();
+        let remainder = &self.string[self.state.cursor..];
 
         // Check for the end of the input string.
-        if self.cursor >= self.string.len() {
+        if self.state.cursor >= self.string.len() {
             return Ok(None);
         }
 
@@ -103,27 +106,27 @@ impl<'a> Lexer<'a> {
             let identifier = m.as_str();
 
             // Check for the module block precedent.
-            match self.module_block_precedent {
+            match self.state.module_block_precedent {
                 // kw_define
                 0 => {
                     if identifier == "define" || identifier == "DEFINE" {
-                        self.module_block_precedent = 1;
+                        self.state.module_block_precedent = 1;
                     }
                 }
                 // kw_module
                 1 => {
                     if identifier == "module" || identifier == "MODULE" {
-                        self.module_block_precedent = 2;
+                        self.state.module_block_precedent = 2;
                     }
                 }
                 // identifier
                 2 => {
-                    self.module_block_precedent = 3;
+                    self.state.module_block_precedent = 3;
                 }
                 // kw_with
                 3 => {
                     if identifier == "with" || identifier == "WITH" {
-                        self.module_block_precedent = 4;
+                        self.state.module_block_precedent = 4;
                     }
                 }
                 _ => unreachable!(),
@@ -135,8 +138,8 @@ impl<'a> Lexer<'a> {
             )
         } else if let Some(m) = ESCAPED_IDENTIFIER_REGEX.find(remainder) {
             // Check for the module block precedent.
-            if self.module_block_precedent == 2 {
-                self.module_block_precedent = 3;
+            if self.state.module_block_precedent == 2 {
+                self.state.module_block_precedent = 3;
             }
 
             // Remove first and last character (ticks).
@@ -170,15 +173,15 @@ impl<'a> Lexer<'a> {
                 TokenKind::RegexLiteral(captured_regex, captured_flags),
             )
         } else if let Some(m) = OP_OPEN_PAREN_REGEX.find(remainder) {
-            self.bracket_stack.push(Bracket::OpenParen);
+            self.state.bracket_stack.push(Bracket::OpenParen);
 
             Token::new(self.advance_by_match(m), TokenKind::OpOpenParen)
         } else if let Some(m) = OP_CLOSE_PAREN_REGEX.find(remainder) {
-            match self.bracket_stack.pop() {
+            match self.state.bracket_stack.pop() {
                 Some(Bracket::OpenParen) => (),
                 other => {
                     return Err(LexerError::MismatchedBracket {
-                        span: self.cursor..self.cursor + 1,
+                        span: self.state.cursor..self.state.cursor + 1,
                         expected: other.map(|b| b.opposite()),
                         found: Bracket::CloseParen,
                     })
@@ -187,15 +190,15 @@ impl<'a> Lexer<'a> {
 
             Token::new(self.advance_by_match(m), TokenKind::OpCloseParen)
         } else if let Some(m) = OP_OPEN_SQUARE_BRACKET_REGEX.find(remainder) {
-            self.bracket_stack.push(Bracket::OpenSquareBracket);
+            self.state.bracket_stack.push(Bracket::OpenSquareBracket);
 
             Token::new(self.advance_by_match(m), TokenKind::OpOpenSquareBracket)
         } else if let Some(m) = OP_CLOSE_SQUARE_BRACKET_REGEX.find(remainder) {
-            match self.bracket_stack.pop() {
+            match self.state.bracket_stack.pop() {
                 Some(Bracket::OpenSquareBracket) => (),
                 other => {
                     return Err(LexerError::MismatchedBracket {
-                        span: self.cursor..self.cursor + 1,
+                        span: self.state.cursor..self.state.cursor + 1,
                         expected: other.map(|b| b.opposite()),
                         found: Bracket::CloseSquareBracket,
                     })
@@ -204,15 +207,15 @@ impl<'a> Lexer<'a> {
 
             Token::new(self.advance_by_match(m), TokenKind::OpCloseSquareBracket)
         } else if let Some(m) = OP_OPEN_BRACE_REGEX.find(remainder) {
-            self.bracket_stack.push(Bracket::OpenBrace);
+            self.state.bracket_stack.push(Bracket::OpenBrace);
 
             Token::new(self.advance_by_match(m), TokenKind::OpOpenBrace)
         } else if let Some(m) = OP_CLOSE_BRACE_REGEX.find(remainder) {
-            match self.bracket_stack.pop() {
+            match self.state.bracket_stack.pop() {
                 Some(Bracket::OpenBrace) => (),
                 other => {
                     return Err(LexerError::MismatchedBracket {
-                        span: self.cursor..self.cursor + 1,
+                        span: self.state.cursor..self.state.cursor + 1,
                         expected: other.map(|b| b.opposite()),
                         found: Bracket::CloseBrace,
                     })
@@ -221,50 +224,50 @@ impl<'a> Lexer<'a> {
 
             Token::new(self.advance_by_match(m), TokenKind::OpCloseBrace)
         } else if let Some(m) = OP_COMMA_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpComma)
         } else if let Some(m) = OP_SCOPE_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpScope)
         } else if let Some(m) = OP_COLON_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpColon)
         } else if let Some(m) = OP_ASSIGN_PLUS_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignPlus)
         } else if let Some(m) = OP_ASSIGN_MINUS_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignMinus)
         } else if let Some(m) = OP_ASSIGN_MUL_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignMul)
         } else if let Some(m) = OP_ASSIGN_DIV_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignDiv)
         } else if let Some(m) = OP_ASSIGN_MOD_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignMod)
         } else if let Some(m) = OP_ASSIGN_POW_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignPow)
         } else if let Some(m) = OP_ASSIGN_SHL_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignShl)
         } else if let Some(m) = OP_ASSIGN_SHR_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignShr)
         } else if let Some(m) = OP_ASSIGN_BIT_AND_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignBitAnd)
         } else if let Some(m) = OP_ASSIGN_BIT_OR_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignBitOr)
         } else if let Some(m) = OP_ASSIGN_BIT_XOR_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignBitXor)
         } else if let Some(m) = OP_ASSIGN_BIT_NOT_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignBitNot)
         } else if let Some(m) = OP_ASSIGN_NULL_COALESCE_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignNullCoalesce)
         } else if let Some(m) = OP_MULTI_ARROW_RIGHT_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpMultiArrowRight)
@@ -299,7 +302,7 @@ impl<'a> Lexer<'a> {
         } else if let Some(m) = OP_EQ_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpEq)
         } else if let Some(m) = OP_IS_LEXER_REGEX.find(remainder) {
-            self.continuation_precedent = true;
+            self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpIsLexer)
         } else if let Some(m) = OP_IS_NOT_LEXER_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpIsNotLexer)
@@ -344,19 +347,28 @@ impl<'a> Lexer<'a> {
         } else if let Some(m) = OP_STAR_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpStar)
         } else if let Some(m) = HEX_INTEGER_LITERAL_REGEX.find(remainder) {
+            // Remove marker characters (`0x`).
+            let trimmed_str = &m.as_str()[2..m.end()];
+
             Token::new(
                 self.advance_by_match(m),
-                TokenKind::HexIntegerLiteral(m.as_str()),
+                TokenKind::HexIntegerLiteral(trimmed_str),
             )
         } else if let Some(m) = OCT_INTEGER_LITERAL_REGEX.find(remainder) {
+            // Remove marker characters (`0o`).
+            let trimmed_str = &m.as_str()[2..m.end()];
+
             Token::new(
                 self.advance_by_match(m),
-                TokenKind::OctIntegerLiteral(m.as_str()),
+                TokenKind::OctIntegerLiteral(trimmed_str),
             )
         } else if let Some(m) = BIN_INTEGER_LITERAL_REGEX.find(remainder) {
+            // Remove marker characters (`0b`).
+            let trimmed_str = &m.as_str()[2..m.end()];
+
             Token::new(
                 self.advance_by_match(m),
-                TokenKind::BinIntegerLiteral(m.as_str()),
+                TokenKind::BinIntegerLiteral(trimmed_str),
             )
         } else if let Some(m) = FLOAT_LITERAL_REGEX.find(remainder) {
             Token::new(
@@ -372,8 +384,8 @@ impl<'a> Lexer<'a> {
             Token::new(self.advance_by_match(m), TokenKind::OpDot)
         } else {
             return Err(LexerError::UnexpectedCharacter {
-                span: self.cursor..self.cursor + 1,
-                character: self.string.chars().nth(self.cursor).unwrap(),
+                span: self.state.cursor..self.state.cursor + 1,
+                character: self.string.chars().nth(self.state.cursor).unwrap(),
             });
         };
 
@@ -381,26 +393,26 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_module_block(&mut self) -> LexerResult<Token<'a>> {
-        self.module_block_precedent = 0;
-        let remainder = &self.string[self.cursor..];
+        self.state.module_block_precedent = 0;
+        let remainder = &self.string[self.state.cursor..];
 
         if let Some(m) = MODULE_BLOCK_REGEX.find(remainder) {
             // Vomit last three characters (`end` or `END`).
             let trimmed_block = &m.as_str()[..m.end() - 3];
-            let span = self.cursor..self.cursor + (m.end() - 3);
-            self.cursor += m.end() - 3;
+            let span = self.state.cursor..self.state.cursor + (m.end() - 3);
+            self.state.cursor += m.end() - 3;
 
             return Ok(Token::new(span, TokenKind::ModuleBlock(trimmed_block)));
         }
 
         Err(LexerError::UnableToLexModuleBlock {
-            span: self.cursor..self.cursor + 1,
+            span: self.state.cursor..self.state.cursor + 1,
         })
     }
 
     /// Skip continuations, whitespaces and comments
     fn skip_superfluous(&mut self) -> usize {
-        let remainder = &self.string[self.cursor..];
+        let remainder = &self.string[self.state.cursor..];
 
         if let Some(m) = COMMENT_REGEX.find(remainder) {
             return m.end();
@@ -408,13 +420,13 @@ impl<'a> Lexer<'a> {
             return m.end();
         } else if let Some(m) = CONT_WHITESPACE_REGEX.find(remainder) {
             // Check for "," or "=" precedent.
-            if self.continuation_precedent {
-                self.continuation_precedent = false;
+            if self.state.continuation_precedent {
+                self.state.continuation_precedent = false;
                 return m.end();
             }
 
             // Check for unmatched bracket precedent.
-            if !self.bracket_stack.is_empty() {
+            if !self.state.bracket_stack.is_empty() {
                 return m.end();
             }
 
@@ -429,8 +441,8 @@ impl<'a> Lexer<'a> {
 
     #[inline]
     fn advance_by_match(&mut self, m: regex::Match) -> Span {
-        let span = self.cursor..self.cursor + m.end();
-        self.cursor += m.end();
+        let span = self.state.cursor..self.state.cursor + m.end();
+        self.state.cursor += m.end();
         span
     }
 }
@@ -456,10 +468,7 @@ impl<'a> From<&'a str> for Lexer<'a> {
     fn from(string: &'a str) -> Self {
         Self {
             string,
-            cursor: 0,
-            bracket_stack: vec![],
-            continuation_precedent: false,
-            module_block_precedent: 0,
+            state: LexerState::default(),
         }
     }
 }
@@ -486,6 +495,18 @@ impl Display for Bracket {
                 Self::CloseBrace => "}",
             }
         )
+    }
+}
+
+impl<'a> Reversible for Lexer<'a> {
+    type State = LexerState;
+
+    fn get_state(&self) -> LexerState {
+        self.state.clone()
+    }
+
+    fn set_state(&mut self, state: LexerState) {
+        self.state = state;
     }
 }
 
