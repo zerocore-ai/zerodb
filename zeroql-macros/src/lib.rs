@@ -9,6 +9,7 @@ pub mod cache;
 // Re-exports
 //--------------------------------------------------------------------------------------------------
 
+pub use tracing;
 pub use zeroql_macros_core::{backtrack, memoize};
 
 //--------------------------------------------------------------------------------------------------
@@ -24,5 +25,6 @@ mod tests {
         cases.pass("tests/01-memoize-pass.rs");
         cases.pass("tests/02-backtrack-pass.rs");
         cases.pass("tests/03-memoize-and-backtrack-pass.rs");
+        cases.pass("tests/04-memoize-skip-pass.rs");
     }
 }

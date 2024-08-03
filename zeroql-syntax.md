@@ -367,8 +367,10 @@ bird -> is_a[0..2] -> thing -- Level 0 to 1
 -- bird -> is_a -> * -> is_a -> thing
 ```
 
+**And in the future**
+
 ```surql
-bird -> is_a[*] -> thing -- Level 0 to infinity
+bird -> is_a[..] -> thing -- Level 0 to infinity
 -- bird -> is_a -> thing
 -- bird -> is_a -> * -> is_a -> thing
 -- ...

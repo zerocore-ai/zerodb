@@ -9,6 +9,10 @@ use zeroql_macros::{anykey::AnyKey, memoize};
 
 struct RandomComputer {
     cache: LruCache<Box<dyn AnyKey>, usize>,
+}
+
+struct RandomStateComputer {
+    cache: LruCache<Box<dyn AnyKey>, (usize, usize)>,
     count: usize,
 }
 
@@ -31,16 +35,20 @@ fn main() {
     assert_eq!(modulo_rand(&mut computer, 2), value);
     assert_eq!(modulo_rand(&mut computer, 2), value);
 
-    let value_1 = plus_rand_salt(&mut computer, 2); // count goes from 0 to 1
-    let value_2 = plus_rand_salt(&mut computer, 2); // count goes from 1 to 2
+    let mut computer = RandomStateComputer::new();
 
-    assert_ne!(value_1, value_2);
+    let value_1 = plus_rand_state(&mut computer, 2); // before call, state (count) is 0, after call, state (count) is 1
+    assert_eq!(computer.count, 1);
 
-    computer.count = 1; // Set count back to 0
-    assert_eq!(plus_rand_salt(&mut computer, 2), value_2);
+    let value_2 = plus_rand_state(&mut computer, 3); // before call, state (count) is 1, after call, state (count) is 0
+    assert_eq!(computer.count, 2);
 
-    computer.count = 0; // Set count back to 1
-    assert_eq!(plus_rand_salt(&mut computer, 2), value_1);
+    computer.count = 0; // Set state (count) back to 0
+    assert_eq!(plus_rand_state(&mut computer, 2), value_1); // We get the cached value at state (count) = 0
+    assert_eq!(computer.count, 1); // State should be updated as well
+
+    assert_eq!(plus_rand_state(&mut computer, 3), value_2); // We get the cached value at state (count) = 1
+    assert_eq!(computer.count, 2); // State should be updated as well
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -52,7 +60,6 @@ impl RandomComputer {
     fn new() -> Self {
         Self {
             cache: LruCache::new(NonZeroUsize::new(10).unwrap()),
-            count: 0,
         }
     }
 
@@ -67,8 +74,18 @@ fn modulo_rand(_c: &mut RandomComputer, x: usize) -> usize {
     x % rand::random::<usize>()
 }
 
-#[memoize(cache = c.cache, salt = c.count)]
-fn plus_rand_salt(c: &mut RandomComputer, x: usize) -> usize {
+impl RandomStateComputer {
+    fn new() -> Self {
+        Self {
+            cache: LruCache::new(NonZeroUsize::new(10).unwrap()),
+            count: 0,
+        }
+    }
+}
+
+#[memoize(cache = c.cache, state = c.count)]
+fn plus_rand_state(c: &mut RandomStateComputer, x: usize) -> usize {
+    let value = x + rand::random::<usize>();
     c.count += 1;
-    x + rand::random::<usize>()
+    value
 }

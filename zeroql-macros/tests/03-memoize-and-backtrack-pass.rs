@@ -9,7 +9,7 @@ use zeroql_macros::{anykey::AnyKey, backtrack, memoize};
 //--------------------------------------------------------------------------------------------------
 
 struct Parser<'a> {
-    cache: LruCache<Box<dyn AnyKey>, Option<Ast>>,
+    cache: LruCache<Box<dyn AnyKey>, (Option<Ast>, usize)>,
     cursor: usize,
     tokens: &'a [&'a str],
 }
@@ -62,8 +62,8 @@ fn main() {
 // Methods
 //--------------------------------------------------------------------------------------------------
 
+#[memoize(cache = self.cache, state = self.cursor)]
 #[backtrack(state = self.cursor, condition = |r| r.is_none())]
-#[memoize(cache = self.cache, salt = self.cursor)]
 impl<'a> Parser<'a> {
     fn new(tokens: &'a [&'a str]) -> Self {
         Self {

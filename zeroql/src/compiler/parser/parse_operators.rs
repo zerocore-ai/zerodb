@@ -1,9 +1,7 @@
-use itertools::Either;
 use zeroql_macros::{backtrack, memoize};
 
 use crate::{
     ast::{Ast, AstKind},
-    compiler::reversible::Reversible,
     lexer::{
         Token,
         TokenKind::{self, *},
@@ -11,25 +9,25 @@ use crate::{
     parse,
 };
 
-use super::{Parser, ParserResult};
+use super::{Choice, Parser, ParserResult};
 
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
 
+#[memoize(cache = self.cache, state = self.lexer.state)]
 #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
-#[memoize(cache = self.cache, salt = self.lexer.state)]
 impl<'a> Parser<'a> {
     /// Parses a token of the given kind.
-    pub fn parse_tok(&mut self, token_kind: TokenKind) -> ParserResult<Option<Ast<'a>>> {
-        let state = self.get_state();
+    #[memoize]
+    #[backtrack]
+    pub fn parse_tok(&mut self, token_kind: TokenKind<'static>) -> ParserResult<Option<Ast<'a>>> {
         if let Some(Token { span, kind }) = self.eat_token()? {
             if kind == token_kind {
                 return Ok(Some(Ast::new(span, AstKind::Temp)));
             }
         }
 
-        self.set_state(state);
         Ok(None)
     }
 
@@ -40,8 +38,8 @@ impl<'a> Parser<'a> {
     ///     | op_mul_lexer
     ///     | op_star
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_mul(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpMulLexer)
@@ -49,8 +47,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -64,8 +63,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["and"]
     ///     | plain_identifier["AND"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_and(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpAndLexer)
@@ -73,8 +72,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -88,8 +88,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["or"]
     ///     | plain_identifier["OR"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_or(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpOrLexer)
@@ -97,8 +97,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -112,8 +113,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["is"]
     ///     | plain_identifier["IS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_is(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpIsLexer)
@@ -121,8 +122,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -136,8 +138,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["is"]
     ///     | plain_identifier["IS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_is_not(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpIsNotLexer)
@@ -145,8 +147,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -159,8 +162,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["not"]
     ///     | plain_identifier["NOT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_not(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpNotLexer)
@@ -168,8 +171,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -182,8 +186,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["in"]
     ///     | plain_identifier["IN"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_in(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("in")
     }
@@ -197,8 +201,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["NOT"] plain_identifier["IN"]
     ///     | plain_identifier["NOT"] plain_identifier["in"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_not_in(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw2("not", "in")
     }
@@ -211,8 +215,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["contains"]
     ///     | plain_identifier["CONTAINS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_contains(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpContainsLexer)
@@ -220,8 +224,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -237,8 +242,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["NOT"] plain_identifier["CONTAINS"]
     ///     | plain_identifier["NOT"] plain_identifier["contains"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_not_contains(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpNotContainsLexer)
@@ -246,8 +251,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -263,8 +269,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["CONTAINS"] plain_identifier["NONE"]
     ///     | plain_identifier["CONTAINS"] plain_identifier["none"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_contains_none(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpContainsNoneLexer)
@@ -272,8 +278,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -289,8 +296,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["CONTAINS"] plain_identifier["ALL"]
     ///     | plain_identifier["CONTAINS"] plain_identifier["all"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_contains_all(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpContainsAllLexer)
@@ -298,8 +305,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -315,8 +323,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["CONTAINS"] plain_identifier["ANY"]
     ///     | plain_identifier["CONTAINS"] plain_identifier["any"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_contains_any(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpContainsAnyLexer)
@@ -324,8 +332,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -339,8 +348,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["match"]
     ///     | plain_identifier["MATCH"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_match(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpMatchLexer)
@@ -348,8 +357,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)
@@ -365,8 +375,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["NOT"] plain_identifier["MATCH"]
     ///     | plain_identifier["NOT"] plain_identifier["match"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_op_not_match(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_tok OpNotMatchLexer)
@@ -374,8 +384,9 @@ impl<'a> Parser<'a> {
         ));
 
         let result = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => x.unwrap_single(),
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(result)

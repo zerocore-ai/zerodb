@@ -2,7 +2,6 @@ use zeroql_macros::{backtrack, memoize};
 
 use crate::{
     ast::{Ast, AstKind},
-    compiler::reversible::Reversible,
     lexer::{Token, TokenKind},
 };
 
@@ -12,12 +11,13 @@ use super::{Parser, ParserResult};
 // Methods
 //--------------------------------------------------------------------------------------------------
 
+#[memoize(cache = self.cache, state = self.lexer.state)]
 #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
-#[memoize(cache = self.cache, salt = self.lexer.state)]
 impl<'a> Parser<'a> {
     /// Parses a keyword.
+    #[memoize]
+    #[backtrack]
     pub(super) fn parse_kw(&mut self, string: &'a str) -> ParserResult<Option<Ast<'a>>> {
-        let state = self.get_state();
         if let Some(Token {
             span,
             kind: TokenKind::PlainIdentifier(ident),
@@ -28,24 +28,23 @@ impl<'a> Parser<'a> {
             }
         }
 
-        self.set_state(state);
         Ok(None)
     }
 
     /// Parses two keywords in a row.
+    #[memoize]
+    #[backtrack]
     pub(super) fn parse_kw2(
         &mut self,
         string_a: &'a str,
         string_b: &'a str,
     ) -> ParserResult<Option<Ast<'a>>> {
-        let state = self.get_state();
         if let Some(Ast { span: span_a, .. }) = self.parse_kw(string_a)? {
             if let Some(Ast { span: span_b, .. }) = self.parse_kw(string_b)? {
                 return Ok(Some(Ast::new(span_a.start..span_b.end, AstKind::Temp)));
             }
         }
 
-        self.set_state(state);
         Ok(None)
     }
 
@@ -56,8 +55,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["create"]
     ///     | plain_identifier["CREATE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_create(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("create")
     }
@@ -68,8 +67,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["relate"]
     ///     | plain_identifier["RELATE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_relate(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("relate")
     }
@@ -81,8 +80,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["delete"]
     ///     | plain_identifier["DELETE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_delete(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("delete")
     }
@@ -94,8 +93,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["update"]
     ///     | plain_identifier["UPDATE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_update(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("update")
     }
@@ -107,8 +106,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["select"]
     ///     | plain_identifier["SELECT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_select(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("select")
     }
@@ -120,8 +119,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["fold"]
     ///     | plain_identifier["FOLD"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_fold(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("fold")
     }
@@ -133,8 +132,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["omit"]
     ///     | plain_identifier["OMIT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_omit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("omit")
     }
@@ -146,8 +145,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["break"]
     ///     | plain_identifier["BREAK"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_break(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("break")
     }
@@ -159,8 +158,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["continue"]
     ///     | plain_identifier["CONTINUE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_continue(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("continue")
     }
@@ -172,8 +171,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["set"]
     ///     | plain_identifier["SET"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_set(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("set")
     }
@@ -185,8 +184,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["begin"]
     ///     | plain_identifier["BEGIN"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_begin(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("begin")
     }
@@ -198,8 +197,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["transaction"]
     ///     | plain_identifier["TRANSACTION"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_transaction(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("transaction")
     }
@@ -211,8 +210,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["commit"]
     ///     | plain_identifier["COMMIT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_commit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("commit")
     }
@@ -224,8 +223,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["cancel"]
     ///     | plain_identifier["CANCEL"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_cancel(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("cancel")
     }
@@ -237,8 +236,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["define"]
     ///     | plain_identifier["DEFINE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_define(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("define")
     }
@@ -250,8 +249,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["redefine"]
     ///     | plain_identifier["REDEFINE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_redefine(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("redefine")
     }
@@ -263,8 +262,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["remove"]
     ///     | plain_identifier["REMOVE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_remove(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("remove")
     }
@@ -276,8 +275,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["describe"]
     ///     | plain_identifier["DESCRIBE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_describe(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("describe")
     }
@@ -289,8 +288,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["namespace"]
     ///     | plain_identifier["NAMESPACE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_namespace(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("namespace")
     }
@@ -302,8 +301,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["ns"]
     ///     | plain_identifier["NS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_ns(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("ns")
     }
@@ -315,8 +314,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["database"]
     ///     | plain_identifier["DATABASE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_database(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("database")
     }
@@ -328,8 +327,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["db"]
     ///     | plain_identifier["DB"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_db(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("db")
     }
@@ -341,8 +340,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["table"]
     ///     | plain_identifier["TABLE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_table(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("table")
     }
@@ -354,8 +353,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["fields"]
     ///     | plain_identifier["FIELDS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_fields(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("fields")
     }
@@ -367,8 +366,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["index"]
     ///     | plain_identifier["INDEX"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_index(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("index")
     }
@@ -380,8 +379,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["indices"]
     ///     | plain_identifier["INDICES"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_indices(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("indices")
     }
@@ -393,8 +392,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["type"]
     ///     | plain_identifier["TYPE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_type(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("type")
     }
@@ -406,8 +405,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["enum"]
     ///     | plain_identifier["ENUM"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_enum(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("enum")
     }
@@ -419,8 +418,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["edge"]
     ///     | plain_identifier["EDGE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_edge(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("edge")
     }
@@ -432,8 +431,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["module"]
     ///     | plain_identifier["MODULE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_module(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("module")
     }
@@ -445,8 +444,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["param"]
     ///     | plain_identifier["PARAM"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_param(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("param")
     }
@@ -458,8 +457,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["mod"]
     ///     | plain_identifier["MOD"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_mod(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("mod")
     }
@@ -471,8 +470,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["value"]
     ///     | plain_identifier["VALUE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_value(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("value")
     }
@@ -484,8 +483,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["values"]
     ///     | plain_identifier["VALUES"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_values(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("values")
     }
@@ -497,8 +496,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["variant"]
     ///     | plain_identifier["VARIANT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_variant(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("variant")
     }
@@ -510,8 +509,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["variants"]
     ///     | plain_identifier["VARIANTS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_variants(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("variants")
     }
@@ -523,8 +522,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["assert"]
     ///     | plain_identifier["ASSERT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_assert(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("assert")
     }
@@ -536,8 +535,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["readonly"]
     ///     | plain_identifier["READONLY"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_readonly(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("readonly")
     }
@@ -549,8 +548,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["unique"]
     ///     | plain_identifier["UNIQUE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_unique(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("unique")
     }
@@ -562,8 +561,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["use"]
     ///     | plain_identifier["USE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_use(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("use")
     }
@@ -575,8 +574,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["if"]
     ///     | plain_identifier["IF"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_if(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("if")
     }
@@ -588,8 +587,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["else"]
     ///     | plain_identifier["ELSE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_else(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("else")
     }
@@ -601,8 +600,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["for"]
     ///     | plain_identifier["FOR"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_for(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("for")
     }
@@ -614,8 +613,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["then"]
     ///     | plain_identifier["THEN"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_then(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("then")
     }
@@ -627,8 +626,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["do"]
     ///     | plain_identifier["DO"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_do(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("do")
     }
@@ -640,8 +639,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["end"]
     ///     | plain_identifier["END"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_end(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("end")
     }
@@ -653,8 +652,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["not"]
     ///     | plain_identifier["NOT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_not(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("not")
     }
@@ -666,8 +665,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["exists"]
     ///     | plain_identifier["EXISTS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_exists(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("exists")
     }
@@ -679,8 +678,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["with"]
     ///     | plain_identifier["WITH"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_with(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("with")
     }
@@ -692,8 +691,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["on"]
     ///     | plain_identifier["ON"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_on(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("on")
     }
@@ -705,8 +704,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["let"]
     ///     | plain_identifier["LET"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_let(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("let")
     }
@@ -718,8 +717,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["where"]
     ///     | plain_identifier["WHERE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_where(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("where")
     }
@@ -731,8 +730,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["group"]
     ///     | plain_identifier["GROUP"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_group(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("group")
     }
@@ -744,8 +743,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["limit"]
     ///     | plain_identifier["LIMIT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_limit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("limit")
     }
@@ -757,8 +756,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["start"]
     ///     | plain_identifier["START"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_start(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("start")
     }
@@ -770,8 +769,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["order"]
     ///     | plain_identifier["ORDER"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_order(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("order")
     }
@@ -783,8 +782,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["by"]
     ///     | plain_identifier["BY"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_by(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("by")
     }
@@ -796,8 +795,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["at"]
     ///     | plain_identifier["AT"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_at(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("at")
     }
@@ -809,8 +808,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["to"]
     ///     | plain_identifier["TO"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_to(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("to")
     }
@@ -822,8 +821,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["no"]
     ///     | plain_identifier["NO"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_no(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("no")
     }
@@ -845,8 +844,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["desc"]
     ///     | plain_identifier["DESC"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_desc(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("desc")
     }
@@ -858,8 +857,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["as"]
     ///     | plain_identifier["AS"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_kw_as(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("as")
     }

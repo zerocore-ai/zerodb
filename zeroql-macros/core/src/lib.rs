@@ -27,7 +27,7 @@ use proc_macro::TokenStream;
 ///     state: usize,
 /// }
 ///
-/// #[backtrack(state = self.state, condition = |r| r.is_none())]
+/// #[backtrack(state = self.state, condition = |result| result.is_none())]
 /// impl Counter {
 ///     #[backtrack]
 ///     fn inc_even(&mut self, n: usize) -> Option<usize> {
@@ -114,6 +114,41 @@ pub fn backtrack(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// fn plus_rand(r: &mut RandomCompute, x: usize) -> usize {
 ///     x + rand::random::<usize>()
 /// }
+/// ```
+///
+/// ### Updating State on Cache Hit
+///
+/// You can update the state on a cache hit by using the `state` option:
+///
+/// ```no_run
+/// struct Counter {
+///     cache: HashMap<Box<dyn AnyKey>, usize>,
+///     count: usize,
+/// }
+///
+/// #[memoize(cache = c.cache, state = c.count)]
+/// fn plus_rand(c: &mut Counter) -> usize {
+///     c.count += 1;
+///     c.count
+/// }
+/// ```
+///
+/// ### Skipping Memoization
+///
+/// You can skip memoization given a certain condition by using the `skip` option:
+///
+/// ```no_run
+/// struct Counter {
+///     cache: HashMap<Box<dyn AnyKey>, usize>,
+///     count: usize,
+/// }
+///
+/// #[memoize(cache = c.cache, state = c.count, skip = |result| result % 2 == 0)]
+/// fn plus_rand(c: &mut Counter) -> usize {
+///     c.count += 1;
+///     c.count
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn memoize(attr: TokenStream, item: TokenStream) -> TokenStream {
     let options: MemoizeOptions = match syn::parse(attr) {

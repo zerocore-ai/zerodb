@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 
 use lru::LruCache;
-use zeroql_macros::anykey::AnyKey;
+use zeroql_macros::{anykey::AnyKey, backtrack, memoize};
 
 use crate::{
     ast::Ast,
@@ -16,21 +16,28 @@ use crate::{
 
 /// A [packrat parser][packrat] for the `zeroql` language.
 ///
-/// It is essentially a recursive descent parser that memoizes the results of parsing subexpressions,
-/// which allows it to parse any context-free grammar in linear time.
+/// This parser employs a recursive descent approach with memoization for subexpression results,
+/// enabling it to parse any context-free grammar in linear time. It also utilizes state backtracking
+/// to manage ambiguous grammars effectively.
 ///
-/// In addition, the parser also uses state backtracking to handle ambiguous grammars.
+/// The grammar rules are defined in the [`./parser.grammar`](./parser.grammar) file.
 ///
-/// It is based on the grammar defined in the [`./parser.grammar`](./parser.grammar) file.
+/// ## Important
+///
+/// Due to its recursive descent nature, this parser is not tail-recursive and may cause stack overflows
+/// with large inputs. This limitation is known and there are no immediate plans to address it. To mitigate
+/// this risk, it is recommended to run the parser in a separate thread to isolate potential faults.
 ///
 /// [packrat]: https://en.wikipedia.org/wiki/Packrat_parser
 pub struct Parser<'a> {
     /// This caches results of parsing subexpressions.
-    pub(crate) cache: LruCache<Box<dyn AnyKey>, ParserResult<Option<Ast<'a>>>>,
+    pub(crate) cache: LruCache<Box<dyn AnyKey>, CacheValue<'a>>,
 
     /// The lexer that produces tokens from the input stream.
     pub(crate) lexer: Lexer<'a>,
 }
+
+type CacheValue<'a> = (ParserResult<Option<Ast<'a>>>, LexerState);
 
 //--------------------------------------------------------------------------------------------------
 // Methods
@@ -47,6 +54,14 @@ impl<'a> Parser<'a> {
     /// Eats a token from the lexer.
     pub fn eat_token(&mut self) -> ParserResult<Option<Token<'a>>> {
         Ok(self.lexer.next_token()?)
+    }
+
+    /// Parse program.
+    /// TODO
+    #[memoize(cache = self.cache, state = self.lexer.state)]
+    #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
+    pub fn parse_program(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        Ok(None) // TODO: Implement
     }
 }
 

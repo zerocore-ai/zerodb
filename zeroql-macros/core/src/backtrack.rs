@@ -158,7 +158,7 @@ fn generate_transformed_fn(
     quote! {
         #(#fn_attrs)*
         #fn_vis fn #fn_name ( #fn_inputs ) #fn_output {
-            let mut __backtrack_state = #state.clone();
+            let __backtrack_state = #state.clone();
             let result = #fn_call;
             if (#condition)(&result) {
                 #state = __backtrack_state;

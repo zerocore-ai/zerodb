@@ -1,4 +1,3 @@
-use itertools::Either;
 use zeroql_macros::{backtrack, memoize};
 
 use crate::{
@@ -11,14 +10,14 @@ use crate::{
     parse,
 };
 
-use super::{Parser, ParserError, ParserResult};
+use super::{Choice, Parser, ParserError, ParserResult};
 
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
 
+#[memoize(cache = self.cache, state = self.lexer.state)]
 #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
-#[memoize(cache = self.cache, salt = self.lexer.state)]
 impl<'a> Parser<'a> {
     /// Parses an identifier.
     ///
@@ -27,8 +26,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier
     ///     | escaped_identifier
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_identifier(&mut self) -> ParserResult<Option<Ast<'a>>> {
         if let Some(Token { span, kind }) = self.eat_token()? {
             match kind {
@@ -45,6 +44,26 @@ impl<'a> Parser<'a> {
         Ok(None)
     }
 
+    /// Parses a variable.
+    ///
+    /// ```txt
+    /// variable =
+    ///     | variable
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_variable(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        if let Some(Token {
+            span,
+            kind: TokenKind::Variable(ident),
+        }) = self.eat_token()?
+        {
+            return Ok(Some(Ast::new(span, AstKind::Variable(ident))));
+        }
+
+        Ok(None)
+    }
+
     /// Parses a boolean literal.
     ///
     /// ```txt
@@ -52,8 +71,8 @@ impl<'a> Parser<'a> {
     ///     | (plain_identifier["true"] | plain_identifier["TRUE"])
     ///     | (plain_identifier["false"] | plain_identifier["FALSE"])
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_boolean_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (arg parse_kw "true")
@@ -61,12 +80,9 @@ impl<'a> Parser<'a> {
         ));
 
         let ast = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => {
-                Ast::new(x.unwrap_single().get_span(), AstKind::BooleanLiteral(true))
-            }
-            Either::Right(x) => {
-                Ast::new(x.unwrap_single().get_span(), AstKind::BooleanLiteral(false))
-            }
+            Choice::A(x) => Ast::new(x.unwrap_single().get_span(), AstKind::BooleanLiteral(true)),
+            Choice::B(x) => Ast::new(x.unwrap_single().get_span(), AstKind::BooleanLiteral(false)),
+            _ => unreachable!(),
         });
 
         Ok(ast)
@@ -79,8 +95,8 @@ impl<'a> Parser<'a> {
     ///     | plain_identifier["none"]
     ///     | plain_identifier["NONE"]
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_none_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         if let Some(ast) = self.parse_kw("none")? {
             return Ok(Some(Ast::new(ast.get_span(), AstKind::NoneLiteral)));
@@ -101,8 +117,8 @@ impl<'a> Parser<'a> {
     ///     | boolean_lit
     ///     | none_lit
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_raw_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let state = self.get_state();
         if let Some(Token { span, kind }) = self.eat_token()? {
@@ -131,7 +147,13 @@ impl<'a> Parser<'a> {
                     return Ok(Some(Ast::new(span, AstKind::StringLiteral(lit))));
                 }
                 TokenKind::RegexLiteral(lit, flags) => {
-                    return Ok(Some(Ast::new(span, AstKind::RegexLiteral(lit, flags))));
+                    return Ok(Some(Ast::new(
+                        span,
+                        AstKind::RegexLiteral {
+                            pattern: lit,
+                            flags,
+                        },
+                    )));
                 }
                 TokenKind::ByteStringLiteral(lit) => {
                     return Ok(Some(Ast::new(span, AstKind::ByteStringLiteral(lit))));
@@ -157,8 +179,8 @@ impl<'a> Parser<'a> {
     ///     | "[" "]"
     ///     | "[" op ("," op)* ","? "]"
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_list_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (seq (arg parse_tok OpOpenSquareBracket) (arg parse_tok OpCloseSquareBracket))
@@ -172,14 +194,14 @@ impl<'a> Parser<'a> {
         ));
 
         let ast = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => {
+            Choice::A(x) => {
                 let (open, close) = x.unwrap_seq2();
                 Ast::new(
                     open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
                     AstKind::ListLiteral(vec![]),
                 )
             }
-            Either::Right(x) => {
+            Choice::B(x) => {
                 let (open, op0, ops, _, close) = x.unwrap_seq5();
                 let mut op_asts = vec![op0.unwrap_single()];
                 for op in ops.unwrap_many() {
@@ -192,6 +214,7 @@ impl<'a> Parser<'a> {
                     AstKind::ListLiteral(op_asts),
                 )
             }
+            _ => unreachable!(),
         });
 
         Ok(ast)
@@ -204,8 +227,8 @@ impl<'a> Parser<'a> {
     ///     | "{" "}"
     ///     | "{" identifier ":" op ("," identifier ":" op)* ","? "}"
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_object_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (seq (arg parse_tok OpOpenBrace) (arg parse_tok OpCloseBrace))
@@ -221,14 +244,14 @@ impl<'a> Parser<'a> {
         ));
 
         let ast = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => {
+            Choice::A(x) => {
                 let (open, close) = x.unwrap_seq2();
                 Ast::new(
                     open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
                     AstKind::ObjectLiteral(vec![]),
                 )
             }
-            Either::Right(x) => {
+            Choice::B(x) => {
                 let (open, k0, _, v0, kvs, _, close) = x.unwrap_seq7();
                 let mut op_asts = vec![(k0.unwrap_single(), v0.unwrap_single())];
                 for op in kvs.unwrap_many() {
@@ -241,6 +264,7 @@ impl<'a> Parser<'a> {
                     AstKind::ObjectLiteral(op_asts),
                 )
             }
+            _ => unreachable!(),
         });
 
         Ok(ast)
@@ -251,31 +275,45 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// tuple_lit =
     ///     | "(" ")"
-    ///     | "(" op ("," op)* ","? ")"
+    ///     | "(" op "," ")"
+    ///     | "(" op ("," op)+ ","? ")"
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_tuple_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             (seq (arg parse_tok OpOpenParen) (arg parse_tok OpCloseParen))
             (seq
                 (arg parse_tok OpOpenParen)
                 parse_op
-                (many_0 (seq (arg parse_tok OpComma) parse_op))
+                (arg parse_tok OpComma)
+                (arg parse_tok OpCloseParen)
+            )
+            (seq
+                (arg parse_tok OpOpenParen)
+                parse_op
+                (many_1 (seq (arg parse_tok OpComma) parse_op)) // Culprit (arg parse_tok OpComma)
                 (opt (arg parse_tok OpComma))
                 (arg parse_tok OpCloseParen)
             )
         ));
 
         let ast = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => {
+            Choice::A(x) => {
                 let (open, close) = x.unwrap_seq2();
                 Ast::new(
                     open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
                     AstKind::TupleLiteral(vec![]),
                 )
             }
-            Either::Right(x) => {
+            Choice::B(x) => {
+                let (open, op, _, close) = x.unwrap_seq4();
+                Ast::new(
+                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    AstKind::TupleLiteral(vec![op.unwrap_single()]),
+                )
+            }
+            Choice::C(x) => {
                 let (open, op0, ops, _, close) = x.unwrap_seq5();
                 let mut op_asts = vec![op0.unwrap_single()];
                 for op in ops.unwrap_many() {
@@ -288,6 +326,7 @@ impl<'a> Parser<'a> {
                     AstKind::TupleLiteral(op_asts),
                 )
             }
+            _ => unreachable!(),
         });
 
         Ok(ast)
@@ -302,29 +341,22 @@ impl<'a> Parser<'a> {
     ///     | object_lit
     ///     | tuple_lit
     /// ```
-    #[backtrack]
     #[memoize]
+    #[backtrack]
     pub fn parse_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (alt
             parse_raw_lit
-            (alt
-                parse_list_lit
-                (alt
-                    parse_object_lit
-                    parse_tuple_lit
-                )
-            )
+            parse_list_lit
+            parse_object_lit
+            parse_tuple_lit
         ));
 
         let ast = result.map(|x| match x.unwrap_choice() {
-            Either::Left(x) => x.unwrap_single(),
-            Either::Right(x) => match x.unwrap_choice() {
-                Either::Left(x) => x.unwrap_single(),
-                Either::Right(x) => match x.unwrap_choice() {
-                    Either::Left(x) => x.unwrap_single(),
-                    Either::Right(x) => x.unwrap_single(),
-                },
-            },
+            Choice::A(x) => x.unwrap_single(),
+            Choice::B(x) => x.unwrap_single(),
+            Choice::C(x) => x.unwrap_single(),
+            Choice::D(x) => x.unwrap_single(),
+            _ => unreachable!(),
         });
 
         Ok(ast)
@@ -336,7 +368,7 @@ impl<'a> Parser<'a> {
 //--------------------------------------------------------------------------------------------------
 
 fn convert_string_to_int(str: &str, radix: u32) -> Result<u128, ParserError> {
-    let cleaned = str.trim_start_matches('0').replace('_', "");
+    let cleaned = str.replace('_', "");
     let int = u128::from_str_radix(&cleaned, radix)
         .map_err(|e| ParserError::InvalidIntegerLiteral(e, cleaned))?;
     Ok(int)

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use lazy_static::lazy_static;
-use regex::{Regex, RegexBuilder};
+use regex::{Match, Regex, RegexBuilder};
 
 use crate::{
     compiler::reversible::Reversible,
@@ -96,7 +96,7 @@ impl<'a> Lexer<'a> {
             Token::new(self.advance_by_match(m), TokenKind::Terminator)
         } else if let Some(m) = BYTE_STRING_LITERAL_REGEX.find(remainder) {
             // Remove first two characters (`b` and quote marks).
-            let trimmed_str = &m.as_str()[2..m.end() - 1];
+            let trimmed_str = &m.as_str()[2..m.len() - 1];
 
             Token::new(
                 self.advance_by_match(m),
@@ -143,7 +143,7 @@ impl<'a> Lexer<'a> {
             }
 
             // Remove first and last character (ticks).
-            let trimmed_str = &m.as_str()[1..m.end() - 1];
+            let trimmed_str = &m.as_str()[1..m.len() - 1];
 
             Token::new(
                 self.advance_by_match(m),
@@ -151,12 +151,12 @@ impl<'a> Lexer<'a> {
             )
         } else if let Some(m) = VARIABLE_REGEX.find(remainder) {
             // Remove first character (`$`).
-            let trimmed_str = &m.as_str()[1..m.end()];
+            let trimmed_str = &m.as_str()[1..];
 
             Token::new(self.advance_by_match(m), TokenKind::Variable(trimmed_str))
         } else if let Some(m) = STRING_LITERAL_REGEX.find(remainder) {
             // Remove first and last character (quote marks).
-            let trimmed_str = &m.as_str()[1..m.end() - 1];
+            let trimmed_str = &m.as_str()[1..m.len() - 1];
 
             Token::new(
                 self.advance_by_match(m),
@@ -348,7 +348,7 @@ impl<'a> Lexer<'a> {
             Token::new(self.advance_by_match(m), TokenKind::OpStar)
         } else if let Some(m) = HEX_INTEGER_LITERAL_REGEX.find(remainder) {
             // Remove marker characters (`0x`).
-            let trimmed_str = &m.as_str()[2..m.end()];
+            let trimmed_str = &m.as_str()[2..];
 
             Token::new(
                 self.advance_by_match(m),
@@ -356,7 +356,7 @@ impl<'a> Lexer<'a> {
             )
         } else if let Some(m) = OCT_INTEGER_LITERAL_REGEX.find(remainder) {
             // Remove marker characters (`0o`).
-            let trimmed_str = &m.as_str()[2..m.end()];
+            let trimmed_str = &m.as_str()[2..];
 
             Token::new(
                 self.advance_by_match(m),
@@ -364,13 +364,13 @@ impl<'a> Lexer<'a> {
             )
         } else if let Some(m) = BIN_INTEGER_LITERAL_REGEX.find(remainder) {
             // Remove marker characters (`0b`).
-            let trimmed_str = &m.as_str()[2..m.end()];
+            let trimmed_str = &m.as_str()[2..];
 
             Token::new(
                 self.advance_by_match(m),
                 TokenKind::BinIntegerLiteral(trimmed_str),
             )
-        } else if let Some(m) = FLOAT_LITERAL_REGEX.find(remainder) {
+        } else if let Some(m) = Self::float_literal_matches(remainder) {
             Token::new(
                 self.advance_by_match(m),
                 TokenKind::FloatLiteral(m.as_str()),
@@ -392,14 +392,26 @@ impl<'a> Lexer<'a> {
         Ok(Some(token))
     }
 
+    fn float_literal_matches(remainder: &str) -> Option<Match> {
+        if FLOAT_SHOULD_NOT_MATCH_REGEX.find(remainder).is_some() {
+            return None;
+        }
+
+        if let Some(m) = FLOAT_LITERAL_REGEX.find(remainder) {
+            return Some(m);
+        }
+
+        None
+    }
+
     fn lex_module_block(&mut self) -> LexerResult<Token<'a>> {
         self.state.module_block_precedent = 0;
         let remainder = &self.string[self.state.cursor..];
 
         if let Some(m) = MODULE_BLOCK_REGEX.find(remainder) {
             // Vomit last three characters (`end` or `END`).
-            let trimmed_block = &m.as_str()[..m.end() - 3];
-            let span = self.state.cursor..self.state.cursor + (m.end() - 3);
+            let trimmed_block = &m.as_str()[..m.len() - 3];
+            let span = self.state.cursor..self.state.cursor + (m.len() - 3);
             self.state.cursor += m.end() - 3;
 
             return Ok(Token::new(span, TokenKind::ModuleBlock(trimmed_block)));
@@ -415,24 +427,24 @@ impl<'a> Lexer<'a> {
         let remainder = &self.string[self.state.cursor..];
 
         if let Some(m) = COMMENT_REGEX.find(remainder) {
-            return m.end();
+            return m.len();
         } else if let Some(m) = CONT_BACK_SLASH_REGEX.find(remainder) {
-            return m.end();
+            return m.len();
         } else if let Some(m) = CONT_WHITESPACE_REGEX.find(remainder) {
             // Check for "," or "=" precedent.
             if self.state.continuation_precedent {
                 self.state.continuation_precedent = false;
-                return m.end();
+                return m.len();
             }
 
             // Check for unmatched bracket precedent.
             if !self.state.bracket_stack.is_empty() {
-                return m.end();
+                return m.len();
             }
 
             // Otherwise, check if horizontal space.
             if let Some(m) = CONT_HORIZONTAL_SPACE_REGEX.find(remainder) {
-                return m.end();
+                return m.len();
             }
         }
 
@@ -441,8 +453,8 @@ impl<'a> Lexer<'a> {
 
     #[inline]
     fn advance_by_match(&mut self, m: regex::Match) -> Span {
-        let span = self.state.cursor..self.state.cursor + m.end();
-        self.state.cursor += m.end();
+        let span = self.state.cursor..self.state.cursor + m.len();
+        self.state.cursor += m.len();
         span
     }
 }
@@ -521,7 +533,7 @@ lazy_static! {
     static ref CONT_WHITESPACE_REGEX: Regex = Regex::new(r"^\s+").unwrap();
 
     static ref TERMINATOR_REGEX: Regex = Regex::new(r"^(;\s*|(\r?\n)\s*)").unwrap();
-    static ref VARIABLE_REGEX: Regex = Regex::new(r"\$[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
+    static ref VARIABLE_REGEX: Regex = Regex::new(r"^\$[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
     static ref PLAIN_IDENTIFIER_REGEX: Regex = Regex::new(r"^([_a-zA-Z][_a-zA-Z0-9]*)").unwrap();
     static ref ESCAPED_IDENTIFIER_REGEX: Regex = Regex::new(r"^(`[_a-zA-Z][_a-zA-Z0-9]*`)").unwrap();
     static ref STRING_LITERAL_REGEX: Regex = Regex::new(r#"^('([^'\\]|\\t|\\n|\\r|\\\\)*'|"([^"\\]|\\t|\\n|\\r|\\\\)*")"#).unwrap();
@@ -602,7 +614,8 @@ lazy_static! {
     static ref OP_DOT_REGEX: Regex = Regex::new(r"^\.").unwrap();
 
     static ref DEC_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^\d(_?\d)*").unwrap();
-    static ref FLOAT_LITERAL_REGEX: Regex = Regex::new(r"^(\.\d(_?\d)*([eE][+-]?\d(_?\d)*)?|\d(_?\d)*\.(\d(_?\d)*)?([eE][+-]?\d(_?\d)*)?|\d(_?\d)*([eE][+-]?\d(_?\d)*))").unwrap();
+    static ref FLOAT_LITERAL_REGEX: Regex = Regex::new(r"^(\.\d(_?\d)*([eE][+-]?\d(_?\d)*)?|\d(_?\d)*\.(\d(_?\d)*([eE][+-]?\d(_?\d)*)?)?|\d(_?\d)*([eE][+-]?\d(_?\d)*))").unwrap();
+    static ref FLOAT_SHOULD_NOT_MATCH_REGEX: Regex = Regex::new(r"^\d(_?\d)*\.[a-zA-Z_.]").unwrap(); // We don't want to match `2..` or `2.max` as a float literal. That should be a range and dot operation respectively
     static ref HEX_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^0x[0-9a-fA-F]+(_?[0-9a-fA-F])*").unwrap();
     static ref BIN_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^0b[01]+(_?[01])*").unwrap();
     static ref OCT_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^0o[0-7]+(_?[0-7])*").unwrap();

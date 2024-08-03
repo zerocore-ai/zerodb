@@ -2,22 +2,22 @@
 
   - [x] Change Countdown to Timeout
   - [x] Replication Session
-  - [ ] zeroql: Change syntax to SQL-like
-    - [ ] Surrealdb syntax
-    - [ ] ANSI SQL syntax
-    - [ ] Land on a syntax that is easy to read and write
-      - [ ] General query syntax
-      - [ ] Meta syntax like create, delete, define, insert, etc.
-      - [ ] Text search syntax
-      - [ ] Regex syntax
-      - [ ] JSON syntax
-      - [ ] Vector syntax
-    - [ ] No procedural elements in syntax
-    - [ ] Figure how the language can import functions compiled to wasm
+  - [x] zeroql: Change syntax to SQL-like
+    - [x] Surrealdb syntax
+    - [x] ANSI SQL syntax
+    - [x] Land on a syntax that is easy to read and write
+      - [x] General query syntax
+      - [x] Meta syntax like create, delete, define, insert, etc.
+      - [x] Text search syntax
+      - [x] Regex syntax
+      - [x] JSON syntax
+      - [x] Vector syntax
+    - [x] No procedural elements in syntax
+    - [x] Figure how the language can import functions compiled to wasm
   - [x] zeroql: Reimplement the Lexer
-    - [ ] Change keywords
-    - [ ] Implement new lexer
-  - [ ] zeroql: Parser
+    - [x] Change keywords
+    - [x] Implement new lexer
+  - [x] zeroql: Parser
 
     - [x] `memoize` macro
       - [x] Support use as impl attribute.
@@ -34,6 +34,24 @@
       - [x] Support use as impl attribute.
       - [x] Add tests
       - [x] Add example in doc. Borrow from tests.
+    - [ ] Combinator macros
+      - [x] Single
+      - [x] Alt
+      - [x] Many0
+      - [x] Many1
+      - [x] Optional
+      - [x] Sequence
+      - [ ] Permutation
+    - [ ] Complete Parser
+      - [ ] Operations
+      - [ ] Expressions
+      - [ ] Statements
+      - [ ] Program
+    - [ ] Support any case keyword and operators
+    - [ ] Need strategy for preventing malicious code that lead to stack overflows
+      - [ ] reblessive crate - problematic because it complicates the interface for backtrack and memoize macros
+      - [ ] active prevention - setting nested expression and unary/binary op limit
+      - [ ] thread isolation - running in a separate thread with set stack size
 
   - [ ] zeroql: Reimplement AST
   - [ ] zeroql: Semantic Analysis
@@ -44,37 +62,23 @@
     - [ ] ...
   - [ ] zerodb: Use libp2p for comms
 
-- [x] Distributed Consensus
-
-  - [x] Raft
-
-    - [x] State transitions
-
-      - [x] Follower
-        - [x] Election timeout
-        - [x] Vote request
-      - [x] Leader
-      - [x] Candidate
-
-    - [x] Client comms
-    - [x] Peer RPC comms
-    - [x] Timeouts
-
 - [ ] Query Language
 
   - [x] Grammar
-  - [ ] Lexer
+  - [x] Lexer
   - [ ] Parser
   - [ ] AST
   - [ ] Semantic Analysis
-  - [ ] Wasm Codegen
+  - [ ] Optimizer
+  - [ ] Analyzer
+  - [ ] Executor
   - [ ] Language Server: The db doubling as a language server
   - [ ] Formatter
   - [ ] Linter
 
 - [ ] Backing Key-Value Store
 
-  - [x] Memstore
+  - [ ] Memstore
   - [ ] RocksDB
 
 - [ ] Data Types
@@ -105,6 +109,13 @@
   - [ ] Graphs
   - [ ] Document
   - [ ] Vector
+
+- [ ] Other Features
+
+  - [ ] Virtual Tables
+  - [ ] Reactive Queries
+  - [ ] Full Text Search
+  - [ ] Vector Search
 
 - [ ] Design
 

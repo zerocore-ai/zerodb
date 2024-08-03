@@ -355,7 +355,7 @@ fn test_lexer_dec_integer() {
 #[test]
 fn test_lexer_float() {
     // Float with a final dot
-    let mut lexer = Lexer::from("1. 0. 1_000. 0_123.");
+    let mut lexer = Lexer::from("1. 0. 1_000. 0_123.,");
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
@@ -373,32 +373,6 @@ fn test_lexer_float() {
         lexer.next().unwrap().unwrap(),
         Token::new(13..19, TokenKind::FloatLiteral("0_123."))
     );
-    assert!(lexer.next().is_none());
-
-    // Float with a dot followed by exponent part
-    let mut lexer = Lexer::from("1.e1 0.e+0 1_000.e-1_000 0_123.E0_123");
-
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(0..4, TokenKind::FloatLiteral("1.e1"))
-    );
-
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(5..10, TokenKind::FloatLiteral("0.e+0"))
-    );
-
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(11..24, TokenKind::FloatLiteral("1_000.e-1_000"))
-    );
-
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(25..37, TokenKind::FloatLiteral("0_123.E0_123"))
-    );
-
-    assert!(lexer.next().is_none());
 
     // Float with a leading dot
     let mut lexer = Lexer::from(".1 .0 .1_000 .0_123");
@@ -519,6 +493,36 @@ fn test_lexer_float() {
     assert_eq!(
         lexer.next().unwrap().unwrap(),
         Token::new(22..33, TokenKind::FloatLiteral("0_123E0_123"))
+    );
+
+    assert!(lexer.next().is_none());
+
+    // Digits with multiple final dot or dot followed by a letter SHOULD NOT be matched as a float literal
+    let mut lexer = Lexer::from("2.. 2.max");
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(0..1, TokenKind::DecIntegerLiteral("2"))
+    );
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(1..3, TokenKind::OpRange)
+    );
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(4..5, TokenKind::DecIntegerLiteral("2"))
+    );
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(5..6, TokenKind::OpDot)
+    );
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(6..9, TokenKind::PlainIdentifier("max"))
     );
 
     assert!(lexer.next().is_none());

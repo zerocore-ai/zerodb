@@ -10,6 +10,8 @@ edition.workspace = true
 anyhow.workspace = true
 lru = "0.12.3"
 sha3 = "0.10.8"
+tracing.workspace = true
+tracing-subscriber.workspace = true
 zeroql-macros-core = { path = "./core" }
 
 [dev-dependencies]

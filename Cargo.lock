@@ -274,6 +274,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "concat-with"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45527fc9cdf65d432ee7f5f5648a3a598809d543200bd78efa770392fcc22e4f"
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2005,6 +2011,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags 2.6.0",
+ "concat-with",
  "itertools",
  "lazy_static",
  "lru",
@@ -2025,6 +2032,8 @@ dependencies = [
  "rand",
  "regex",
  "sha3",
+ "tracing",
+ "tracing-subscriber",
  "trybuild",
  "zeroql-macros-core",
 ]

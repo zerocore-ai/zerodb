@@ -384,7 +384,8 @@ object_lit =
 
 tuple_lit =
     | "(" ")"
-    | "(" op ("," op)* ","? ")"
+    |"(" op "," ")"
+    | "(" op ("," op)+ ","? ")"
 
 lit =
     | raw_lit
@@ -397,100 +398,184 @@ lit =
 parens_op =
     | "(" exp ")"
 
-scope_op =
+id_op =
+    | identifier ":" (lit | identifier | variable | op_star)
+
+identifier_scope_op =
     | identifier (op_scope identifier)+
     | identifier
 
 atom_op =
-    | lit
-    | scope_op
-    | parens_op
-    | id_exp
     | variable
-
-access_op =
-    | index_op (op_dot | op_safe_nav) identifier
-    | atom_op
+    | lit
+    | id_op
+    | identifier_scope_op
+    | parens_op
 
 index_op =
-    | access_op "[" exp "]"
-    | access_op "[" exp "]"
-    | access_op
+    | atom_op "[" exp "]"
+    | atom_op
 
 function_arg =
-    | (identifier op_assign)? op
+    | (identifier op_is_lexer)? op
 
 function_call_op =
     | index_op "(" (function_arg ("," function_arg)* ","?)? ")"
     | index_op
 
 not_op =
-    | (op_not | op_match) atom_op
+    | (op_not | op_match_lexer) function_call_op
     | function_call_op
 
-unary_op =
-    | (op_plus | op_minus) atom_op
-
-unary_not_op =
+sign_op =
+    | (op_plus | op_minus) not_op
     | not_op
-    | unary_op
-    | function_call_op
 
-pow_op =
-    | unary_not_op op_pow op
-    | unary_not_op
+op_access =
+    | op_dot
+    | op_safe_nav
 
-mul_op =
-    | op (op_mul | op_div | op_mod) pow_op
+access_op = (* Left Associative *)
+    | sign_op (op_access identifier)+
+    | sign_op
+
+pow_op = (* Right Associative *)
+    | (access_op op_pow)+ access_op
+    | access_op
+
+op_multiplicative =
+    | op_mul
+    | op_div
+    | op_mod
+
+mul_op = (* Left Associative *)
+    | pow_op (op_multiplicative pow_op)+
     | pow_op
 
-add_op =
-    | op (op_plus | op_minus) mul_op
+op_additive =
+    | op_plus
+    | op_minus
+
+add_op = (* Left Associative *)
+    | mul_op (op_additive mul_op)+
     | mul_op
 
-shift_op =
-    | op (op_shl | op_shr) add_op
+op_shift =
+    | op_shl
+    | op_shr
+
+shift_op = (* Left Associative *)
+    | add_op (op_shift add_op)+
     | add_op
 
-match_sim_op =
-    | op (op_match | op_not_match | op_similarity) shift_op
+op_match_sim =
+    | op_match
+    | op_not_match
+    | op_similarity
+
+match_sim_op = (* Left Associative *)
+    | shift_op (op_match_sim shift_op)+
     | shift_op
 
-rel_op =
-    | op (op_lt | op_gt | op_lte | op_gte | op_in | op_not_in | op_contains | op_not_contains | op_contains_none | op_contains_all | op_contains_any) match_sim_op
+op_relational =
+    | op_lt
+    | op_gt
+    | op_lte
+    | op_gte
+    | op_in
+    | op_not_in
+    | op_not_contains
+    | op_contains_none
+    | op_contains_all
+    | op_contains_any
+    | op_contains
+
+rel_op = (* Left Associative *)
+    | match_sim_op (op_relational match_sim_op)+
     | match_sim_op
 
-eq_op =
-    | op (op_eq | op_is | op_is_not) rel_op
+op_eq_is =
+    | op_eq
+    | op_is_not
+    | op_is
+
+eq_op = (* Left Associative *)
+    | rel_op (op_eq_is rel_op)+
     | rel_op
 
-bit_and_op =
-    | op op_bit_and eq_op
+bit_and_op = (* Left Associative *)
+    | eq_op (op_bit_and eq_op)+
     | eq_op
 
-bit_xor_op =
-    | op op_bit_xor bit_and_op
+bit_xor_op = (* Left Associative *)
+    | bit_and_op (op_bit_xor bit_and_op)+
     | bit_and_op
 
-bit_or_op =
-    | op op_bit_or bit_xor_op
+bit_or_op = (* Left Associative *)
+    | bit_xor_op (op_bit_or bit_xor_op)+
     | bit_xor_op
 
-and_op =
-    | op op_and bit_or_op
+and_op = (* Left Associative *)
+    | bit_or_op (op_and bit_or_op)+
     | bit_or_op
 
-or_null_coalesce_op =
-    | op (op_or | op_null_coalesce) and_op
+op_or_null_coalesce =
+    | op_or
+    | op_null_coalesce
+
+or_null_coalesce_op = (* Left Associative *)
+    | and_op (op_or_null_coalesce and_op)+
     | and_op
 
+op_ranges =
+    | op_range_incl
+    | op_range
+
 range_op =
-    | op? (op_range | op_range_incl) or_null_coalesce_op?
+    | or_null_coalesce_op op_ranges or_null_coalesce_op
     | or_null_coalesce_op
 
-op =
+single_relate_id =
+    | id_op
+    | identifier
     | range_op
-    | relation_exp
+    | op_star
+
+multi_relate_id =
+    | "[" single_relate_id ("," single_relate_id)* ","? "]"
+
+relate_id =
+    | multi_relate_id
+    | single_relate_id
+
+relate_edge_id =
+    | identifier "[" op "]"
+    | identifier
+
+relate_edge_not_op =
+    | op_not relate_edge_id
+    | relate_edge_id
+
+relate_edge_and_op = (* Left Associative *)
+    | relate_edge_not_op (op_and relate_edge_not_op)+
+    | relate_edge_not_op
+
+relate_edge_or_op = (* Left Associative *)
+    | relate_edge_and_op (op_or relate_edge_and_op)+
+    | relate_edge_and_op
+
+op_arrow =
+    | op_arrow_left
+    | op_arrow_right
+    | op_multi_arrow_right
+    | op_multi_arrow_left
+
+relate_op = (* Left Associative *)
+    | relate_id (op_arrow relate_edge_or_op op_arrow relate_id)+
+
+op =
+    | relate_op
+    | range_op
 
 (* EXPRESSIONS *)
 
@@ -517,54 +602,10 @@ where_guard =
     | kw_where op
     | kw_where op_star
 
-id_exp =
-    | identifier ":" lit
-    | identifier ":" identifier
-    | identifier ":" variable
-    | identifier ":" op_star
-    | identifier
-
-single_relation_id =
-    | id_exp
-    | range_op
-    | op_star
-
-multi_relation_id =
-    | "[" single_relation_id ("," single_relation_id)* ","? "]"
-
-relation_id =
-    | multi_relation_id
-    | single_relation_id
-
-relation_edge_id =
-    | identifier "[" op "]"
-    | identifier
-
-relation_edge_not_op =
-    | op_not relation_edge_id
-    | relation_edge_id
-
-relation_edge_and_op =
-    | relation_edge_or_op op_and relation_edge_not_op
-    | relation_edge_not_op
-
-relation_edge_or_op =
-    | relation_edge_or_op op_or relation_edge_and_op
-    | relation_edge_and_op
-
-op_arrow =
-    | op_arrow_left
-    | op_arrow_right
-    | op_multi_arrow_right
-    | op_multi_arrow_left
-
-relation_exp =
-    | (relation_id op_arrow relation_edge_or_op op_arrow)+ relation_id
-
 create_exp =
-    | kw_create id_exp kw_set object_lit
-    | kw_create id_exp kw_set identifier op_assign op ("," identifier op_assign op)*
-    | kw_create id_exp kw_set "(" (identifier ("," identifier)* ","?)? ")" kw_values tuple_lit ("," tuple_lit)*
+    | kw_create (id_op | identifier) kw_set object_lit
+    | kw_create (id_op | identifier) kw_set identifier op_assign op ("," identifier op_assign op)*
+    | kw_create (id_op | identifier) kw_set "(" (identifier ("," identifier)* ","?)? ")" kw_values tuple_lit ("," tuple_lit)*
 
 relate_set_object =
     | kw_set object_lit
@@ -573,12 +614,13 @@ relate_set_comma =
     | kw_set identifier assign op ("," identifier assign op)*
 
 relate_exp =
-    | kw_relate relation_exp << where_guard? relate_set_object? >>
-    | kw_relate relation_exp << where_guard? relate_set_comma? >>
+    | kw_relate relate_op << where_guard? relate_set_object? >>
+    | kw_relate relate_op << where_guard? relate_set_comma? >>
 
 target =
-    | relation_exp
-    | id_exp
+    | relate_op
+    | id_op
+    | identifier
 
 delete_exp =
     | kw_delete target where_guard?
@@ -783,8 +825,8 @@ type_sig =
     | "[" type_sig ";" integer_lit "]" "?"*
     | "[" type_sig "]" "?"*
     | "(" type_sig ("," type_sig)* ","? ")" "?"*
-    | scope_op "<" type_sig ("," type_sig)* ","? ">" "?"*
-    | scope_op "?"*
+    | identifier_scope_op "<" type_sig ("," type_sig)* ","? ">" "?"*
+    | identifier_scope_op "?"*
 
 if_not_exists =
     | kw_if kw_not kw_exists

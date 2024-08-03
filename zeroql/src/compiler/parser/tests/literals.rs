@@ -34,6 +34,21 @@ fn test_parser_identifier() -> anyhow::Result<()> {
 }
 
 #[test_log::test]
+fn test_parser_variable() -> anyhow::Result<()> {
+    let parser = &mut Parser::new("$_0world", 10);
+    let result = parser.parse_variable()?;
+
+    info!(
+        "input = {:?} | parse_variable = {:?}",
+        parser.lexer.string, result
+    );
+
+    assert_eq!(result, Some(Ast::new(0..8, AstKind::Variable("_0world"))));
+
+    Ok(())
+}
+
+#[test_log::test]
 fn test_parser_boolean_lit() -> anyhow::Result<()> {
     let parser = &mut Parser::new("true TRUE FALSE false", 10);
     let result_a = parser.parse_boolean_lit()?;
@@ -96,8 +111,8 @@ fn test_parser_raw_lit() -> anyhow::Result<()> {
         0_123_456_789 \
         0_123. \
         .0_123 \
-        0_123.E0_123 \
-        0.e+0 \
+        0_12.3E0_123 \
+        0.1e0 \
         'Hello, World!' \
         //[a-zA-Z_][a-zA-Z0-9_]*//xmig \
         b"Hello, World!"\
@@ -174,12 +189,12 @@ fn test_parser_raw_lit() -> anyhow::Result<()> {
 
     assert_eq!(
         result_g,
-        Some(Ast::new(143..155, AstKind::FloatLiteral(0_123.0E0_123)))
+        Some(Ast::new(143..155, AstKind::FloatLiteral(0_12.30E0_123)))
     );
 
     assert_eq!(
         result_h,
-        Some(Ast::new(166..171, AstKind::FloatLiteral(0.0)))
+        Some(Ast::new(166..171, AstKind::FloatLiteral(0.1)))
     );
 
     assert_eq!(
@@ -194,13 +209,13 @@ fn test_parser_raw_lit() -> anyhow::Result<()> {
         result_j,
         Some(Ast::new(
             208..238,
-            AstKind::RegexLiteral(
-                r#"[a-zA-Z_][a-zA-Z0-9_]*"#,
-                RegexFlags::X_EXTENDED
+            AstKind::RegexLiteral {
+                pattern: r#"[a-zA-Z_][a-zA-Z0-9_]*"#,
+                flags: RegexFlags::X_EXTENDED
                     | RegexFlags::I_IGNORE_CASE
                     | RegexFlags::M_MULTILINE
                     | RegexFlags::G_GLOBAL,
-            )
+            }
         ))
     );
 
@@ -224,6 +239,8 @@ fn test_parser_raw_lit() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_list_lit() -> anyhow::Result<()> {
+    // TODO: Need more op examples
+    // TODO: Need nested examples
     let parser = &mut Parser::new(
         r#"[] [1] [1, "Hello",] [.1, NONE, //[a-zA-Z_][a-zA-Z0-9_]*//xmig]"#,
         10,
@@ -265,13 +282,13 @@ fn test_parser_list_lit() -> anyhow::Result<()> {
                 Ast::new(26..30, AstKind::NoneLiteral),
                 Ast::new(
                     32..62,
-                    AstKind::RegexLiteral(
-                        r#"[a-zA-Z_][a-zA-Z0-9_]*"#,
-                        RegexFlags::X_EXTENDED
+                    AstKind::RegexLiteral {
+                        pattern: r#"[a-zA-Z_][a-zA-Z0-9_]*"#,
+                        flags: RegexFlags::X_EXTENDED
                             | RegexFlags::I_IGNORE_CASE
                             | RegexFlags::M_MULTILINE
-                            | RegexFlags::G_GLOBAL
-                    )
+                            | RegexFlags::G_GLOBAL,
+                    }
                 )
             ])
         ))
@@ -282,6 +299,8 @@ fn test_parser_list_lit() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_object_lit() -> anyhow::Result<()> {
+    // TODO: Need more op examples
+    // TODO: Need nested examples
     let parser = &mut Parser::new(
         r#"{} {a: 1,} {a: 1, b: "Hello", c: true} {a: 1, b: //[a-zA-Z_][a-zA-Z0-9_]*//xmig, c: none,}"#,
         10,
@@ -343,13 +362,13 @@ fn test_parser_object_lit() -> anyhow::Result<()> {
                     Ast::new(46..47, AstKind::Identifier("b")),
                     Ast::new(
                         49..79,
-                        AstKind::RegexLiteral(
-                            r#"[a-zA-Z_][a-zA-Z0-9_]*"#,
-                            RegexFlags::X_EXTENDED
+                        AstKind::RegexLiteral {
+                            pattern: r#"[a-zA-Z_][a-zA-Z0-9_]*"#,
+                            flags: RegexFlags::X_EXTENDED
                                 | RegexFlags::I_IGNORE_CASE
                                 | RegexFlags::M_MULTILINE
-                                | RegexFlags::G_GLOBAL
-                        )
+                                | RegexFlags::G_GLOBAL,
+                        }
                     )
                 ),
                 (
@@ -365,6 +384,8 @@ fn test_parser_object_lit() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_tuple_lit() -> anyhow::Result<()> {
+    // TODO: Need more op examples
+    // TODO: Need nested examples
     let parser = &mut Parser::new(r#"() (1,) (0b1011, "Hello",) (1., "Hello", true,)"#, 10);
     let result_a = parser.parse_tuple_lit()?;
     let result_b = parser.parse_tuple_lit()?;
@@ -409,6 +430,17 @@ fn test_parser_tuple_lit() -> anyhow::Result<()> {
         ))
     );
 
+    // Fail Cases
+    let parser = &mut Parser::new("(1)", 10);
+    let result = parser.parse_tuple_lit()?;
+
+    info!(
+        "input = {:?} | parse_tuple_lit = {:?}",
+        parser.lexer.string, result
+    );
+
+    assert_eq!(result, None);
+
     Ok(())
 }
 
@@ -447,15 +479,15 @@ fn test_parser_lit() -> anyhow::Result<()> {
                 Ast::new(25..29, AstKind::BooleanLiteral(true)),
                 Ast::new(
                     31..43,
-                    AstKind::RegexLiteral(
-                        ".+",
-                        RegexFlags::X_EXTENDED
+                    AstKind::RegexLiteral {
+                        pattern: ".+",
+                        flags: RegexFlags::X_EXTENDED
                             | RegexFlags::I_IGNORE_CASE
                             | RegexFlags::M_MULTILINE
                             | RegexFlags::G_GLOBAL
                             | RegexFlags::S_SINGLELINE
-                            | RegexFlags::U_UNICODE
-                    )
+                            | RegexFlags::U_UNICODE,
+                    }
                 )
             ])
         ))
