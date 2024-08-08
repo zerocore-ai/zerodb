@@ -55,13 +55,13 @@ impl<'a> Parser<'a> {
                 Choice::A(x) => x.unwrap_single(),
                 Choice::B(x) => x.unwrap_single(),
                 Choice::C(x) => x.unwrap_single(),
-                Choice::D(x) => Ast::new(x.unwrap_single().get_span(), AstKind::Star),
+                Choice::D(x) => Ast::new(x.unwrap_single().span, AstKind::Wildcard),
                 _ => unreachable!(),
             };
 
             let ident = ident.unwrap_single();
             Ast::new(
-                ident.get_span().start..value.get_span().end,
+                ident.span.start..value.span.end,
                 AstKind::IdOp(Box::new(ident), Box::new(value)),
             )
         });
@@ -91,14 +91,14 @@ impl<'a> Parser<'a> {
             Choice::A(x) => {
                 let (ident, scopes) = x.unwrap_seq2();
                 let ident = ident.unwrap_single();
-                let start = ident.get_span().start;
-                let mut end = ident.get_span().end;
+                let start = ident.span.start;
+                let mut end = ident.span.end;
 
                 let mut scoped_identifiers = vec![ident];
                 for scope in scopes.unwrap_many() {
                     let (_, scope) = scope.unwrap_seq2();
                     let scope = scope.unwrap_single();
-                    end = scope.get_span().end;
+                    end = scope.span.end;
 
                     scoped_identifiers.push(scope);
                 }
@@ -167,7 +167,7 @@ impl<'a> Parser<'a> {
                 let exp = exp.unwrap_single();
 
                 Ast::new(
-                    atom_op.get_span().start..close.unwrap_single().get_span().end,
+                    atom_op.span.start..close.unwrap_single().span.end,
                     AstKind::Index {
                         subject: Box::new(atom_op),
                         index: Box::new(exp),
@@ -204,13 +204,10 @@ impl<'a> Parser<'a> {
             };
 
             let op = op.unwrap_single();
-            let start = name
-                .as_ref()
-                .map(|n| n.get_span().start)
-                .unwrap_or(op.get_span().start);
+            let start = name.as_ref().map(|n| n.span.start).unwrap_or(op.span.start);
 
             Ast::new(
-                start..op.get_span().end,
+                start..op.span.end,
                 AstKind::FunctionArg {
                     name: name.map(Box::new),
                     value: Box::new(op),
@@ -264,7 +261,7 @@ impl<'a> Parser<'a> {
                 };
 
                 Ast::new(
-                    subject.get_span().start..close.unwrap_single().get_span().end,
+                    subject.span.start..close.unwrap_single().span.end,
                     AstKind::FunctionCall { subject, args },
                 )
             }
@@ -300,11 +297,11 @@ impl<'a> Parser<'a> {
 
                 match op.unwrap_choice() {
                     Choice::A(x) => Ast::new(
-                        x.unwrap_single().get_span().start..atom_op.get_span().end,
+                        x.unwrap_single().span.start..atom_op.span.end,
                         AstKind::LogicalNotOp(Box::new(atom_op)),
                     ),
                     Choice::B(x) => Ast::new(
-                        x.unwrap_single().get_span().start..atom_op.get_span().end,
+                        x.unwrap_single().span.start..atom_op.span.end,
                         AstKind::BitwiseNotOp(Box::new(atom_op)),
                     ),
                     _ => unreachable!(),
@@ -339,11 +336,11 @@ impl<'a> Parser<'a> {
 
                 match op.unwrap_choice() {
                     Choice::A(x) => Ast::new(
-                        x.unwrap_single().get_span().start..atom_op.get_span().end,
+                        x.unwrap_single().span.start..atom_op.span.end,
                         AstKind::PlusSignOp(Box::new(atom_op)),
                     ),
                     Choice::B(x) => Ast::new(
-                        x.unwrap_single().get_span().start..atom_op.get_span().end,
+                        x.unwrap_single().span.start..atom_op.span.end,
                         AstKind::MinusSignOp(Box::new(atom_op)),
                     ),
                     _ => unreachable!(),
@@ -390,7 +387,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::DotAccessOp(Box::new(l), Box::new(r)),
@@ -441,7 +438,7 @@ impl<'a> Parser<'a> {
                     let (l, _) = comb.unwrap_seq2();
                     let l = l.unwrap_single();
                     r = Ast::new(
-                        l.get_span().start..r.get_span().end,
+                        l.span.start..r.span.end,
                         AstKind::ExponentiationOp(Box::new(l), Box::new(r)),
                     );
                 }
@@ -490,7 +487,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::MultiplicationOp(Box::new(l), Box::new(r)),
@@ -545,7 +542,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::AdditionOp(Box::new(l), Box::new(r)),
@@ -599,7 +596,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::LeftShiftOp(Box::new(l), Box::new(r)),
@@ -654,7 +651,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::MatchOp(Box::new(l), Box::new(r)),
@@ -732,7 +729,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::LessThanOp(Box::new(l), Box::new(r)),
@@ -799,7 +796,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::EqualToOp(Box::new(l), Box::new(r)),
@@ -850,7 +847,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (_, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
                     let ast = AstKind::BitwiseAndOp(Box::new(l), Box::new(r));
 
                     l = Ast::new(span, ast);
@@ -895,7 +892,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (_, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
                     let ast = AstKind::BitwiseXorOp(Box::new(l), Box::new(r));
 
                     l = Ast::new(span, ast);
@@ -940,7 +937,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (_, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
                     let ast = AstKind::BitwiseOrOp(Box::new(l), Box::new(r));
 
                     l = Ast::new(span, ast);
@@ -986,7 +983,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (_, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
                     let ast = AstKind::LogicalAndOp(Box::new(l), Box::new(r));
 
                     l = Ast::new(span, ast);
@@ -1035,7 +1032,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (op, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
 
                     let ast = match op.unwrap_choice() {
                         Choice::A(_) => AstKind::LogicalOrOp(Box::new(l), Box::new(r)),
@@ -1087,11 +1084,11 @@ impl<'a> Parser<'a> {
 
                 match op.unwrap_choice() {
                     Choice::A(_) => Ast::new(
-                        l.get_span().start..r.get_span().end,
+                        l.span.start..r.span.end,
                         AstKind::RangeInclusiveOp(Box::new(l), Box::new(r)),
                     ),
                     Choice::B(_) => Ast::new(
-                        l.get_span().start..r.get_span().end,
+                        l.span.start..r.span.end,
                         AstKind::RangeOp(Box::new(l), Box::new(r)),
                     ),
                     _ => unreachable!(),
@@ -1127,7 +1124,7 @@ impl<'a> Parser<'a> {
             Choice::A(x) => x.unwrap_single(),
             Choice::B(x) => x.unwrap_single(),
             Choice::C(x) => x.unwrap_single(),
-            Choice::D(x) => Ast::new(x.unwrap_single().get_span(), AstKind::Star),
+            Choice::D(x) => Ast::new(x.unwrap_single().span, AstKind::Wildcard),
             _ => unreachable!(),
         });
 
@@ -1164,7 +1161,7 @@ impl<'a> Parser<'a> {
             }
 
             Ast::new(
-                open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                open.unwrap_single().span.start..close.unwrap_single().span.end,
                 AstKind::ListLiteral(id_asts),
             )
         });
@@ -1223,7 +1220,7 @@ impl<'a> Parser<'a> {
                 let op = op.unwrap_single();
                 let close = close.unwrap_single();
 
-                let span = ident.get_span().start..close.get_span().end;
+                let span = ident.span.start..close.span.end;
                 let ast = AstKind::RelateEdgeId(Box::new(ident), Some(Box::new(op)));
 
                 Ast::new(span, ast)
@@ -1296,7 +1293,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (_, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
                     let ast = AstKind::LogicalAndOp(Box::new(l), Box::new(r));
 
                     l = Ast::new(span, ast);
@@ -1341,7 +1338,7 @@ impl<'a> Parser<'a> {
                 for comb in rest.unwrap_many() {
                     let (_, r) = comb.unwrap_seq2();
                     let r = r.unwrap_single();
-                    let span = l.get_span().start..r.get_span().end;
+                    let span = l.span.start..r.span.end;
                     let ast = AstKind::LogicalOrOp(Box::new(l), Box::new(r));
 
                     l = Ast::new(span, ast);
@@ -1411,7 +1408,7 @@ impl<'a> Parser<'a> {
                     _ => unreachable!(),
                 };
 
-                let span = l.get_span().start..r.get_span().end;
+                let span = l.span.start..r.span.end;
                 let ast = AstKind::RelateOp(Box::new(l), arr_l, Box::new(e), arr_r, Box::new(r));
 
                 l = Ast::new(span, ast);

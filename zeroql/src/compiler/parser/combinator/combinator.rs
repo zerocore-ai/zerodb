@@ -1,3 +1,5 @@
+use crate::compiler::reversible::Reversible;
+
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
@@ -241,10 +243,87 @@ impl<T> Combinator<T> {
 }
 
 //--------------------------------------------------------------------------------------------------
+// Functions
+//--------------------------------------------------------------------------------------------------
+
+/// Calls provided parser functions in different permutation sequences.
+pub fn permute<T: Reversible, U, E>(
+    parser: &mut T,
+    mut parser_funcs: Vec<(
+        usize,
+        Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>,
+    )>,
+) -> std::collections::HashMap<usize, Combinator<U>> {
+    let mut result_map = std::collections::HashMap::<usize, Combinator<U>>::new();
+    let mut prev_len = std::usize::MAX;
+
+    // Keep looping until the parser functions vector is exhausted.
+    while parser_funcs.len() < prev_len {
+        prev_len = parser_funcs.len();
+
+        // Remove parser functions that succeed and insert the result into the map.
+        parser_funcs.retain(|(index, f)| {
+            if let Ok(Some(result)) = f(parser) {
+                result_map.insert(*index, result);
+                return false;
+            }
+
+            true
+        });
+    }
+
+    result_map
+}
+
+/// Permutes parser functions with proper optional combinator support.
+pub fn permute_opt<T: Reversible, U: Clone, E>(
+    index: usize,
+    parser: &mut T,
+    // Parser functions and their rule positions.
+    parser_funcs: Vec<(
+        usize,
+        Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>,
+    )>,
+) -> Result<
+    (
+        std::collections::BTreeMap<usize, Combinator<U>>,
+        std::collections::HashSet<usize>,
+    ),
+    E,
+> {
+    let mut map = std::collections::BTreeMap::new();
+
+    // For each rule position, find the first parser function that succeeds and insert it into the map.
+    for _ in 0..index {
+        for (index, f) in parser_funcs.iter() {
+            if let Some(combinator) = f(parser)? {
+                map.insert(*index, combinator);
+                break;
+            }
+        }
+    }
+
+    // Collect map indices before further processing.
+    let map_indices = map
+        .keys()
+        .cloned()
+        .collect::<std::collections::HashSet<_>>();
+
+    // Fill unoccupied indices with void combinators.
+    for i in 0..index {
+        if map.get(&i).is_none() {
+            map.insert(i, Combinator::Void);
+        }
+    }
+
+    Ok((map, map_indices))
+}
+
+//--------------------------------------------------------------------------------------------------
 // Macros
 //--------------------------------------------------------------------------------------------------
 
-/// A parser combinator macro.
+/// A parser combinator macro for convenience.
 ///
 /// ## Important
 ///
@@ -253,17 +332,19 @@ impl<T> Combinator<T> {
 macro_rules! parse {
     // a => a
     ($parser:expr $(, $path:ident)? => $parse:ident) => {{
-        tracing::debug!("entered {}", std::stringify!($parse));
-        $( $path :: )? $parse($parser)?.map(|x| $crate::compiler::parser::Combinator::Single(x))
+        // $( $path :: )? $parse($parser)?.map(|x| $crate::compiler::parser::Combinator::Single(x))
+        match $( $path :: )? $parse($parser) {
+            Ok(Some(x)) => Some($crate::compiler::parser::Combinator::Single(x)),
+            Ok(None) => None,
+            Err(e) => return Err(e),
+        }
     }};
     // (arg a b ...) => [ a(b, ...) ]
     ($parser:expr $(, $path:ident)? => (arg $parse:ident $( $parse_args:tt )+)) => {{
-        tracing::debug!("entered (arg {} {})", std::stringify!($parse), concat_with::concat!(with " ", $( std::stringify!($parse_args) ),+));
         $( $path :: )? $parse($parser $(, $parse_args )+)?.map(|x| $crate::compiler::parser::Combinator::Single(x))
     }};
     // (opt a) => a?
     ($parser:expr $(, $path:ident)? => (opt $parse:tt)) => {{
-        tracing::debug!("entered (opt {:?})", std::stringify!($parse));
         match parse!($parser $(, $path)? => $parse) {
             Some(x) => Some(x),
             None => Some($crate::compiler::parser::Combinator::Void),
@@ -271,7 +352,6 @@ macro_rules! parse {
     }};
     // (many_0 a) => a*
     ($parser:expr $(, $path:ident)? => (many_0 $parse:tt)) => {{
-        tracing::debug!("entered (many_0 {:?})", std::stringify!($parse));
         let mut result = Vec::new();
         while let Some(__result) = parse!($parser $(, $path)? => $parse) {
             result.push(__result);
@@ -280,7 +360,6 @@ macro_rules! parse {
     }};
     // (many_1 a) => a+
     ($parser:expr $(, $path:ident)? => (many_1 $parse:tt)) => {{
-        tracing::debug!("entered (many_1 {:?})", std::stringify!($parse));
         let mut result = Vec::new();
         while let Some(__result) = parse!($parser $(, $path)? => $parse) {
             result.push(__result);
@@ -293,223 +372,356 @@ macro_rules! parse {
     }};
     // (alt a b ...) => a | b | ...
     ($parser:expr $(, $path:ident)? => (alt $( $parse:tt )+)) => {{
-        tracing::debug!("entered (alt {:?})", concat_with::concat!(with " ", $(std::stringify!($parse)),+));
-        alt!($parser $(, $path)? => $( $parse )+)
+        $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $( $parse )+)
     }};
     // (seq a b ...) => a b ...
     ($parser:expr $(, $path:ident)? => (seq $( $parse:tt )+)) => {{
-        use $crate::compiler::reversible::Reversible;
-        let state = $parser.get_state();
-        tracing::debug!("entered (seq {:?})", concat_with::concat!(with " ", $(std::stringify!($parse)),+));
-        if let Some(x) = seq!($parser $(, $path)? => $( $parse )+) {
-            tracing::debug!("success seq");
+        let state = <_ as $crate::compiler::reversible::Reversible>::get_state($parser);
+        if let Some(x) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $( $parse )+) {
             Some(x)
         } else {
-            tracing::debug!("failed seq");
-            $parser.set_state(state);
+            <_ as $crate::compiler::reversible::Reversible>::set_state($parser, state);
             None
         }
     }};
-    // (perm a b c) => << a b c >>
+    // (perm a b c) => << a b c >> // This won't work well with optional combinators
     ($parser:expr $(, $path:ident)? => (perm $( $parse:tt )+)) => {{
-        // use $crate::compiler::parser::capture::StateCapture;
-        // let state = $parser.get_state();
-        // if let Some(x) = perm!($parser $(, $path)? => $( $parse )+) {
-        //     Some(x)
-        // } else {
-        //     $parser.set_state(state);
-        //     None
-        // }
+        let mut index = 0;
+        let mut parser_funcs = std::vec::Vec::<(
+            usize,
+            Box<dyn Fn(&mut _) -> std::result::Result<std::option::Option<Combinator<_>>, _>>,
+        )>::new();
+
+        $(
+            let parser_func = |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                Ok(parse!(parser, Parser => $parse))
+            };
+
+            parser_funcs.push((index, Box::new(parser_func)));
+
+            index += 1;
+        )+
+
+        let mut result = $crate::compiler::parser::combinator::permute($parser, parser_funcs);
+        tracing::trace!("result = {:?}", result);
+
+        if result.len() == index {
+            Some($crate::compiler::parser::combinator::inner::perm_result!(result, $( $parse )+))
+        } else {
+            None
+        }
     }};
+    // (perm_opt (opt a) b (opt c)) => << a? b c? >>
+    // This macro supports optional combinators at the top-level for convenience.
+    // However, it comes at the cost of performance.
+    ($parser:expr $(, $path:ident)? => (perm_opt $( $parse:tt )+)) => {{
+        let mut index = 0;
+        let mut non_optionals = std::collections::HashSet::<usize>::new();
+        let mut parser_funcs = std::vec::Vec::<(
+            usize,
+            Box<dyn Fn(&mut _) -> std::result::Result<std::option::Option<Combinator<_>>, _>>,
+        )>::new();
+
+        $crate::compiler::parser::combinator::inner::perm_opt_args!(index, parser_funcs, non_optionals, $parser $(, $path)? => $( $parse )+);
+        let (mut map, map_indices) = $crate::compiler::parser::combinator::permute_opt(index, $parser, parser_funcs)?;
+
+        if map_indices.is_superset(&non_optionals) {
+            Some($crate::compiler::parser::combinator::inner::perm_result!(map, $( $parse )+))
+        } else {
+            None
+        }
+    }}
 }
 
-/// Sequence combinator macro.
-#[macro_export(local_inner_macros)]
-macro_rules! seq {
-    // Sequence(2) => a b
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
-                Some($crate::compiler::parser::Combinator::Seq2(Box::new(__result_a), Box::new(__result_b)))
+pub(crate) mod inner {
+    /// Sequence combinator macro.
+    macro_rules! seq {
+        // Sequence(2) => a b
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
+                    Some($crate::compiler::parser::Combinator::Seq2(Box::new(__result_a), Box::new(__result_b)))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-    // Sequence(3) => a b c
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq2(__result_b, __result_c)) = seq!($parser $(, $path)? => $parse_b $parse_c) {
-                Some($crate::compiler::parser::Combinator::Seq3(Box::new(__result_a), __result_b, __result_c))
+        }};
+        // Sequence(3) => a b c
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some($crate::compiler::parser::Combinator::Seq2(__result_b, __result_c)) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $parse_b $parse_c) {
+                    Some($crate::compiler::parser::Combinator::Seq3(Box::new(__result_a), __result_b, __result_c))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-    // Sequence(4) => a b c d
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq3(__result_b, __result_c, __result_d)) = seq!($parser $(, $path)? => $parse_b $parse_c $parse_d) {
-                Some($crate::compiler::parser::Combinator::Seq4(Box::new(__result_a), __result_b, __result_c, __result_d))
+        }};
+        // Sequence(4) => a b c d
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some($crate::compiler::parser::Combinator::Seq3(__result_b, __result_c, __result_d)) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $parse_b $parse_c $parse_d) {
+                    Some($crate::compiler::parser::Combinator::Seq4(Box::new(__result_a), __result_b, __result_c, __result_d))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-    // Sequence(5) => a b c d e
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq4(__result_b, __result_c, __result_d, __result_e)) = seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e) {
-                Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e))
+        }};
+        // Sequence(5) => a b c d e
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some($crate::compiler::parser::Combinator::Seq4(__result_b, __result_c, __result_d, __result_e)) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e) {
+                    Some($crate::compiler::parser::Combinator::Seq5(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-    // Sequence(6) => a b c d e f
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq5(__result_b, __result_c, __result_d, __result_e, __result_f)) = seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f) {
-                Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e, __result_f))
+        }};
+        // Sequence(6) => a b c d e f
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some($crate::compiler::parser::Combinator::Seq5(__result_b, __result_c, __result_d, __result_e, __result_f)) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f) {
+                    Some($crate::compiler::parser::Combinator::Seq6(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e, __result_f))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-    // Sequence(7) => a b c d e f g
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq6(__result_b, __result_c, __result_d, __result_e, __result_f, __result_g)) = seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g) {
-                Some($crate::compiler::parser::Combinator::Seq7(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e, __result_f, __result_g))
+        }};
+        // Sequence(7) => a b c d e f g
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some($crate::compiler::parser::Combinator::Seq6(__result_b, __result_c, __result_d, __result_e, __result_f, __result_g)) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g) {
+                    Some($crate::compiler::parser::Combinator::Seq7(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e, __result_f, __result_g))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-    // Sequence(8) => a b c d e f g h
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            if let Some($crate::compiler::parser::Combinator::Seq7(__result_b, __result_c, __result_d, __result_e, __result_f, __result_g, __result_h)) = seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g $parse_h) {
-                Some($crate::compiler::parser::Combinator::Seq8(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e, __result_f, __result_g, __result_h))
+        }};
+        // Sequence(8) => a b c d e f g h
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                if let Some($crate::compiler::parser::Combinator::Seq7(__result_b, __result_c, __result_d, __result_e, __result_f, __result_g, __result_h)) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g $parse_h) {
+                    Some($crate::compiler::parser::Combinator::Seq8(Box::new(__result_a), __result_b, __result_c, __result_d, __result_e, __result_f, __result_g, __result_h))
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
-        }
-    }};
-}
+        }};
+    }
 
-/// Alternative combinator macro.
-#[macro_export(local_inner_macros)]
-macro_rules! alt {
-    // Alternative(2) => a | b
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
-        if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::A(Box::new(__result_a))))
-        } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::B(Box::new(__result_b))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(3) => a | b | c
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b) {
-            Some(__result)
-        } else if let Some(__result_c) = parse!($parser $(, $path)? => $parse_c)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::C(Box::new(__result_c))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(4) => a | b | c | d
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c) {
-            Some(__result)
-        } else if let Some(__result_d) = parse!($parser $(, $path)? => $parse_d)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::D(Box::new(__result_d))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(5) => a | b | c | d | e
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d) {
-            Some(__result)
-        } else if let Some(__result_e) = parse!($parser $(, $path)? => $parse_e)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::E(Box::new(__result_e))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(6) => a | b | c | d | e | f
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e) {
-            Some(__result)
-        } else if let Some(__result_f) = parse!($parser $(, $path)? => $parse_f)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::F(Box::new(__result_f))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(7) => a | b | c | d | e | f | g
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f) {
-            Some(__result)
-        } else if let Some(__result_g) = parse!($parser $(, $path)? => $parse_g)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::G(Box::new(__result_g))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(8) => a | b | c | d | e | f | g | h
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g) {
-            Some(__result)
-        } else if let Some(__result_h) = parse!($parser $(, $path)? => $parse_h)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::H(Box::new(__result_h))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(9) => a | b | c | d | e | f | g | h | i
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt $parse_i:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g $parse_h) {
-            Some(__result)
-        } else if let Some(__result_i) = parse!($parser $(, $path)? => $parse_i)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::I(Box::new(__result_i))))
-        } else {
-            None
-        }
-    }};
-    // Alternative(10) => a | b | c | d | e | f | g | h | i | j
-    ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt $parse_i:tt $parse_j:tt) => {{
-        if let Some(__result) = alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g $parse_h $parse_i) {
-            Some(__result)
-        } else if let Some(__result_j) = parse!($parser $(, $path)? => $parse_j)  {
-            Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::J(Box::new(__result_j))))
-        } else {
-            None
-        }
-    }};
-}
+    /// Alternative combinator macro.
+    macro_rules! alt {
+        // Alternative(2) => a | b
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
+            if let Some(__result_a) = parse!($parser $(, $path)? => $parse_a) {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::A(Box::new(__result_a))))
+            } else if let Some(__result_b) = parse!($parser $(, $path)? => $parse_b) {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::B(Box::new(__result_b))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(3) => a | b | c
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b) {
+                Some(__result)
+            } else if let Some(__result_c) = parse!($parser $(, $path)? => $parse_c)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::C(Box::new(__result_c))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(4) => a | b | c | d
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c) {
+                Some(__result)
+            } else if let Some(__result_d) = parse!($parser $(, $path)? => $parse_d)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::D(Box::new(__result_d))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(5) => a | b | c | d | e
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d) {
+                Some(__result)
+            } else if let Some(__result_e) = parse!($parser $(, $path)? => $parse_e)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::E(Box::new(__result_e))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(6) => a | b | c | d | e | f
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e) {
+                Some(__result)
+            } else if let Some(__result_f) = parse!($parser $(, $path)? => $parse_f)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::F(Box::new(__result_f))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(7) => a | b | c | d | e | f | g
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f) {
+                Some(__result)
+            } else if let Some(__result_g) = parse!($parser $(, $path)? => $parse_g)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::G(Box::new(__result_g))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(8) => a | b | c | d | e | f | g | h
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g) {
+                Some(__result)
+            } else if let Some(__result_h) = parse!($parser $(, $path)? => $parse_h)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::H(Box::new(__result_h))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(9) => a | b | c | d | e | f | g | h | i
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt $parse_i:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g $parse_h) {
+                Some(__result)
+            } else if let Some(__result_i) = parse!($parser $(, $path)? => $parse_i)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::I(Box::new(__result_i))))
+            } else {
+                None
+            }
+        }};
+        // Alternative(10) => a | b | c | d | e | f | g | h | i | j
+        ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt $parse_i:tt $parse_j:tt) => {{
+            if let Some(__result) = $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $parse_a $parse_b $parse_c $parse_d $parse_e $parse_f $parse_g $parse_h $parse_i) {
+                Some(__result)
+            } else if let Some(__result_j) = parse!($parser $(, $path)? => $parse_j)  {
+                Some($crate::compiler::parser::Combinator::Choice($crate::compiler::parser::combinator::Choice::J(Box::new(__result_j))))
+            } else {
+                None
+            }
+        }};
+    }
 
-// /// Permutation combinator macro.
-// macro_rules! perm {
-//     ($parser:expr $(, $path:ident)? => $parse_a:tt $parse_b:tt) => {{
-//         todo!()
-//     }};
-// }
+    /// Permutation combinator macro result.
+    macro_rules! perm_result {
+        ($result:expr, $parse_a:tt $parse_b:tt) => {{
+            Combinator::Seq2(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+            )
+        }};
+        ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt) => {{
+            Combinator::Seq3(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+                Box::new($result.remove(&2).unwrap()),
+            )
+        }};
+        ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
+            Combinator::Seq4(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+                Box::new($result.remove(&2).unwrap()),
+                Box::new($result.remove(&3).unwrap()),
+            )
+        }};
+        ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
+            Combinator::Seq5(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+                Box::new($result.remove(&2).unwrap()),
+                Box::new($result.remove(&3).unwrap()),
+                Box::new($result.remove(&4).unwrap()),
+            )
+        }};
+        ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
+            Combinator::Seq6(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+                Box::new($result.remove(&2).unwrap()),
+                Box::new($result.remove(&3).unwrap()),
+                Box::new($result.remove(&4).unwrap()),
+                Box::new($result.remove(&5).unwrap()),
+            )
+        }};
+        ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
+            Combinator::Seq7(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+                Box::new($result.remove(&2).unwrap()),
+                Box::new($result.remove(&3).unwrap()),
+                Box::new($result.remove(&4).unwrap()),
+                Box::new($result.remove(&5).unwrap()),
+                Box::new($result.remove(&6).unwrap()),
+            )
+        }};
+        ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
+            Combinator::Seq8(
+                Box::new($result.remove(&0).unwrap()),
+                Box::new($result.remove(&1).unwrap()),
+                Box::new($result.remove(&2).unwrap()),
+                Box::new($result.remove(&3).unwrap()),
+                Box::new($result.remove(&4).unwrap()),
+                Box::new($result.remove(&5).unwrap()),
+                Box::new($result.remove(&6).unwrap()),
+                Box::new($result.remove(&7).unwrap()),
+            )
+        }};
+    }
+
+    /// Permutation combinator macro.
+    macro_rules! perm_opt_args {
+        ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr, $path:ident => $parse_0:tt $( $parse_rest:tt )+) => {{
+            $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser, $path => $parse_0);
+            $(
+                $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser, $path => $parse_rest);
+            )+
+        }};
+        ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr => $parse_0:tt $( $parse_rest:tt )+) => {{
+            $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser => $parse_0);
+            $(
+                $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser => $parse_rest);
+            )+
+        }};
+        ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr $(, $path:ident)? => (opt $parse:tt)) => {{
+            {
+                let parser_func =
+                    |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                        Ok(parse!(parser $(, $path)? => $parse))
+                    };
+                $parser_funcs.push(($index, Box::new(parser_func)));
+                $index += 1;
+            }
+        }};
+        ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr $(, $path:ident)? => $parse:tt) => {{
+            {
+                let parser_func =
+                    |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                        Ok(parse!(parser $(, $path)? => $parse))
+                    };
+                $parser_funcs.push(($index, Box::new(parser_func)));
+                $non_optionals.insert($index);
+                $index += 1;
+            }
+        }}
+    }
+
+    pub(crate) use alt;
+    pub(crate) use perm_opt_args;
+    pub(crate) use perm_result;
+    pub(crate) use seq;
+}

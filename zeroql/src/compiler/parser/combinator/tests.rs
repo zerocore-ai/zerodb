@@ -1,6 +1,7 @@
 use crate::parse;
 
 use super::*;
+use itertools::Itertools;
 use mock::*;
 use tracing::info;
 
@@ -8,67 +9,240 @@ use tracing::info;
 // Tests
 //--------------------------------------------------------------------------------------------------
 
+fn test_(parser: &mut Parser) -> anyhow::Result<Option<Combinator<mock::Ast>>> {
+    let mut index = 0;
+    let mut parser_funcs = std::vec::Vec::<(
+        usize,
+        Box<
+            dyn Fn(
+                &mut _,
+            ) -> std::result::Result<
+                std::option::Option<Combinator<mock::Ast>>,
+                anyhow::Error,
+            >,
+        >,
+        // Box<dyn Fn(&mut _) -> std::result::Result<std::option::Option<Combinator<_>>, _>>,
+    )>::new();
+    let mut non_optionals = std::collections::HashSet::<usize>::new();
+
+    // ---
+
+    {
+        let parser_func =
+            |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                Ok(parse!(parser, Parser => parse_a))
+            };
+        parser_funcs.push((index, Box::new(parser_func)));
+        non_optionals.insert(index);
+        index += 1;
+    }
+
+    {
+        let parser_func =
+            |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                Ok(parse!(parser, Parser => parse_b))
+            };
+        parser_funcs.push((index, Box::new(parser_func)));
+        index += 1;
+    }
+
+    {
+        let parser_func =
+            |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                Ok(parse!(parser, Parser => parse_c))
+            };
+        parser_funcs.push((index, Box::new(parser_func)));
+        non_optionals.insert(index);
+        index += 1;
+    }
+
+    // ---
+
+    let mut map = std::collections::BTreeMap::new();
+    for _ in 0..index {
+        for (index, f) in parser_funcs.iter() {
+            println!("index = {}", index);
+            if let Some(combinator) = f(parser)? {
+                map.insert(*index, combinator);
+                break;
+            }
+        }
+    }
+
+    let map_indices = map
+        .keys()
+        .cloned()
+        .collect::<std::collections::HashSet<_>>();
+
+    // Non-optionals must be in the map
+    if map_indices.is_superset(&non_optionals) {
+        Ok(Some(Combinator::Many(
+            map.into_iter().map(|(_, combinator)| combinator).collect(),
+        )))
+    } else {
+        Ok(None)
+    }
+}
+
+#[test_log::test]
+fn test_combinator_perm_optional() -> anyhow::Result<()> {
+    for i in ('a'..='d').permutations(4) {
+        let parser = &mut Parser::new(i);
+        let result = parse!(parser, Parser => (perm_opt parse_a parse_b parse_c parse_d));
+        info!(
+            "input = {:?} | (perm_opt parse_a parse_b parse_c parse_d) = {:?}",
+            parser.input, result
+        );
+        assert_eq!(
+            result,
+            Some(Combinator::Seq4(
+                Box::new(Combinator::Single(Ast::A)),
+                Box::new(Combinator::Single(Ast::B)),
+                Box::new(Combinator::Single(Ast::C)),
+                Box::new(Combinator::Single(Ast::D))
+            ))
+        );
+    }
+
+    // Optional rules
+    let parser = &mut Parser::new(['b']);
+    let result = parse!(parser, Parser => (perm_opt (opt parse_c) parse_b (opt parse_a)));
+    info!(
+        "input = {:?} | (perm_opt (opt parse_c) parse_b (opt parse_a)) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq3(
+            Box::new(Combinator::Void),
+            Box::new(Combinator::Single(Ast::B)),
+            Box::new(Combinator::Void)
+        ))
+    );
+
+    let parser = &mut Parser::new(['b', 'c']);
+    let result = parse!(parser, Parser => (perm_opt (opt parse_c) parse_b (opt parse_a)));
+    info!(
+        "input = {:?} | (perm_opt (opt parse_c) parse_b (opt parse_a)) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq3(
+            Box::new(Combinator::Single(Ast::C)),
+            Box::new(Combinator::Single(Ast::B)),
+            Box::new(Combinator::Void)
+        ))
+    );
+
+    let parser = &mut Parser::new(['a', 'b', 'c']);
+    let result = parse!(parser, Parser => (perm_opt (opt parse_c) parse_b (opt parse_a)));
+    info!(
+        "input = {:?} | (perm_opt (opt parse_c) parse_b (opt parse_a)) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq3(
+            Box::new(Combinator::Single(Ast::C)),
+            Box::new(Combinator::Single(Ast::B)),
+            Box::new(Combinator::Single(Ast::A))
+        ))
+    );
+
+    // Fail Cases
+    let parser = &mut Parser::new(['c', 'a']);
+    let result = parse!(parser, Parser => (perm_opt (opt parse_c) parse_b (opt parse_a)));
+    info!(
+        "input = {:?} | (perm_opt (opt parse_c) parse_b (opt parse_a)) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(result, None);
+
+    let parser = &mut Parser::new(['a', 'b']);
+    let result = parse!(parser, Parser => (perm_opt parse_a parse_c));
+    info!(
+        "input = {:?} | (perm_opt parse_a parse_c) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(result, None);
+
+    Ok(())
+}
+
 #[test_log::test]
 fn test_combinator_perm() -> anyhow::Result<()> {
-    // let mut parser = &mut Parser::new(['a', 'b']);
-    // let result = parse!(&mut parser, Parser => (perm parse_a parse_b));
-    // info!(
-    //     "input = {:?} | (perm parse_a parse_b) = {:?}",
-    //     parser.input, result
-    // );
-    // assert_eq!(
-    //     result,
-    //     Some(Combinator::Seq2(
-    //         Box::new(Combinator::Single(Ast::A)),
-    //         Box::new(Combinator::Single(Ast::B))
-    //     ))
-    // );
+    let parser = &mut Parser::new(['a', 'b']);
+    let result = parse!(parser, Parser => (perm parse_a parse_b));
+    info!(
+        "input = {:?} | (perm parse_a parse_b) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq2(
+            Box::new(Combinator::Single(Ast::A)),
+            Box::new(Combinator::Single(Ast::B))
+        ))
+    );
 
-    // let mut parser = &mut Parser::new(['b', 'a']);
-    // let result = perm!(&mut parser, Parser => parse_a parse_b);
-    // info!(
-    //     "input = {:?} | (perm parse_a parse_b) = {:?}",
-    //     parser.input, result
-    // );
-    // assert_eq!(
-    //     result,
-    //     Some(Combinator::Seq2(
-    //         Box::new(Combinator::Single(Ast::B)),
-    //         Box::new(Combinator::Single(Ast::A))
-    //     ))
-    // );
+    let parser = &mut Parser::new(['b', 'a']);
+    let result = parse!(parser, Parser => (perm parse_a parse_b));
+    info!(
+        "input = {:?} | (perm parse_a parse_b) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq2(
+            Box::new(Combinator::Single(Ast::A)),
+            Box::new(Combinator::Single(Ast::B))
+        ))
+    );
 
-    // for i in ('a'..='c').permutations(3) {
-    //     let mut parser = &mut Parser::new(i);
-    //     let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c));
-    //     info!(
-    //         "input = {:?} | (perm parse_a parse_b parse_c) = {:?}",
-    //         parser.input, result
-    //     );
-    //     assert!(matches!(result, Some(Combinator::Seq3(_, _, _))));
-    // }
+    for i in ('a'..='c').permutations(3) {
+        let parser = &mut Parser::new(i);
+        let result = parse!(parser, Parser => (perm parse_a parse_b parse_c));
+        info!(
+            "input = {:?} | (perm parse_a parse_b parse_c) = {:?}",
+            parser.input, result
+        );
+        assert_eq!(
+            result,
+            Some(Combinator::Seq3(
+                Box::new(Combinator::Single(Ast::A)),
+                Box::new(Combinator::Single(Ast::B)),
+                Box::new(Combinator::Single(Ast::C))
+            ))
+        );
+    }
 
-    // for i in ('a'..='d').permutations(4) {
-    //     let mut parser = &mut Parser::new(i);
-    //     let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c parse_d));
-    //     info!(
-    //         "input = {:?} | (perm parse_a parse_b parse_c parse_d) = {:?}",
-    //         parser.input, result
-    //     );
-    //     assert!(matches!(result, Some(Combinator::Seq4(_, _, _, _))));
-    // }
+    for i in ('a'..='d').permutations(4) {
+        let parser = &mut Parser::new(i);
+        let result = parse!(parser, Parser => (perm parse_a parse_b parse_c parse_d));
+        info!(
+            "input = {:?} | (perm parse_a parse_b parse_c parse_d) = {:?}",
+            parser.input, result
+        );
+        assert_eq!(
+            result,
+            Some(Combinator::Seq4(
+                Box::new(Combinator::Single(Ast::A)),
+                Box::new(Combinator::Single(Ast::B)),
+                Box::new(Combinator::Single(Ast::C)),
+                Box::new(Combinator::Single(Ast::D))
+            ))
+        );
+    }
 
-    // for i in ('a'..='e').permutations(5) {
-    //     let mut parser = &mut Parser::new(i);
-    //     let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c parse_d parse_e));
-    //     assert!(matches!(result, Some(Combinator::Seq5(_, _, _, _, _))));
-    // }
-
-    // for i in ('a'..='f').permutations(6) {
-    //     let mut parser = &mut Parser::new(i);
-    //     let result = parse!(&mut parser, Parser => (perm parse_a parse_b parse_c parse_d parse_e parse_f));
-    //     assert!(matches!(result, Some(Combinator::Seq6(_, _, _, _, _, _))));
-    // }
+    // Fail Cases
+    let parser = &mut Parser::new(['a', 'b']);
+    let result = parse!(parser, Parser => (perm parse_a parse_c));
+    info!(
+        "input = {:?} | (perm parse_a parse_c) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(result, None);
 
     Ok(())
 }
@@ -563,6 +737,48 @@ fn test_combinator_mix() -> anyhow::Result<()> {
             Box::new(Combinator::Void),
             Box::new(Combinator::Seq2(
                 Box::new(Combinator::Single(Ast::A)),
+                Box::new(Combinator::Single(Ast::D))
+            ))
+        ))
+    );
+
+    // Permutation in sequence
+    let parser = &mut Parser::new(['b', 'a', 'd', 'c']);
+    let result = parse!(parser, Parser => (seq (perm parse_a parse_b) (perm parse_c parse_d)));
+    info!(
+        "input = {:?} | (seq (perm parse_a parse_b) (perm parse_c parse_d)) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq2(
+            Box::new(Combinator::Seq2(
+                Box::new(Combinator::Single(Ast::A)),
+                Box::new(Combinator::Single(Ast::B))
+            )),
+            Box::new(Combinator::Seq2(
+                Box::new(Combinator::Single(Ast::C)),
+                Box::new(Combinator::Single(Ast::D))
+            ))
+        ))
+    );
+
+    // Sequence in permutation
+    let parser = &mut Parser::new(['c', 'd', 'a', 'b']);
+    let result = parse!(parser, Parser => (perm (seq parse_a parse_b) (seq parse_c parse_d)));
+    info!(
+        "input = {:?} | (perm (seq parse_a parse_b) (seq parse_c parse_d)) = {:?}",
+        parser.input, result
+    );
+    assert_eq!(
+        result,
+        Some(Combinator::Seq2(
+            Box::new(Combinator::Seq2(
+                Box::new(Combinator::Single(Ast::A)),
+                Box::new(Combinator::Single(Ast::B))
+            )),
+            Box::new(Combinator::Seq2(
+                Box::new(Combinator::Single(Ast::C)),
                 Box::new(Combinator::Single(Ast::D))
             ))
         ))

@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
     pub fn parse_tok(&mut self, token_kind: TokenKind<'static>) -> ParserResult<Option<Ast<'a>>> {
         if let Some(Token { span, kind }) = self.eat_token()? {
             if kind == token_kind {
-                return Ok(Some(Ast::new(span, AstKind::Temp)));
+                return Ok(Some(Ast::new(span, AstKind::Temp(None))));
             }
         }
 

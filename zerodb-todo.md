@@ -43,15 +43,18 @@
       - [x] Sequence
       - [ ] Permutation
     - [ ] Complete Parser
-      - [ ] Operations
+      - [x] Operations
       - [ ] Expressions
       - [ ] Statements
       - [ ] Program
     - [ ] Support any case keyword and operators
     - [ ] Need strategy for preventing malicious code that lead to stack overflows
+      - [ ] stacker::maybe_grow - grows the stack as needed or spills to heap - used by rustc https://docs.rs/stacker/latest/stacker/
+      - [ ] thread isolation - running in a separate thread with set stack size and is the least intrusive
       - [ ] reblessive crate - problematic because it complicates the interface for backtrack and memoize macros
-      - [ ] active prevention - setting nested expression and unary/binary op limit
-      - [ ] thread isolation - running in a separate thread with set stack size
+      - [ ] active prevention - setting nested expression limit, unary/binary op limit or recursion depth limit
+    - [ ] Rewrite parser to not use combinator macros in the future.
+    - [ ] Remove `permute` and make `permute_op` the new `permute`
 
   - [ ] zeroql: Reimplement AST
   - [ ] zeroql: Semantic Analysis

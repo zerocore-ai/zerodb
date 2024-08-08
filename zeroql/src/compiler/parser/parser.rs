@@ -37,6 +37,7 @@ pub struct Parser<'a> {
     pub(crate) lexer: Lexer<'a>,
 }
 
+/// The value stored in the cache.
 type CacheValue<'a> = (ParserResult<Option<Ast<'a>>>, LexerState);
 
 //--------------------------------------------------------------------------------------------------

@@ -80,8 +80,8 @@ impl<'a> Parser<'a> {
         ));
 
         let ast = result.map(|x| match x.unwrap_choice() {
-            Choice::A(x) => Ast::new(x.unwrap_single().get_span(), AstKind::BooleanLiteral(true)),
-            Choice::B(x) => Ast::new(x.unwrap_single().get_span(), AstKind::BooleanLiteral(false)),
+            Choice::A(x) => Ast::new(x.unwrap_single().span, AstKind::BooleanLiteral(true)),
+            Choice::B(x) => Ast::new(x.unwrap_single().span, AstKind::BooleanLiteral(false)),
             _ => unreachable!(),
         });
 
@@ -99,7 +99,7 @@ impl<'a> Parser<'a> {
     #[backtrack]
     pub fn parse_none_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         if let Some(ast) = self.parse_kw("none")? {
-            return Ok(Some(Ast::new(ast.get_span(), AstKind::NoneLiteral)));
+            return Ok(Some(Ast::new(ast.span, AstKind::NoneLiteral)));
         }
 
         Ok(None)
@@ -197,7 +197,7 @@ impl<'a> Parser<'a> {
             Choice::A(x) => {
                 let (open, close) = x.unwrap_seq2();
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::ListLiteral(vec![]),
                 )
             }
@@ -210,7 +210,7 @@ impl<'a> Parser<'a> {
                 }
 
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::ListLiteral(op_asts),
                 )
             }
@@ -247,7 +247,7 @@ impl<'a> Parser<'a> {
             Choice::A(x) => {
                 let (open, close) = x.unwrap_seq2();
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::ObjectLiteral(vec![]),
                 )
             }
@@ -260,7 +260,7 @@ impl<'a> Parser<'a> {
                 }
 
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::ObjectLiteral(op_asts),
                 )
             }
@@ -302,14 +302,14 @@ impl<'a> Parser<'a> {
             Choice::A(x) => {
                 let (open, close) = x.unwrap_seq2();
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::TupleLiteral(vec![]),
                 )
             }
             Choice::B(x) => {
                 let (open, op, _, close) = x.unwrap_seq4();
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::TupleLiteral(vec![op.unwrap_single()]),
                 )
             }
@@ -322,7 +322,7 @@ impl<'a> Parser<'a> {
                 }
 
                 Ast::new(
-                    open.unwrap_single().get_span().start..close.unwrap_single().get_span().end,
+                    open.unwrap_single().span.start..close.unwrap_single().span.end,
                     AstKind::TupleLiteral(op_asts),
                 )
             }

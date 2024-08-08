@@ -221,13 +221,13 @@ fn generate_transformed_fn(
             let anykey = anykey::into_key(hashable_key);
 
             if #cache.get(&anykey).is_none() {
-                tracing::debug!("memoize: cache miss: {}({})", std::stringify!(#fn_name), std::stringify!(#fn_inputs));
+                tracing::trace!("memoize: cache miss: {}({})", std::stringify!(#fn_name), std::stringify!(#fn_inputs));
                 let value = #fn_call;
                 #skip_if_true_block
                 #cache_insert;
                 value
             } else {
-                tracing::debug!("memoize: cache hit: {}({})", std::stringify!(#fn_name), std::stringify!(#fn_inputs));
+                tracing::trace!("memoize: cache hit: {}({})", std::stringify!(#fn_name), std::stringify!(#fn_inputs));
                 #cache_hit_return
             }
         }

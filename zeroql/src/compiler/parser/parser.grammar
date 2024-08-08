@@ -579,7 +579,34 @@ op =
 
 (* EXPRESSIONS *)
 
-op_assign_any =
+partial_set_object =
+    | kw_set object_lit
+
+partial_set_assign =
+    | kw_set identifier op_is_lexer op ("," identifier op_is_lexer op)*
+
+create_exp =
+    | kw_create (id_op | identifier) partial_set_object
+    | kw_create (id_op | identifier) partial_set_assign
+    | kw_create identifier kw_set "(" (identifier ("," identifier)* ","?)? ")" kw_values tuple_lit ("," tuple_lit)*
+
+partial_where_guard =
+    | kw_where (op | op_star)
+
+relate_exp =
+    | kw_relate relate_op << partial_where_guard? (partial_set_object | partial_set_assign) >>
+    | kw_relate relate_op partial_where_guard
+    | kw_relate relate_op
+
+partial_target =
+    | relate_op
+    | id_op
+    | identifier
+
+delete_exp =
+    | kw_delete partial_target partial_where_guard?
+
+partial_op_update_assign =
     | op_is_lexer
     | op_assign_plus
     | op_assign_minus
@@ -595,129 +622,117 @@ op_assign_any =
     | op_assign_shr
     | op_assign_null_coalesce
 
-assign =
-    | identifier op_assign_any op
-
-where_guard =
-    | kw_where op
-    | kw_where op_star
-
-create_exp =
-    | kw_create (id_op | identifier) kw_set object_lit
-    | kw_create (id_op | identifier) kw_set identifier op_assign op ("," identifier op_assign op)*
-    | kw_create (id_op | identifier) kw_set "(" (identifier ("," identifier)* ","?)? ")" kw_values tuple_lit ("," tuple_lit)*
-
-relate_set_object =
-    | kw_set object_lit
-
-relate_set_comma =
-    | kw_set identifier assign op ("," identifier assign op)*
-
-relate_exp =
-    | kw_relate relate_op << where_guard? relate_set_object? >>
-    | kw_relate relate_op << where_guard? relate_set_comma? >>
-
-target =
-    | relate_op
-    | id_op
-    | identifier
-
-delete_exp =
-    | kw_delete target where_guard?
+partial_set_update_assign =
+    | kw_set identifier partial_op_update_assign op ("," identifier partial_op_update_assign op)*
 
 update_exp =
-    | kw_update target << where_guard? relate_set_object >>
-    | kw_update target << where_guard? relate_set_comma >>
+    | kw_update partial_target << partial_where_guard (partial_set_object | partial_set_update_assign) >>
+    | kw_update partial_target partial_where_guard? (partial_set_object | partial_set_update_assign)
 
-select_field_fold =
+partial_partial_select_field_fold =
     | kw_fold function_call_op
 
-select_as =
+partial_select_as =
     | kw_as identifier
 
-select_field =
-    | select_field_fold select_as?
-    | op select_as?
+partial_select_field =
+    | partial_select_field_fold partial_select_as?
+    | op partial_select_as?
     | index_op (op_dot | op_safe_nav) op_star
     | op_star
 
-select_omit =
+partial_select_omit =
     | kw_omit identifier ("," identifier)*
 
-select_fields =
-    | select_field ("," select_field)* (","? select_omit)?
+partial_select_fields =
+    | partial_select_field ("," partial_select_field)* (","? partial_select_omit)?
 
-select_from_table_relate_id_as =
-    | relate_id select_as?
+partial_select_from_table_relate_id_as =
+    | relate_id partial_select_as?
 
-select_from_table_relate =
-    | (select_from_table_relate_id_as op_arrow)+ select_from_table_relate_id_as
+partial_select_from_table_relate =
+    | (partial_select_from_table_relate_id_as op_arrow)+ partial_select_from_table_relate_id_as
 
-select_from_table =
-    | op select_as?
-    | select_from_table_relate
+partial_select_from_table =
+    | op partial_select_as?
+    | partial_select_from_table_relate
 
-select_from_tables =
-    | select_from_table ("," select_from_table)*
+partial_select_from_tables =
+    | partial_select_from_table ("," partial_select_from_table)*
 
-select_from =
-    | kw_from select_from_tables
+partial_select_from =
+    | kw_from partial_select_from_tables
     | kw_from op_star
 
-select_with_indices =
+partial_select_with_indices =
     | kw_with kw_indices identifier ("," identifier)*
     | kw_with kw_no kw_index
 
-select_group_by =
+partial_select_group_by =
     | kw_group kw_by? identifier ("," identifier)*
 
-select_order_by =
+partial_select_order_by =
     | kw_order kw_by? identifier ("," identifier)* (kw_asc | kw_desc)?
 
-select_start_at =
+partial_select_start_at =
     | kw_start kw_at? op
 
-select_limit_to =
+partial_select_limit_to =
     | kw_limit kw_to? op
 
 select_exp =
-    | kw_select select_fields select_from << where_guard? select_with_indices? select_group_by? select_order_by? select_start_at? select_limit_to? >>
+    | kw_select partial_select_fields partial_select_from << partial_where_guard? partial_select_with_indices? partial_select_group_by? partial_select_order_by? partial_select_start_at? partial_select_limit_to? >>
+
+partial_if_not_exists =
+    | kw_if kw_not kw_exists
+
+partial_if_exists =
+    | kw_if kw_exists
+
+partial_on_namespace =
+    | kw_on (kw_namespace | kw_ns)? identifier
+
+partial_on_database =
+    | kw_on (kw_database | kw_db)? identifier
+
+partial_on_table =
+    | kw_on kw_table identifier
 
 remove_namespace_exp =
-    | kw_remove kw_namespace if_exists? identifier
-    | kw_remove kw_namespace identifier if_exists
+    | kw_remove kw_namespace partial_if_exists? identifier
+    | kw_remove kw_namespace identifier partial_if_exists
 
 remove_database_exp =
-    | kw_remove kw_database if_exists? identifier on_namespace?
-    | kw_remove kw_database identifier << if_exists? on_namespace? >>
+    | kw_remove kw_database partial_if_exists? identifier partial_on_namespace?
+    | kw_remove kw_database identifier << partial_if_exists? partial_on_namespace? >>
 
 remove_table_exp =
-    | kw_remove kw_table if_exists? identifier on_database?
-    | kw_remove kw_table identifier << if_exists? on_database? >>
+    | kw_remove kw_table partial_if_exists? identifier partial_on_database?
+    | kw_remove kw_table identifier << partial_if_exists? partial_on_database? >>
 
 remove_edge_exp =
-    | kw_remove kw_edge if_exists? identifier on_database?
-    | kw_remove kw_edge identifier << if_exists? on_database? >>
+    | kw_remove kw_edge partial_if_exists? identifier partial_on_database?
+    | kw_remove kw_edge identifier << partial_if_exists? partial_on_database? >>
 
 remove_type_exp =
-    | kw_remove kw_type if_exists? identifier on_database?
-    | kw_remove kw_type identifier << if_exists? on_database? >>
+    | kw_remove kw_type partial_if_exists? identifier partial_on_database?
+    | kw_remove kw_type identifier << partial_if_exists? partial_on_database? >>
 
 remove_enum_exp =
-    | kw_remove kw_enum if_exists? identifier on_database?
-    | kw_remove kw_enum identifier << if_exists? on_database? >>
+    | kw_remove kw_enum partial_if_exists? identifier partial_on_database?
+    | kw_remove kw_enum identifier << partial_if_exists? partial_on_database? >>
 
 remove_index_exp =
-    | kw_remove kw_index if_exists? identifier << on_table? on_database? >>
-    | kw_remove kw_index identifier << if_exists? on_table? on_database? >>
+    | kw_remove kw_index partial_if_exists? identifier << partial_on_table? partial_on_database? >>
+    | kw_remove kw_index identifier << partial_if_exists? partial_on_table? partial_on_database? >>
 
 remove_module_exp =
-    | kw_remove kw_module if_exists? identifier on_database?
-    | kw_remove kw_module identifier << if_exists? on_database? >>
+    | kw_remove kw_module partial_if_exists? identifier partial_on_database?
+    | kw_remove kw_module identifier << partial_if_exists? partial_on_database? >>
 
 remove_param_exp =
-    | kw_remove kw_param if_exists? variable on_database?
-    | kw_remove kw_param variable << if_exists? on_database? >>
+    | kw_remove kw_param partial_if_exists? variable partial_on_database?
+    | kw_remove kw_param variable << partial_if_exists? partial_on_database? >>
 
 remove_exp =
     | remove_namespace_exp
@@ -731,38 +746,40 @@ remove_exp =
     | remove_param_exp
 
 describe_namespace_exp =
-    | kw_describe kw_namespace if_exists? identifier
-    | kw_describe kw_namespace identifier if_exists?
+    | kw_describe kw_namespace partial_if_exists? identifier
+    | kw_describe kw_namespace identifier partial_if_exists?
 
 describe_database_exp =
-    | kw_describe kw_database if_exists? identifier on_namespace?
-    | kw_describe kw_database identifier << if_exists? on_namespace? >>
+    | kw_describe kw_database partial_if_exists? identifier partial_on_namespace?
+    | kw_describe kw_database identifier << partial_if_exists? partial_on_namespace? >>
 
 describe_table_exp =
-    | kw_describe kw_table if_exists? identifier on_database?
-    | kw_describe kw_table identifier << if_exists? on_database? >>
+    | kw_describe kw_table partial_if_exists? identifier partial_on_database?
+    | kw_describe kw_table identifier << partial_if_exists? partial_on_database? >>
 
 describe_edge_exp =
-    | kw_describe kw_edge if_exists? identifier on_database?
-    | kw_describe kw_edge identifier << if_exists? on_database? >>
+    | kw_describe kw_edge partial_if_exists? identifier partial_on_database?
+    | kw_describe kw_edge identifier << partial_if_exists? partial_on_database? >>
 
 describe_type_exp =
-    | kw_describe kw_type if_exists? identifier on_database?
-    | kw_describe kw_type identifier << if_exists? on_database? >>
+    | kw_describe kw_type partial_if_exists? identifier partial_on_database?
+    | kw_describe kw_type identifier << partial_if_exists? partial_on_database? >>
 
-describe
+describe_enum_exp =
+    | kw_describe kw_enum partial_if_exists? identifier partial_on_database?
+    | kw_describe kw_enum identifier << partial_if_exists? partial_on_database? >>
 
 describe_index_exp =
-    | kw_describe kw_index if_exists? identifier on_table? on_database?
-    | kw_describe kw_index identifier << if_exists? on_table? on_database? >>
+    | kw_describe kw_index partial_if_exists? identifier partial_on_table? partial_on_database?
+    | kw_describe kw_index identifier << partial_if_exists? partial_on_table? partial_on_database? >>
 
 describe_module_exp =
-    | kw_describe kw_module if_exists? identifier on_database?
-    | kw_describe kw_module identifier << if_exists? on_database? >>
+    | kw_describe kw_module partial_if_exists? identifier partial_on_database?
+    | kw_describe kw_module identifier << partial_if_exists? partial_on_database? >>
 
 describe_param_exp =
-    | kw_describe kw_param if_exists? variable on_database?
-    | kw_describe kw_param variable << if_exists? on_database? >>
+    | kw_describe kw_param partial_if_exists? variable partial_on_database?
+    | kw_describe kw_param variable << partial_if_exists? partial_on_database? >>
 
 describe_exp =
     | describe_namespace_exp
@@ -787,20 +804,20 @@ cancel_exp =
 for_exp =
     | kw_for variable op_in op kw_do program kw_end
 
-else_part =
+partial_else_part =
     | kw_else program
 
-else_if_part =
+partial_else_if_part =
     | kw_else kw_if op kw_then program
 
 if_else_exp =
-    | kw_if op kw_then program else_if_part* else_part? kw_end
+    | kw_if op kw_then program partial_else_if_part* partial_else_part? kw_end
 
 let_exp =
-    | kw_let variable (kw_type type_sig)? op_assign exp
+    | kw_let variable (kw_type type_sig)? op_is_lexer exp
 
 set_exp =
-    | kw_set variable op_assign_any exp
+    | kw_set variable partial_op_update_assign exp
 
 exp =
     | relate_exp
@@ -828,28 +845,13 @@ type_sig =
     | identifier_scope_op "<" type_sig ("," type_sig)* ","? ">" "?"*
     | identifier_scope_op "?"*
 
-if_not_exists =
-    | kw_if kw_not kw_exists
-
-if_exists =
-    | kw_if kw_exists
-
-on_namespace =
-    | kw_on (kw_namespace | kw_ns)? identifier
-
-on_database =
-    | kw_on (kw_database | kw_db)? identifier
-
-on_table =
-    | kw_on kw_table identifier
-
 define_namespace_stmt =
-    | kw_define (kw_namespace | kw_ns) if_not_exists? identifier
-    | kw_define (kw_namespace | kw_ns) identifier if_not_exists?
+    | kw_define (kw_namespace | kw_ns) partial_if_not_exists? identifier
+    | kw_define (kw_namespace | kw_ns) identifier partial_if_not_exists?
 
 define_database_stmt =
-    | kw_define (kw_database | kw_db) if_not_exists? identifier on_namespace?
-    | kw_define (kw_database | kw_db) identifier << if_not_exists? on_namespace? >>
+    | kw_define (kw_database | kw_db) partial_if_not_exists? identifier partial_on_namespace?
+    | kw_define (kw_database | kw_db) identifier << partial_if_not_exists? partial_on_namespace? >>
 
 define_table_field_type =
     | kw_type type_sig
@@ -867,12 +869,12 @@ define_table_fields =
     | kw_fields define_table_field ("," define_table_field)*
 
 define_table_stmt =
-    | kw_define kw_table if_not_exists? identifier on_database? define_table_fields?
-    | kw_define kw_table identifier << if_not_exists? on_database? define_table_fields? >>
+    | kw_define kw_table partial_if_not_exists? identifier partial_on_database? define_table_fields?
+    | kw_define kw_table identifier << partial_if_not_exists? partial_on_database? define_table_fields? >>
 
 define_edge_stmt =
-    | kw_define kw_edge if_not_exists? identifier on_database? define_table_fields?
-    | kw_define kw_edge identifier << if_not_exists? on_database? define_table_fields? >>
+    | kw_define kw_edge partial_if_not_exists? identifier partial_on_database? define_table_fields?
+    | kw_define kw_edge identifier << partial_if_not_exists? partial_on_database? define_table_fields? >>
 
 define_type_field =
     | identifier define_table_field_type
@@ -881,19 +883,19 @@ define_type_fields =
     | kw_fields define_type_field ("," define_type_field)*
 
 define_type_stmt =
-    | kw_define kw_type if_not_exists? identifier on_database? define_type_fields?
-    | kw_define kw_type identifier << if_not_exists? on_database? define_type_fields? >>
+    | kw_define kw_type partial_if_not_exists? identifier partial_on_database? define_type_fields?
+    | kw_define kw_type identifier << partial_if_not_exists? partial_on_database? define_type_fields? >>
 
 define_enum_variants =
     | kw_variants identifier ("," identifier)*
 
 define_enum_stmt =
-    | kw_define kw_enum if_not_exists? identifier on_database? define_enum_variants?
-    | kw_define kw_enum identifier << if_not_exists? on_database? define_enum_variants? >>
+    | kw_define kw_enum partial_if_not_exists? identifier partial_on_database? define_enum_variants?
+    | kw_define kw_enum identifier << partial_if_not_exists? partial_on_database? define_enum_variants? >>
 
 define_type_stmt =
-    | kw_define kw_type if_not_exists? identifier on_database? define_table_fields?
-    | kw_define kw_type identifier << if_not_exists? on_database? define_table_fields? >>
+    | kw_define kw_type partial_if_not_exists? identifier partial_on_database? define_table_fields?
+    | kw_define kw_type identifier << partial_if_not_exists? partial_on_database? define_table_fields? >>
 
 define_index_fields =
     | kw_fields identifier ("," identifier)*
@@ -902,19 +904,19 @@ define_index_with =
     | kw_with function_call_op
 
 define_index_stmt =
-    | kw_define kw_index if_not_exists? identifier << on_database? on_table? define_index_fields define_index_with? >>
-    | kw_define kw_index identifier << if_not_exists? on_database? on_table? define_index_fields define_index_with? >>
+    | kw_define kw_index partial_if_not_exists? identifier << partial_on_database? partial_on_table? define_index_fields define_index_with? >>
+    | kw_define kw_index identifier << partial_if_not_exists? partial_on_database? partial_on_table? define_index_fields define_index_with? >>
 
 define_module_block =
     | kw_with module_block kw_end
 
 define_module_stmt =
-    | kw_define (kw_module | kw_mod) if_not_exists? identifier << define_module_block on_database? >>
-    | kw_define (kw_module | kw_mod) identifier << if_not_exists? define_module_block on_database? >>
+    | kw_define (kw_module | kw_mod) partial_if_not_exists? identifier << define_module_block partial_on_database? >>
+    | kw_define (kw_module | kw_mod) identifier << partial_if_not_exists? define_module_block partial_on_database? >>
 
 define_param_stmt =
-    | kw_define kw_param if_not_exists? identifier << on_database? define_table_field_type? define_table_field_value >>
-    | kw_define kw_param identifier << if_not_exists? on_database? define_table_field_type? define_table_field_value >>
+    | kw_define kw_param partial_if_not_exists? identifier << partial_on_database? define_table_field_type? define_table_field_value >>
+    | kw_define kw_param identifier << partial_if_not_exists? partial_on_database? define_table_field_type? define_table_field_value >>
 
 define_stmt =
     | define_namespace_stmt

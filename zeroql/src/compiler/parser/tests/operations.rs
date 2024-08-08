@@ -102,7 +102,7 @@ fn test_parser_id_op() -> anyhow::Result<()> {
                 }),
                 Box::new(Ast {
                     span: 29..30,
-                    kind: Star,
+                    kind: Wildcard,
                 }),
             ),
         })
@@ -2460,7 +2460,7 @@ fn test_parser_single_relate_id() -> anyhow::Result<()> {
                 }),
                 Box::new(Ast {
                     span: 3..4,
-                    kind: Star,
+                    kind: Wildcard,
                 }),
             )
         })
@@ -2495,7 +2495,7 @@ fn test_parser_single_relate_id() -> anyhow::Result<()> {
         result_d,
         Some(Ast {
             span: 16..17,
-            kind: Star,
+            kind: Wildcard,
         })
     );
 
@@ -2527,7 +2527,7 @@ fn test_parser_multi_relate_id() -> anyhow::Result<()> {
                         }),
                         Box::new(Ast {
                             span: 4..5,
-                            kind: Star,
+                            kind: Wildcard,
                         }),
                     ),
                 },
@@ -2559,7 +2559,7 @@ fn test_parser_multi_relate_id() -> anyhow::Result<()> {
                 },
                 Ast {
                     span: 21..22,
-                    kind: Star,
+                    kind: Wildcard,
                 },
             ],),
         },)
@@ -2594,7 +2594,7 @@ fn test_parser_relate_id() -> anyhow::Result<()> {
                         }),
                         Box::new(Ast {
                             span: 4..5,
-                            kind: Star,
+                            kind: Wildcard,
                         }),
                     ),
                 },
@@ -2627,7 +2627,7 @@ fn test_parser_relate_id() -> anyhow::Result<()> {
         result_c,
         Some(Ast {
             span: 20..21,
-            kind: Star,
+            kind: Wildcard,
         })
     );
 
@@ -3059,7 +3059,7 @@ fn test_parser_relate_op() -> anyhow::Result<()> {
                             span: 26..29,
                             kind: ListLiteral(vec![Ast {
                                 span: 27..28,
-                                kind: Star,
+                                kind: Wildcard,
                             }]),
                         }),
                     ),
@@ -3132,7 +3132,7 @@ fn test_parser_operation() -> anyhow::Result<()> {
             kind: RelateOp(
                 Box::new(Ast {
                     span: 0..1,
-                    kind: Star,
+                    kind: Wildcard,
                 }),
                 Right,
                 Box::new(Ast {

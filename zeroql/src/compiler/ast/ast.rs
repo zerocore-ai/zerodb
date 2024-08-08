@@ -1,10 +1,9 @@
-use crate::{lexer::RegexFlags, Span};
+use crate::{lexer::RegexFlags, parser::Combinator, Span};
 
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
 
-// TODO: I think ASTs don't need spans.
 /// The abstract syntax tree (AST) of the zeroql language.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ast<'a> {
@@ -18,11 +17,12 @@ pub struct Ast<'a> {
 /// The kind of an AST node.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstKind<'a> {
-    /// For intermediate nodes that won't make it into the final AST.
-    Temp,
+    /// For intermediate nodes representing partial syntax that may not necessarily make it into
+    /// the final AST.
+    Temp(Option<Box<Combinator<Ast<'a>>>>),
 
-    /// A `*` expression.
-    Star,
+    /// A wildcard expression.
+    Wildcard,
 
     /// An identifier.
     Identifier(&'a str),
@@ -239,6 +239,33 @@ pub enum AstKind<'a> {
         RelateArrow,
         Box<Ast<'a>>,
     ),
+
+    /// An `CREATE` expression.
+    Create {
+        /// The subject of the create operation.
+        subject: Box<Ast<'a>>,
+
+        /// Columns of the create operation.
+        columns: Vec<Ast<'a>>,
+
+        /// A vector of value tuples.
+        values: Vec<Vec<Ast<'a>>>,
+    },
+
+    /// A `RELATE` expression.
+    Relate {
+        /// The associated relate operation.
+        relate_op: Box<Ast<'a>>,
+
+        /// The columns of the relate operation.
+        columns: Vec<Ast<'a>>,
+
+        /// The values of the relate operation.
+        value: Vec<Ast<'a>>,
+
+        /// The where guard of the relate operation.
+        where_guard: Option<Box<Ast<'a>>>,
+    },
 }
 
 /// The arrow direction of a relate operation.
@@ -270,5 +297,13 @@ impl<'a> Ast<'a> {
     /// Gets the span of the AST node.
     pub fn get_span(&self) -> Span {
         self.span.clone()
+    }
+
+    /// Unwraps the AST node from the temporary kind.
+    pub(crate) fn unwrap_temp(self) -> Combinator<Ast<'a>> {
+        match self.kind {
+            AstKind::Temp(x) => *x.unwrap(),
+            _ => panic!("AstKind::Temp expected"),
+        }
     }
 }

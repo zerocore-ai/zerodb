@@ -21,11 +21,11 @@ fn test_parser_operators() -> anyhow::Result<()> {
 
     info!("input = {:?} | parse_tok(OpPlus) parse_tok(OpOpenParen) parse_tok(OpCloseParen) parse_tok(OpMinus) parse_tok(OpDiv) = {:?} {:?} {:?} {:?} {:?}", parser.lexer.string, result_a, result_b, result_c, result_d, result_e);
 
-    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(1..2, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(2..3, AstKind::Temp)));
-    assert_eq!(result_d, Some(Ast::new(3..4, AstKind::Temp)));
-    assert_eq!(result_e, Some(Ast::new(4..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(1..2, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(2..3, AstKind::Temp(None))));
+    assert_eq!(result_d, Some(Ast::new(3..4, AstKind::Temp(None))));
+    assert_eq!(result_e, Some(Ast::new(4..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -38,8 +38,8 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(1..3, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(1..3, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -53,9 +53,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..6, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(7..10, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..6, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(7..10, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -69,9 +69,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(6..8, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(6..8, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -85,9 +85,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(2..4, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(5..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(2..4, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(5..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -101,9 +101,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..9, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(10..16, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..9, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(10..16, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -117,9 +117,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(2..5, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(6..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(2..5, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(6..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -132,8 +132,8 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -146,8 +146,8 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -161,9 +161,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..12, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(13..21, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..12, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(13..21, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -177,9 +177,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..16, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(17..29, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..16, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(17..29, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -193,9 +193,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..17, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(18..31, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..17, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(18..31, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -209,9 +209,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..16, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(17..29, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..16, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(17..29, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -225,9 +225,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..16, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(17..29, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..16, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(17..29, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -241,9 +241,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(2..7, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(8..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..1, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(2..7, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(8..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -257,9 +257,9 @@ fn test_parser_operators() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b, result_c
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..12, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(13..22, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..12, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(13..22, AstKind::Temp(None))));
 
     Ok(())
 }

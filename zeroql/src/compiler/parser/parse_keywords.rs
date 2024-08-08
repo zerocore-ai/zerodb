@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
         }) = self.eat_token()?
         {
             if ident == string.to_uppercase() || ident == string.to_lowercase() {
-                return Ok(Some(Ast::new(span, AstKind::Temp)));
+                return Ok(Some(Ast::new(span, AstKind::Temp(None))));
             }
         }
 
@@ -41,7 +41,10 @@ impl<'a> Parser<'a> {
     ) -> ParserResult<Option<Ast<'a>>> {
         if let Some(Ast { span: span_a, .. }) = self.parse_kw(string_a)? {
             if let Some(Ast { span: span_b, .. }) = self.parse_kw(string_b)? {
-                return Ok(Some(Ast::new(span_a.start..span_b.end, AstKind::Temp)));
+                return Ok(Some(Ast::new(
+                    span_a.start..span_b.end,
+                    AstKind::Temp(None),
+                )));
             }
         }
 

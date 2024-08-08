@@ -20,10 +20,10 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         r#"input = {:?} | parse_kw("SUPERFLUOUS") parse_kw("superfluous") parse_kw("superfluous") parse_kw("SUPERFLUOUS") = {:?} {:?} {:?} {:?}"#,
         parser.lexer.string, result_a, result_b, result_c, result_d
     );
-    assert_eq!(result_a, Some(Ast::new(0..11, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(12..23, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(24..35, AstKind::Temp)));
-    assert_eq!(result_d, Some(Ast::new(36..47, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..11, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(12..23, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(24..35, AstKind::Temp(None))));
+    assert_eq!(result_d, Some(Ast::new(36..47, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -36,10 +36,10 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         r#"input = {:?} | parse_kw2("SMOOTH", "BEAN") parse_kw2("smooth", "bean") parse_kw2("SMOOTH", "bean") parse_kw2("smooth", "BEAN") = {:?} {:?} {:?} {:?}"#,
         parser.lexer.string, result_a, result_b, result_c, result_d
     );
-    assert_eq!(result_a, Some(Ast::new(0..11, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(12..23, AstKind::Temp)));
-    assert_eq!(result_c, Some(Ast::new(24..35, AstKind::Temp)));
-    assert_eq!(result_d, Some(Ast::new(36..47, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..11, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(12..23, AstKind::Temp(None))));
+    assert_eq!(result_c, Some(Ast::new(24..35, AstKind::Temp(None))));
+    assert_eq!(result_d, Some(Ast::new(36..47, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -50,8 +50,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_create parse_kw_create = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -62,8 +62,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_relate parse_kw_relate = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -74,8 +74,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_delete parse_kw_delete = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -86,8 +86,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_update parse_kw_update = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -98,8 +98,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_select parse_kw_select = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -110,8 +110,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_fold parse_kw_fold = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -122,8 +122,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_omit parse_kw_omit = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -134,8 +134,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_break parse_kw_break = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -146,8 +146,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_continue parse_kw_continue = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -158,8 +158,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_set parse_kw_set = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -170,8 +170,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_begin parse_kw_begin = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -182,8 +182,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_transaction parse_kw_transaction = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..11, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(12..23, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..11, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(12..23, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -194,8 +194,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_commit parse_kw_commit = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -206,8 +206,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_cancel parse_kw_cancel = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -218,8 +218,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_define parse_kw_define = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -230,8 +230,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_redefine parse_kw_redefine = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -242,8 +242,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_remove parse_kw_remove = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -254,8 +254,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_describe parse_kw_describe = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -266,8 +266,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_namespace parse_kw_namespace = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..9, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(10..19, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..9, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(10..19, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -278,8 +278,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_ns parse_kw_ns = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -290,8 +290,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_database parse_kw_database = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -302,8 +302,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_db parse_kw_db = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -314,8 +314,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_table parse_kw_table = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -326,8 +326,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_fields parse_kw_fields = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -338,8 +338,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_index parse_kw_index = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -350,8 +350,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_indices parse_kw_indices = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..7, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(8..15, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..7, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(8..15, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -362,8 +362,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_type parse_kw_type = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -374,8 +374,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_enum parse_kw_enum = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -386,8 +386,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_edge parse_kw_edge = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -398,8 +398,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_module parse_kw_module = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -410,8 +410,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_param parse_kw_param = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -422,8 +422,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_mod parse_kw_mod = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -434,8 +434,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_value parse_kw_value = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -446,8 +446,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_values parse_kw_values = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -458,8 +458,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_variant parse_kw_variant = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..7, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(8..15, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..7, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(8..15, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -470,8 +470,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_variants parse_kw_variants = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -482,8 +482,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_assert parse_kw_assert = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -494,8 +494,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_readonly parse_kw_readonly = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..8, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(9..17, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -506,8 +506,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_unique parse_kw_unique = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -518,8 +518,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_use parse_kw_use = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -530,8 +530,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_if parse_kw_if = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -542,8 +542,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_else parse_kw_else = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -554,8 +554,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_for parse_kw_for = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -566,8 +566,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_then parse_kw_then = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -578,8 +578,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_do parse_kw_do = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -590,8 +590,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_end parse_kw_end = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -602,8 +602,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_not parse_kw_not = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -614,8 +614,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_exists parse_kw_exists = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..6, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(7..13, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -626,8 +626,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_with parse_kw_with = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -638,8 +638,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_on parse_kw_on = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -650,8 +650,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_let parse_kw_let = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -662,8 +662,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_where parse_kw_where = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -674,8 +674,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_group parse_kw_group = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -686,8 +686,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_limit parse_kw_limit = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -698,8 +698,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_start parse_kw_start = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -710,8 +710,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_order parse_kw_order = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -722,8 +722,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_by parse_kw_by = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -734,8 +734,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_at parse_kw_at = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -746,8 +746,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_to parse_kw_to = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -759,8 +759,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -772,8 +772,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_asc parse_kw_asc = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..3, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(4..7, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -785,8 +785,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         parser.lexer.string, result_a, result_b
     );
 
-    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
@@ -797,8 +797,8 @@ fn test_parser_keywords() -> anyhow::Result<()> {
         "input = {:?} | parse_kw_as parse_kw_as = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
-    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp)));
-    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp)));
+    assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
 
     //----------------------------------------------------------------------------------------------
 
