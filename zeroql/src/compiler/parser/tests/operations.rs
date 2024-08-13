@@ -619,42 +619,43 @@ fn test_parser_sign_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_access_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"$var.TEST??.Now person[5].names.surname -0o5_00??.max +0x1234"#,
+        r#"$var.TEST??.Now person[5].names.surname -0o5_00??.max $var.test.* +0x1234"#,
         100,
     );
     let result_a = parser.parse_access_op()?;
     let result_b = parser.parse_access_op()?;
     let result_c = parser.parse_access_op()?;
     let result_d = parser.parse_access_op()?;
+    let result_e = parser.parse_access_op()?;
 
     info!(
-        r#"input = {:?} | parse_access_op parse_access_op parse_access_op parse_access_op = {:#?} {:#?} {:#?} {:#?}"#,
-        parser.lexer.string, result_a, result_b, result_c, result_d,
+        r#"input = {:?} | parse_access_op parse_access_op parse_access_op parse_access_op parse_access_op = {:#?} {:#?} {:#?} {:#?} {:#?}"#,
+        parser.lexer.string, result_a, result_b, result_c, result_d, result_e,
     );
 
     assert_eq!(
         result_a,
         Some(Ast {
             span: 0..15,
-            kind: SafeNavigationAccessOp(
-                Box::new(Ast {
+            kind: SafeNavigationAccessOp {
+                subject: Box::new(Ast {
                     span: 0..9,
-                    kind: DotAccessOp(
-                        Box::new(Ast {
+                    kind: DotAccessOp {
+                        subject: Box::new(Ast {
                             span: 0..4,
                             kind: Variable("var"),
                         }),
-                        Box::new(Ast {
+                        field: Box::new(Ast {
                             span: 5..9,
                             kind: Identifier("TEST"),
                         }),
-                    ),
+                    },
                 }),
-                Box::new(Ast {
+                field: Box::new(Ast {
                     span: 12..15,
                     kind: Identifier("Now"),
                 }),
-            ),
+            },
         })
     );
 
@@ -662,11 +663,11 @@ fn test_parser_access_op() -> anyhow::Result<()> {
         result_b,
         Some(Ast {
             span: 16..39,
-            kind: DotAccessOp(
-                Box::new(Ast {
+            kind: DotAccessOp {
+                subject: Box::new(Ast {
                     span: 16..31,
-                    kind: DotAccessOp(
-                        Box::new(Ast {
+                    kind: DotAccessOp {
+                        subject: Box::new(Ast {
                             span: 16..25,
                             kind: Index {
                                 subject: Box::new(Ast {
@@ -679,17 +680,17 @@ fn test_parser_access_op() -> anyhow::Result<()> {
                                 }),
                             },
                         }),
-                        Box::new(Ast {
+                        field: Box::new(Ast {
                             span: 26..31,
                             kind: Identifier("names"),
                         }),
-                    ),
+                    },
                 }),
-                Box::new(Ast {
+                field: Box::new(Ast {
                     span: 32..39,
                     kind: Identifier("surname"),
                 }),
-            ),
+            },
         })
     );
 
@@ -697,31 +698,53 @@ fn test_parser_access_op() -> anyhow::Result<()> {
         result_c,
         Some(Ast {
             span: 40..53,
-            kind: SafeNavigationAccessOp(
-                Box::new(Ast {
+            kind: SafeNavigationAccessOp {
+                subject: Box::new(Ast {
                     span: 40..47,
                     kind: MinusSignOp(Box::new(Ast {
                         span: 41..47,
                         kind: IntegerLiteral(0o5_00),
                     })),
                 }),
-                Box::new(Ast {
+                field: Box::new(Ast {
                     span: 50..53,
                     kind: Identifier("max"),
                 }),
-            ),
-        },)
+            },
+        })
     );
 
     assert_eq!(
         result_d,
         Some(Ast {
-            span: 54..61,
-            kind: PlusSignOp(Box::new(Ast {
-                span: 55..61,
-                kind: IntegerLiteral(0x1234),
-            })),
+            span: 54..65,
+            kind: DotAccessWildcardOp {
+                subject: Box::new(Ast {
+                    span: 54..63,
+                    kind: DotAccessOp {
+                        subject: Box::new(Ast {
+                            span: 54..58,
+                            kind: Variable("var",),
+                        }),
+                        field: Box::new(Ast {
+                            span: 59..63,
+                            kind: Identifier("test",),
+                        })
+                    },
+                })
+            },
         },)
+    );
+
+    assert_eq!(
+        result_e,
+        Some(Ast {
+            span: 66..73,
+            kind: PlusSignOp(Box::new(Ast {
+                span: 67..73,
+                kind: IntegerLiteral(4660,),
+            })),
+        })
     );
 
     Ok(())
@@ -784,16 +807,16 @@ fn test_parser_pow_op() -> anyhow::Result<()> {
             kind: ExponentiationOp(
                 Box::new(Ast {
                     span: 27..40,
-                    kind: DotAccessOp(
-                        Box::new(Ast {
+                    kind: DotAccessOp {
+                        subject: Box::new(Ast {
                             span: 27..34,
                             kind: ByteStringLiteral("test"),
                         }),
-                        Box::new(Ast {
+                        field: Box::new(Ast {
                             span: 35..40,
                             kind: Identifier("hello"),
                         }),
-                    ),
+                    },
                 }),
                 Box::new(Ast {
                     span: 44..45,
@@ -807,8 +830,8 @@ fn test_parser_pow_op() -> anyhow::Result<()> {
         result_c,
         Some(Ast {
             span: 46..60,
-            kind: SafeNavigationAccessOp(
-                Box::new(Ast {
+            kind: SafeNavigationAccessOp {
+                subject: Box::new(Ast {
                     span: 46..53,
                     kind: FunctionCall {
                         subject: Box::new(Ast {
@@ -818,11 +841,11 @@ fn test_parser_pow_op() -> anyhow::Result<()> {
                         args: vec![],
                     },
                 }),
-                Box::new(Ast {
+                field: Box::new(Ast {
                     span: 56..60,
                     kind: Identifier("name"),
                 }),
-            ),
+            },
         })
     );
 
@@ -889,16 +912,16 @@ fn test_parser_mul_op() -> anyhow::Result<()> {
                     kind: ExponentiationOp(
                         Box::new(Ast {
                             span: 23..36,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 23..30,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 31..36,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 40..41,
@@ -1003,16 +1026,16 @@ fn test_parser_add_op() -> anyhow::Result<()> {
                     kind: MultiplicationOp(
                         Box::new(Ast {
                             span: 22..35,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 22..29,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 30..35,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 39..40,
@@ -1117,16 +1140,16 @@ fn test_parser_shift_op() -> anyhow::Result<()> {
                     kind: AdditionOp(
                         Box::new(Ast {
                             span: 24..37,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 24..31,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 32..37,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 40..41,
@@ -1231,16 +1254,16 @@ fn test_parser_match_sim_op() -> anyhow::Result<()> {
                     kind: RightShiftOp(
                         Box::new(Ast {
                             span: 31..44,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 31..38,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 39..44,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 48..49,
@@ -1653,16 +1676,16 @@ fn test_parser_eq_op() -> anyhow::Result<()> {
                     kind: InOp(
                         Box::new(Ast {
                             span: 24..37,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 24..31,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 32..37,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 41..42,
@@ -1776,16 +1799,16 @@ fn test_parser_bit_and_op() -> anyhow::Result<()> {
                     kind: IsOp(
                         Box::new(Ast {
                             span: 26..39,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 26..33,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 34..39,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 42..43,
@@ -1899,16 +1922,16 @@ fn test_parser_bit_xor_op() -> anyhow::Result<()> {
                     kind: BitwiseAndOp(
                         Box::new(Ast {
                             span: 26..39,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 26..33,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 34..39,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 42..43,
@@ -2022,16 +2045,16 @@ fn test_parser_bit_or_op() -> anyhow::Result<()> {
                     kind: BitwiseXorOp(
                         Box::new(Ast {
                             span: 26..39,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 26..33,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 34..39,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 42..43,
@@ -2145,16 +2168,16 @@ fn test_parser_and_op() -> anyhow::Result<()> {
                     kind: BitwiseOrOp(
                         Box::new(Ast {
                             span: 31..44,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 31..38,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 39..44,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 47..48,
@@ -2268,16 +2291,16 @@ fn test_parser_or_null_coalesce_op() -> anyhow::Result<()> {
                     kind: LogicalAndOp(
                         Box::new(Ast {
                             span: 30..43,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 30..37,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 38..43,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 47..48,
@@ -2382,16 +2405,16 @@ fn test_parser_range_op() -> anyhow::Result<()> {
                     kind: NullCoalesceOp(
                         Box::new(Ast {
                             span: 21..34,
-                            kind: DotAccessOp(
-                                Box::new(Ast {
+                            kind: DotAccessOp {
+                                subject: Box::new(Ast {
                                     span: 21..28,
                                     kind: ByteStringLiteral("test"),
                                 }),
-                                Box::new(Ast {
+                                field: Box::new(Ast {
                                     span: 29..34,
                                     kind: Identifier("hello"),
                                 }),
-                            ),
+                            },
                         }),
                         Box::new(Ast {
                             span: 38..39,
@@ -2437,32 +2460,56 @@ fn test_parser_range_op() -> anyhow::Result<()> {
 }
 
 #[test_log::test]
+fn test_parser_partial_as() -> anyhow::Result<()> {
+    let parser = &mut Parser::new("as identifier AS identifier", 20);
+    let result_a = parser.parse_partial_as()?;
+    let result_b = parser.parse_partial_as()?;
+
+    info!(
+        r#"input = {:?} | parse_partial_as parse_partial_as = {:#?} {:#?}"#,
+        parser.lexer.string, result_a, result_b,
+    );
+
+    assert!(result_a.is_some());
+    assert!(result_b.is_some());
+
+    Ok(())
+}
+
+#[test_log::test]
 fn test_parser_single_relate_id() -> anyhow::Result<()> {
-    let parser = &mut Parser::new(r#"id:* name 4..=5 *"#, 20);
+    let parser = &mut Parser::new(r#"id:* name 4..=5 name as n *"#, 20);
     let result_a = parser.parse_single_relate_id()?;
     let result_b = parser.parse_single_relate_id()?;
     let result_c = parser.parse_single_relate_id()?;
     let result_d = parser.parse_single_relate_id()?;
+    let result_e = parser.parse_single_relate_id()?;
 
     info!(
-        r#"input = {:?} | parse_single_relate_id parse_single_relate_id parse_single_relate_id parse_single_relate_id = {:#?} {:#?} {:#?} {:#?}"#,
-        parser.lexer.string, result_a, result_b, result_c, result_d,
+        r#"input = {:?} | parse_single_relate_id parse_single_relate_id parse_single_relate_id parse_single_relate_id parse_single_relate_id = {:#?} {:#?} {:#?} {:#?} {:#?}"#,
+        parser.lexer.string, result_a, result_b, result_c, result_d, result_e,
     );
 
     assert_eq!(
         result_a,
         Some(Ast {
             span: 0..4,
-            kind: IdOp(
-                Box::new(Ast {
-                    span: 0..2,
-                    kind: Identifier("id"),
+            kind: SingleRelateId {
+                subject: Box::new(Ast {
+                    span: 0..4,
+                    kind: IdOp(
+                        Box::new(Ast {
+                            span: 0..2,
+                            kind: Identifier("id",),
+                        }),
+                        Box::new(Ast {
+                            span: 3..4,
+                            kind: Wildcard,
+                        }),
+                    ),
                 }),
-                Box::new(Ast {
-                    span: 3..4,
-                    kind: Wildcard,
-                }),
-            )
+                alias: None,
+            },
         })
     );
 
@@ -2470,31 +2517,60 @@ fn test_parser_single_relate_id() -> anyhow::Result<()> {
         result_b,
         Some(Ast {
             span: 5..9,
-            kind: Identifier("name"),
-        })
+            kind: SingleRelateId {
+                subject: Box::new(Ast {
+                    span: 5..9,
+                    kind: Identifier("name",),
+                }),
+                alias: None,
+            },
+        },)
     );
 
     assert_eq!(
         result_c,
         Some(Ast {
             span: 10..15,
-            kind: RangeInclusiveOp(
-                Box::new(Ast {
-                    span: 10..11,
-                    kind: IntegerLiteral(4),
+            kind: SingleRelateId {
+                subject: Box::new(Ast {
+                    span: 10..15,
+                    kind: RangeInclusiveOp(
+                        Box::new(Ast {
+                            span: 10..11,
+                            kind: IntegerLiteral(4,),
+                        }),
+                        Box::new(Ast {
+                            span: 14..15,
+                            kind: IntegerLiteral(5,),
+                        }),
+                    ),
                 }),
-                Box::new(Ast {
-                    span: 14..15,
-                    kind: IntegerLiteral(5),
-                }),
-            ),
-        })
+                alias: None,
+            },
+        },)
     );
 
     assert_eq!(
         result_d,
         Some(Ast {
-            span: 16..17,
+            span: 16..25,
+            kind: SingleRelateId {
+                subject: Box::new(Ast {
+                    span: 16..20,
+                    kind: Identifier("name",),
+                }),
+                alias: Some(Box::new(Ast {
+                    span: 24..25,
+                    kind: Identifier("n",),
+                })),
+            },
+        },)
+    );
+
+    assert_eq!(
+        result_e,
+        Some(Ast {
+            span: 26..27,
             kind: Wildcard,
         })
     );
@@ -2520,23 +2596,35 @@ fn test_parser_multi_relate_id() -> anyhow::Result<()> {
             kind: ListLiteral(vec![
                 Ast {
                     span: 1..5,
-                    kind: IdOp(
-                        Box::new(Ast {
-                            span: 1..3,
-                            kind: Identifier("id"),
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 1..5,
+                            kind: IdOp(
+                                Box::new(Ast {
+                                    span: 1..3,
+                                    kind: Identifier("id",),
+                                }),
+                                Box::new(Ast {
+                                    span: 4..5,
+                                    kind: Wildcard,
+                                }),
+                            ),
                         }),
-                        Box::new(Ast {
-                            span: 4..5,
-                            kind: Wildcard,
-                        }),
-                    ),
+                        alias: None,
+                    },
                 },
                 Ast {
                     span: 7..11,
-                    kind: Identifier("name"),
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 7..11,
+                            kind: Identifier("name",),
+                        }),
+                        alias: None,
+                    },
                 },
             ]),
-        })
+        },)
     );
 
     assert_eq!(
@@ -2546,16 +2634,22 @@ fn test_parser_multi_relate_id() -> anyhow::Result<()> {
             kind: ListLiteral(vec![
                 Ast {
                     span: 14..19,
-                    kind: RangeInclusiveOp(
-                        Box::new(Ast {
-                            span: 14..15,
-                            kind: IntegerLiteral(4),
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 14..19,
+                            kind: RangeInclusiveOp(
+                                Box::new(Ast {
+                                    span: 14..15,
+                                    kind: IntegerLiteral(4,),
+                                }),
+                                Box::new(Ast {
+                                    span: 18..19,
+                                    kind: IntegerLiteral(5,),
+                                }),
+                            ),
                         }),
-                        Box::new(Ast {
-                            span: 18..19,
-                            kind: IntegerLiteral(5),
-                        }),
-                    ),
+                        alias: None,
+                    },
                 },
                 Ast {
                     span: 21..22,
@@ -2587,40 +2681,58 @@ fn test_parser_relate_id() -> anyhow::Result<()> {
             kind: ListLiteral(vec![
                 Ast {
                     span: 1..5,
-                    kind: IdOp(
-                        Box::new(Ast {
-                            span: 1..3,
-                            kind: Identifier("id"),
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 1..5,
+                            kind: IdOp(
+                                Box::new(Ast {
+                                    span: 1..3,
+                                    kind: Identifier("id",),
+                                }),
+                                Box::new(Ast {
+                                    span: 4..5,
+                                    kind: Wildcard,
+                                }),
+                            ),
                         }),
-                        Box::new(Ast {
-                            span: 4..5,
-                            kind: Wildcard,
-                        }),
-                    ),
+                        alias: None,
+                    },
                 },
                 Ast {
                     span: 7..11,
-                    kind: Identifier("name"),
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 7..11,
+                            kind: Identifier("name",),
+                        }),
+                        alias: None,
+                    },
                 },
-            ]),
-        })
+            ],),
+        },)
     );
 
     assert_eq!(
         result_b,
         Some(Ast {
             span: 14..19,
-            kind: RangeInclusiveOp(
-                Box::new(Ast {
-                    span: 14..15,
-                    kind: IntegerLiteral(4),
+            kind: SingleRelateId {
+                subject: Box::new(Ast {
+                    span: 14..19,
+                    kind: RangeInclusiveOp(
+                        Box::new(Ast {
+                            span: 14..15,
+                            kind: IntegerLiteral(4,),
+                        }),
+                        Box::new(Ast {
+                            span: 18..19,
+                            kind: IntegerLiteral(5,),
+                        }),
+                    ),
                 }),
-                Box::new(Ast {
-                    span: 18..19,
-                    kind: IntegerLiteral(5),
-                }),
-            ),
-        })
+                alias: None,
+            },
+        },)
     );
 
     assert_eq!(
@@ -2636,44 +2748,65 @@ fn test_parser_relate_id() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_relate_edge_id() -> anyhow::Result<()> {
-    let parser = &mut Parser::new(r#"friend[5] friend"#, 20);
+    let parser = &mut Parser::new(r#"friend[5] friend likes as l"#, 20);
     let result_a = parser.parse_relate_edge_id()?;
     let result_b = parser.parse_relate_edge_id()?;
+    let result_c = parser.parse_relate_edge_id()?;
 
     info!(
-        r#"input = {:?} | parse_relate_edge_id parse_relate_edge_id = {:#?} {:#?}"#,
-        parser.lexer.string, result_a, result_b,
+        r#"input = {:?} | parse_relate_edge_id parse_relate_edge_id parse_relate_edge_id = {:#?} {:#?} {:#?}"#,
+        parser.lexer.string, result_a, result_b, result_c,
     );
 
     assert_eq!(
         result_a,
         Some(Ast {
             span: 0..9,
-            kind: RelateEdgeId(
-                Box::new(Ast {
+            kind: RelateEdgeId {
+                subject: Box::new(Ast {
                     span: 0..6,
                     kind: Identifier("friend"),
                 }),
-                Some(Box::new(Ast {
+                depth: Some(Box::new(Ast {
                     span: 7..8,
                     kind: IntegerLiteral(5),
                 })),
-            ),
-        },)
+                alias: None,
+            },
+        })
     );
 
     assert_eq!(
         result_b,
         Some(Ast {
             span: 10..16,
-            kind: RelateEdgeId(
-                Box::new(Ast {
+            kind: RelateEdgeId {
+                subject: Box::new(Ast {
                     span: 10..16,
                     kind: Identifier("friend"),
                 }),
-                None,
-            ),
+                depth: None,
+                alias: None,
+            },
         })
+    );
+
+    assert_eq!(
+        result_c,
+        Some(Ast {
+            span: 17..27,
+            kind: RelateEdgeId {
+                subject: Box::new(Ast {
+                    span: 17..22,
+                    kind: Identifier("likes",),
+                }),
+                depth: None,
+                alias: Some(Box::new(Ast {
+                    span: 26..27,
+                    kind: Identifier("l",),
+                })),
+            },
+        },)
     );
 
     Ok(())
@@ -2697,13 +2830,14 @@ fn test_parser_relate_edge_not_op() -> anyhow::Result<()> {
             span: 4..10,
             kind: LogicalNotOp(Box::new(Ast {
                 span: 4..10,
-                kind: RelateEdgeId(
-                    Box::new(Ast {
+                kind: RelateEdgeId {
+                    subject: Box::new(Ast {
                         span: 4..10,
                         kind: Identifier("friend",),
                     }),
-                    None,
-                ),
+                    depth: None,
+                    alias: None,
+                },
             })),
         },)
     );
@@ -2714,13 +2848,14 @@ fn test_parser_relate_edge_not_op() -> anyhow::Result<()> {
             span: 12..17,
             kind: LogicalNotOp(Box::new(Ast {
                 span: 12..17,
-                kind: RelateEdgeId(
-                    Box::new(Ast {
+                kind: RelateEdgeId {
+                    subject: Box::new(Ast {
                         span: 12..17,
                         kind: Identifier("likes",),
                     }),
-                    None,
-                ),
+                    depth: None,
+                    alias: None,
+                },
             })),
         },)
     );
@@ -2731,13 +2866,14 @@ fn test_parser_relate_edge_not_op() -> anyhow::Result<()> {
             span: 21..29,
             kind: LogicalNotOp(Box::new(Ast {
                 span: 21..29,
-                kind: RelateEdgeId(
-                    Box::new(Ast {
+                kind: RelateEdgeId {
+                    subject: Box::new(Ast {
                         span: 21..29,
                         kind: Identifier("drives",),
                     }),
-                    None,
-                ),
+                    depth: None,
+                    alias: None,
+                },
             })),
         },)
     );
@@ -2770,35 +2906,38 @@ fn test_parser_relate_edge_and_op() -> anyhow::Result<()> {
                     kind: LogicalAndOp(
                         Box::new(Ast {
                             span: 0..6,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 0..6,
                                     kind: Identifier("friend"),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                         Box::new(Ast {
                             span: 11..18,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 11..18,
                                     kind: Identifier("sibling"),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                     ),
                 }),
                 Box::new(Ast {
                     span: 23..29,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 23..29,
                             kind: Identifier("family",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
             ),
         })
@@ -2811,23 +2950,25 @@ fn test_parser_relate_edge_and_op() -> anyhow::Result<()> {
             kind: LogicalAndOp(
                 Box::new(Ast {
                     span: 30..33,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 30..33,
                             kind: Identifier("has",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
                 Box::new(Ast {
                     span: 37..41,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 37..41,
                             kind: Identifier("owns",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
             ),
         })
@@ -2839,13 +2980,14 @@ fn test_parser_relate_edge_and_op() -> anyhow::Result<()> {
             span: 46..51,
             kind: LogicalNotOp(Box::new(Ast {
                 span: 46..51,
-                kind: RelateEdgeId(
-                    Box::new(Ast {
+                kind: RelateEdgeId {
+                    subject: Box::new(Ast {
                         span: 46..51,
                         kind: Identifier("likes",),
                     }),
-                    None,
-                ),
+                    depth: None,
+                    alias: None,
+                },
             })),
         })
     );
@@ -2878,35 +3020,38 @@ fn test_parser_relate_edge_or_op() -> anyhow::Result<()> {
                     kind: LogicalOrOp(
                         Box::new(Ast {
                             span: 0..6,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 0..6,
                                     kind: Identifier("friend",),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                         Box::new(Ast {
                             span: 10..17,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 10..17,
                                     kind: Identifier("sibling",),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                     ),
                 }),
                 Box::new(Ast {
                     span: 21..27,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 21..27,
                             kind: Identifier("family",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
             ),
         })
@@ -2922,23 +3067,25 @@ fn test_parser_relate_edge_or_op() -> anyhow::Result<()> {
                     kind: LogicalAndOp(
                         Box::new(Ast {
                             span: 28..31,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 28..31,
                                     kind: Identifier("has",),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                         Box::new(Ast {
                             span: 36..40,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 36..40,
                                     kind: Identifier("owns",),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                     ),
                 }),
@@ -2947,23 +3094,25 @@ fn test_parser_relate_edge_or_op() -> anyhow::Result<()> {
                     kind: LogicalAndOp(
                         Box::new(Ast {
                             span: 44..49,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 44..49,
                                     kind: Identifier("needs",),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                         Box::new(Ast {
                             span: 54..58,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 54..58,
                                     kind: Identifier("have",),
                                 }),
-                                None,
-                            ),
+                                depth: None,
+                                alias: None,
+                            },
                         }),
                     ),
                 }),
@@ -2978,23 +3127,25 @@ fn test_parser_relate_edge_or_op() -> anyhow::Result<()> {
             kind: LogicalAndOp(
                 Box::new(Ast {
                     span: 59..64,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 59..64,
                             kind: Identifier("plays",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
                 Box::new(Ast {
                     span: 69..73,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 69..73,
                             kind: Identifier("toys",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
             ),
         })
@@ -3006,7 +3157,7 @@ fn test_parser_relate_edge_or_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_relate_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"[name,] <- test[5..8] <<- [*] -> not likes or hates ->> person:john"#,
+        r#"[name,] <- test[5..8] <<- [*] -> not likes or hates as h ->> person:john"#,
         20,
     );
     let result_a = parser.parse_relate_op()?;
@@ -3019,27 +3170,33 @@ fn test_parser_relate_op() -> anyhow::Result<()> {
     assert_eq!(
         result_a,
         Some(Ast {
-            span: 0..67,
-            kind: RelateOp(
-                Box::new(Ast {
+            span: 0..72,
+            kind: RelateOp {
+                left: Box::new(Ast {
                     span: 0..29,
-                    kind: RelateOp(
-                        Box::new(Ast {
+                    kind: RelateOp {
+                        left: Box::new(Ast {
                             span: 0..7,
                             kind: ListLiteral(vec![Ast {
                                 span: 1..5,
-                                kind: Identifier("name",),
+                                kind: SingleRelateId {
+                                    subject: Box::new(Ast {
+                                        span: 1..5,
+                                        kind: Identifier("name",),
+                                    }),
+                                    alias: None,
+                                },
                             }]),
                         }),
-                        Left,
-                        Box::new(Ast {
+                        l_op: Left,
+                        edge: Box::new(Ast {
                             span: 11..21,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 11..15,
                                     kind: Identifier("test",),
                                 }),
-                                Some(Box::new(Ast {
+                                depth: Some(Box::new(Ast {
                                     span: 16..20,
                                     kind: RangeOp(
                                         Box::new(Ast {
@@ -3052,63 +3209,75 @@ fn test_parser_relate_op() -> anyhow::Result<()> {
                                         }),
                                     ),
                                 })),
-                            ),
+                                alias: None,
+                            },
                         }),
-                        MultiLeft,
-                        Box::new(Ast {
+                        r_op: MultiLeft,
+                        right: Box::new(Ast {
                             span: 26..29,
                             kind: ListLiteral(vec![Ast {
                                 span: 27..28,
                                 kind: Wildcard,
                             }]),
                         }),
-                    ),
+                    },
                 }),
-                Right,
-                Box::new(Ast {
-                    span: 37..51,
+                l_op: Right,
+                edge: Box::new(Ast {
+                    span: 37..56,
                     kind: LogicalOrOp(
                         Box::new(Ast {
                             span: 37..42,
                             kind: LogicalNotOp(Box::new(Ast {
                                 span: 37..42,
-                                kind: RelateEdgeId(
-                                    Box::new(Ast {
+                                kind: RelateEdgeId {
+                                    subject: Box::new(Ast {
                                         span: 37..42,
-                                        kind: Identifier("likes",)
+                                        kind: Identifier("likes",),
                                     }),
-                                    None,
-                                ),
+                                    depth: None,
+                                    alias: None,
+                                },
                             })),
                         }),
                         Box::new(Ast {
-                            span: 46..51,
-                            kind: RelateEdgeId(
-                                Box::new(Ast {
+                            span: 46..56,
+                            kind: RelateEdgeId {
+                                subject: Box::new(Ast {
                                     span: 46..51,
                                     kind: Identifier("hates",),
                                 }),
-                                None,
+                                depth: None,
+                                alias: Some(Box::new(Ast {
+                                    span: 55..56,
+                                    kind: Identifier("h",),
+                                })),
+                            },
+                        }),
+                    ),
+                }),
+                r_op: MultiRight,
+                right: Box::new(Ast {
+                    span: 61..72,
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 61..72,
+                            kind: IdOp(
+                                Box::new(Ast {
+                                    span: 61..67,
+                                    kind: Identifier("person",),
+                                }),
+                                Box::new(Ast {
+                                    span: 68..72,
+                                    kind: Identifier("john",),
+                                }),
                             ),
                         }),
-                    ),
+                        alias: None,
+                    },
                 }),
-                MultiRight,
-                Box::new(Ast {
-                    span: 56..67,
-                    kind: IdOp(
-                        Box::new(Ast {
-                            span: 56..62,
-                            kind: Identifier("person",),
-                        }),
-                        Box::new(Ast {
-                            span: 63..67,
-                            kind: Identifier("john",),
-                        }),
-                    ),
-                }),
-            ),
-        },)
+            },
+        })
     );
 
     Ok(())
@@ -3116,50 +3285,58 @@ fn test_parser_relate_op() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_operation() -> anyhow::Result<()> {
-    let parser = &mut Parser::new(r#"* -> likes <- person:john 1..=2.0e-1"#, 20);
+    let parser = &mut Parser::new(r#"* -> likes <- person:john 1..=2.0e-1 5 + 20 as sum"#, 20);
     let result_a = parser.parse_op()?;
     let result_b = parser.parse_op()?;
+    let result_c = parser.parse_op()?;
 
     info!(
-        r#"input = {:?} | parse_op parse_op = {:#?} {:#?}"#,
-        parser.lexer.string, result_a, result_b,
+        r#"input = {:?} | parse_op parse_op parse_op = {:#?} {:#?} {:#?}"#,
+        parser.lexer.string, result_a, result_b, result_c,
     );
 
     assert_eq!(
         result_a,
         Some(Ast {
             span: 0..25,
-            kind: RelateOp(
-                Box::new(Ast {
+            kind: RelateOp {
+                left: Box::new(Ast {
                     span: 0..1,
                     kind: Wildcard,
                 }),
-                Right,
-                Box::new(Ast {
+                l_op: Right,
+                edge: Box::new(Ast {
                     span: 5..10,
-                    kind: RelateEdgeId(
-                        Box::new(Ast {
+                    kind: RelateEdgeId {
+                        subject: Box::new(Ast {
                             span: 5..10,
                             kind: Identifier("likes",),
                         }),
-                        None,
-                    ),
+                        depth: None,
+                        alias: None,
+                    },
                 }),
-                Left,
-                Box::new(Ast {
+                r_op: Left,
+                right: Box::new(Ast {
                     span: 14..25,
-                    kind: IdOp(
-                        Box::new(Ast {
-                            span: 14..20,
-                            kind: Identifier("person",),
+                    kind: SingleRelateId {
+                        subject: Box::new(Ast {
+                            span: 14..25,
+                            kind: IdOp(
+                                Box::new(Ast {
+                                    span: 14..20,
+                                    kind: Identifier("person",),
+                                }),
+                                Box::new(Ast {
+                                    span: 21..25,
+                                    kind: Identifier("john",),
+                                }),
+                            ),
                         }),
-                        Box::new(Ast {
-                            span: 21..25,
-                            kind: Identifier("john",),
-                        }),
-                    ),
+                        alias: None,
+                    },
                 }),
-            ),
+            },
         })
     );
 
@@ -3178,6 +3355,32 @@ fn test_parser_operation() -> anyhow::Result<()> {
                 }),
             ),
         })
+    );
+
+    assert_eq!(
+        result_c,
+        Some(Ast {
+            span: 37..50,
+            kind: AliasOp {
+                subject: Box::new(Ast {
+                    span: 37..43,
+                    kind: AdditionOp(
+                        Box::new(Ast {
+                            span: 37..38,
+                            kind: IntegerLiteral(5,),
+                        }),
+                        Box::new(Ast {
+                            span: 41..43,
+                            kind: IntegerLiteral(20,),
+                        }),
+                    ),
+                }),
+                alias: Box::new(Ast {
+                    span: 47..50,
+                    kind: Identifier("sum",),
+                }),
+            },
+        },)
     );
 
     Ok(())

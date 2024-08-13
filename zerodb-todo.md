@@ -53,8 +53,12 @@
       - [ ] thread isolation - running in a separate thread with set stack size and is the least intrusive
       - [ ] reblessive crate - problematic because it complicates the interface for backtrack and memoize macros
       - [ ] active prevention - setting nested expression limit, unary/binary op limit or recursion depth limit
-    - [ ] Rewrite parser to not use combinator macros in the future.
+    - [ ] Implement `perm_ord` combinator for SELECT to preserve order of transforms perhaps as returned indexes, `SeqIndexX`?.
     - [ ] Remove `permute` and make `permute_op` the new `permute`
+    - [ ] Specify `DEFINE EVENT` grammar
+      - [ ] `DEFINE EVENT ON TABLE user WHEN age > 18 THEN foo::bar()`
+      - [ ] Add `REMOVE EVENT`, `DESCRIBE EVENT`, `DELETE EVENT` etc.
+    - [ ] Rewrite parser to not use combinator macros in the future.
 
   - [ ] zeroql: Reimplement AST
   - [ ] zeroql: Semantic Analysis

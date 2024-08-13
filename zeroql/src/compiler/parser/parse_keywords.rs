@@ -141,6 +141,19 @@ impl<'a> Parser<'a> {
         self.parse_kw("omit")
     }
 
+    /// Parses the `kw_from` rule.
+    ///
+    /// ```txt
+    /// kw_from =
+    ///     | plain_identifier["from"]
+    ///     | plain_identifier["FROM"]
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_kw_from(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        self.parse_kw("from")
+    }
+
     /// Parses the `kw_break` rule.
     ///
     /// ```txt
@@ -386,6 +399,19 @@ impl<'a> Parser<'a> {
     #[backtrack]
     pub fn parse_kw_indices(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("indices")
+    }
+
+    /// Parses the `kw_indexes` rule.
+    ///
+    /// ```txt
+    /// kw_indexes =
+    ///     | plain_identifier["indexes"]
+    ///     | plain_identifier["INDEXES"]
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_kw_indexes(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        self.parse_kw("indexes")
     }
 
     /// Parses the `kw_type` rule.

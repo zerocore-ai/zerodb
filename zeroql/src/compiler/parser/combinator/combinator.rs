@@ -110,6 +110,18 @@ pub enum Choice<T> {
     J(Box<Combinator<T>>),
 }
 
+/// A vector of parser functions and their rule positions.
+pub type ParserFuncs<T, U, E> = Vec<(
+    usize,
+    Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>,
+)>;
+
+/// The result of a permutation operation.
+pub type PermutationResult<U> = (
+    std::collections::BTreeMap<usize, Combinator<U>>,
+    std::collections::HashSet<usize>,
+);
+
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
@@ -247,13 +259,13 @@ impl<T> Combinator<T> {
 //--------------------------------------------------------------------------------------------------
 
 /// Calls provided parser functions in different permutation sequences.
-pub fn permute<T: Reversible, U, E>(
+pub fn permute<T, U, E>(
     parser: &mut T,
-    mut parser_funcs: Vec<(
-        usize,
-        Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>,
-    )>,
-) -> std::collections::HashMap<usize, Combinator<U>> {
+    mut parser_funcs: ParserFuncs<T, U, E>,
+) -> std::collections::HashMap<usize, Combinator<U>>
+where
+    T: Reversible,
+{
     let mut result_map = std::collections::HashMap::<usize, Combinator<U>>::new();
     let mut prev_len = std::usize::MAX;
 
@@ -276,21 +288,15 @@ pub fn permute<T: Reversible, U, E>(
 }
 
 /// Permutes parser functions with proper optional combinator support.
-pub fn permute_opt<T: Reversible, U: Clone, E>(
+pub fn permute_opt<T, U, E>(
     index: usize,
     parser: &mut T,
-    // Parser functions and their rule positions.
-    parser_funcs: Vec<(
-        usize,
-        Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>,
-    )>,
-) -> Result<
-    (
-        std::collections::BTreeMap<usize, Combinator<U>>,
-        std::collections::HashSet<usize>,
-    ),
-    E,
-> {
+    parser_funcs: ParserFuncs<T, U, E>,
+) -> Result<PermutationResult<U>, E>
+where
+    T: Reversible,
+    U: Clone,
+{
     let mut map = std::collections::BTreeMap::new();
 
     // For each rule position, find the first parser function that succeeds and insert it into the map.
@@ -330,27 +336,26 @@ pub fn permute_opt<T: Reversible, U: Clone, E>(
 /// Single parsers are expected to backtrack when they fail.
 #[macro_export(local_inner_macros)]
 macro_rules! parse {
-    // a => a
+    // a => a // Single parser
     ($parser:expr $(, $path:ident)? => $parse:ident) => {{
-        // $( $path :: )? $parse($parser)?.map(|x| $crate::compiler::parser::Combinator::Single(x))
         match $( $path :: )? $parse($parser) {
             Ok(Some(x)) => Some($crate::compiler::parser::Combinator::Single(x)),
             Ok(None) => None,
             Err(e) => return Err(e),
         }
     }};
-    // (arg a b ...) => [ a(b, ...) ]
+    // (arg a b ...) => [ a(b, ...) ] // Single parser with arguments
     ($parser:expr $(, $path:ident)? => (arg $parse:ident $( $parse_args:tt )+)) => {{
         $( $path :: )? $parse($parser $(, $parse_args )+)?.map(|x| $crate::compiler::parser::Combinator::Single(x))
     }};
-    // (opt a) => a?
+    // (opt a) => a? // Optional parser
     ($parser:expr $(, $path:ident)? => (opt $parse:tt)) => {{
         match parse!($parser $(, $path)? => $parse) {
             Some(x) => Some(x),
             None => Some($crate::compiler::parser::Combinator::Void),
         }
     }};
-    // (many_0 a) => a*
+    // (many_0 a) => a* // Zero or more parser
     ($parser:expr $(, $path:ident)? => (many_0 $parse:tt)) => {{
         let mut result = Vec::new();
         while let Some(__result) = parse!($parser $(, $path)? => $parse) {
@@ -358,7 +363,7 @@ macro_rules! parse {
         }
         Some($crate::compiler::parser::Combinator::Many(result))
     }};
-    // (many_1 a) => a+
+    // (many_1 a) => a+ // One or more parser
     ($parser:expr $(, $path:ident)? => (many_1 $parse:tt)) => {{
         let mut result = Vec::new();
         while let Some(__result) = parse!($parser $(, $path)? => $parse) {
@@ -370,11 +375,11 @@ macro_rules! parse {
             None
         }
     }};
-    // (alt a b ...) => a | b | ...
+    // (alt a b ...) => a | b | ... // Alternative parser
     ($parser:expr $(, $path:ident)? => (alt $( $parse:tt )+)) => {{
         $crate::compiler::parser::combinator::inner::alt!($parser $(, $path)? => $( $parse )+)
     }};
-    // (seq a b ...) => a b ...
+    // (seq a b ...) => a b ... // Sequence parser
     ($parser:expr $(, $path:ident)? => (seq $( $parse:tt )+)) => {{
         let state = <_ as $crate::compiler::reversible::Reversible>::get_state($parser);
         if let Some(x) = $crate::compiler::parser::combinator::inner::seq!($parser $(, $path)? => $( $parse )+) {
@@ -384,7 +389,7 @@ macro_rules! parse {
             None
         }
     }};
-    // (perm a b c) => << a b c >> // This won't work well with optional combinators
+    // (perm a b c) => << a b c >> // Permutation parser
     ($parser:expr $(, $path:ident)? => (perm $( $parse:tt )+)) => {{
         let mut index = 0;
         let mut parser_funcs = std::vec::Vec::<(
@@ -411,11 +416,12 @@ macro_rules! parse {
             None
         }
     }};
-    // (perm_opt (opt a) b (opt c)) => << a? b c? >>
+    // (perm_opt (opt a) b (opt c)) => << a? b c? >> // Permutation parser with optional support.
     // This macro supports optional combinators at the top-level for convenience.
     // However, it comes at the cost of performance.
     ($parser:expr $(, $path:ident)? => (perm_opt $( $parse:tt )+)) => {{
         let mut index = 0;
+        #[allow(unused_mut)]
         let mut non_optionals = std::collections::HashSet::<usize>::new();
         let mut parser_funcs = std::vec::Vec::<(
             usize,

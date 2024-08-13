@@ -5,6 +5,7 @@ mod errors;
 mod parse_expressions;
 mod parse_keywords;
 mod parse_literals;
+mod parse_meta;
 mod parse_operations;
 mod parse_operators;
 mod parse_statements;

@@ -7,6 +7,11 @@
  * Symbols grouped in << and >> are permutable.
  *)
 
+(* META *)
+
+terminator =
+    | terminator
+
 (* KEYWORDS *)
 
 kw_create =
@@ -36,6 +41,10 @@ kw_fold =
 kw_omit =
     | plain_identifier["omit"]
     | plain_identifier["OMIT"]
+
+kw_from =
+    | plain_identifier["from"]
+    | plain_identifier["FROM"]
 
 kw_break =
     | plain_identifier["break"]
@@ -112,6 +121,10 @@ kw_index =
 kw_indices =
     | plain_identifier["indices"]
     | plain_identifier["INDICES"]
+
+kw_indexes =
+    | plain_identifier["indexes"]
+    | plain_identifier["INDEXES"]
 
 kw_type =
     | plain_identifier["type"]
@@ -384,7 +397,7 @@ object_lit =
 
 tuple_lit =
     | "(" ")"
-    |"(" op "," ")"
+    | "(" op "," ")"
     | "(" op ("," op)+ ","? ")"
 
 lit =
@@ -436,6 +449,7 @@ op_access =
     | op_safe_nav
 
 access_op = (* Left Associative *)
+    | sign_op (op_access identifier)* op_dot op_star
     | sign_op (op_access identifier)+
     | sign_op
 
@@ -535,10 +549,13 @@ range_op =
     | or_null_coalesce_op op_ranges or_null_coalesce_op
     | or_null_coalesce_op
 
+partial_as =
+    | kw_as identifier
+
 single_relate_id =
-    | id_op
-    | identifier
-    | range_op
+    | id_op partial_as?
+    | identifier partial_as?
+    | range_op partial_as?
     | op_star
 
 multi_relate_id =
@@ -549,8 +566,8 @@ relate_id =
     | single_relate_id
 
 relate_edge_id =
-    | identifier "[" op "]"
-    | identifier
+    | identifier "[" op "]" partial_as?
+    | identifier partial_as?
 
 relate_edge_not_op =
     | op_not relate_edge_id
@@ -575,7 +592,7 @@ relate_op = (* Left Associative *)
 
 op =
     | relate_op
-    | range_op
+    | range_op partial_as?
 
 (* EXPRESSIONS *)
 
@@ -586,22 +603,19 @@ partial_set_assign =
     | kw_set identifier op_is_lexer op ("," identifier op_is_lexer op)*
 
 create_exp =
-    | kw_create (id_op | identifier) partial_set_object
-    | kw_create (id_op | identifier) partial_set_assign
+    | kw_create (id_op | identifier) (partial_set_object | partial_set_assign)
     | kw_create identifier kw_set "(" (identifier ("," identifier)* ","?)? ")" kw_values tuple_lit ("," tuple_lit)*
 
-partial_where_guard =
-    | kw_where (op | op_star)
-
 relate_exp =
-    | kw_relate relate_op << partial_where_guard? (partial_set_object | partial_set_assign) >>
-    | kw_relate relate_op partial_where_guard
-    | kw_relate relate_op
+    | kw_relate relate_op (partial_set_object | partial_set_assign)?
 
 partial_target =
     | relate_op
     | id_op
     | identifier
+
+partial_where_guard =
+    | kw_where (op | op_star)
 
 delete_exp =
     | kw_delete partial_target partial_where_guard?
@@ -626,59 +640,41 @@ partial_set_update_assign =
     | kw_set identifier partial_op_update_assign op ("," identifier partial_op_update_assign op)*
 
 update_exp =
-    | kw_update partial_target << partial_where_guard (partial_set_object | partial_set_update_assign) >>
-    | kw_update partial_target partial_where_guard? (partial_set_object | partial_set_update_assign)
+    | kw_update partial_target << partial_where_guard? (partial_set_object | partial_set_update_assign) >>
 
-partial_partial_select_field_fold =
-    | kw_fold function_call_op
-
-partial_select_as =
-    | kw_as identifier
+partial_select_field_fold =
+    | kw_fold range_op partial_as?
 
 partial_select_field =
-    | partial_select_field_fold partial_select_as?
-    | op partial_select_as?
-    | index_op (op_dot | op_safe_nav) op_star
+    | partial_select_field_fold
+    | op
     | op_star
 
 partial_select_omit =
-    | kw_omit identifier ("," identifier)*
+    | kw_omit op ("," op)*
 
 partial_select_fields =
     | partial_select_field ("," partial_select_field)* (","? partial_select_omit)?
 
-partial_select_from_table_relate_id_as =
-    | relate_id partial_select_as?
-
-partial_select_from_table_relate =
-    | (partial_select_from_table_relate_id_as op_arrow)+ partial_select_from_table_relate_id_as
-
-partial_select_from_table =
-    | op partial_select_as?
-    | partial_select_from_table_relate
-
-partial_select_from_tables =
-    | partial_select_from_table ("," partial_select_from_table)*
-
 partial_select_from =
-    | kw_from partial_select_from_tables
+    | kw_from op ("," op)*
     | kw_from op_star
 
 partial_select_with_indices =
-    | kw_with kw_indices identifier ("," identifier)*
+    | kw_with (kw_index | kw_indices | kw_indexes) identifier ("," identifier)*
     | kw_with kw_no kw_index
 
 partial_select_group_by =
-    | kw_group kw_by? identifier ("," identifier)*
+    | kw_group kw_by? range_op ("," range_op)*
 
 partial_select_order_by =
-    | kw_order kw_by? identifier ("," identifier)* (kw_asc | kw_desc)?
+    | kw_order kw_by? range_op ("," range_op)* (kw_asc | kw_desc)?
 
 partial_select_start_at =
-    | kw_start kw_at? op
+    | kw_start kw_at? range_op
 
 partial_select_limit_to =
-    | kw_limit kw_to? op
+    | kw_limit kw_to? range_op
 
 select_exp =
     | kw_select partial_select_fields partial_select_from << partial_where_guard? partial_select_with_indices? partial_select_group_by? partial_select_order_by? partial_select_start_at? partial_select_limit_to? >>

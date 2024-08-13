@@ -127,6 +127,18 @@ fn test_parser_keywords() -> anyhow::Result<()> {
 
     //----------------------------------------------------------------------------------------------
 
+    let parser = &mut Parser::new("from FROM", 10);
+    let result_a = parser.parse_kw_from()?;
+    let result_b = parser.parse_kw_from()?;
+    info!(
+        "input = {:?} | parse_kw_from parse_kw_from = {:?} {:?}",
+        parser.lexer.string, result_a, result_b
+    );
+    assert_eq!(result_a, Some(Ast::new(0..4, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(5..9, AstKind::Temp(None))));
+
+    //----------------------------------------------------------------------------------------------
+
     let parser = &mut Parser::new("break BREAK", 10);
     let result_a = parser.parse_kw_break()?;
     let result_b = parser.parse_kw_break()?;
@@ -348,6 +360,18 @@ fn test_parser_keywords() -> anyhow::Result<()> {
     let result_b = parser.parse_kw_indices()?;
     info!(
         "input = {:?} | parse_kw_indices parse_kw_indices = {:?} {:?}",
+        parser.lexer.string, result_a, result_b
+    );
+    assert_eq!(result_a, Some(Ast::new(0..7, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(8..15, AstKind::Temp(None))));
+
+    //----------------------------------------------------------------------------------------------
+
+    let parser = &mut Parser::new("indexes INDEXES", 10);
+    let result_a = parser.parse_kw_indexes()?;
+    let result_b = parser.parse_kw_indexes()?;
+    info!(
+        "input = {:?} | parse_kw_indexes parse_kw_indexes = {:?} {:?}",
         parser.lexer.string, result_a, result_b
     );
     assert_eq!(result_a, Some(Ast::new(0..7, AstKind::Temp(None))));
