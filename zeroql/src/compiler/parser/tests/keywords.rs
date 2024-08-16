@@ -11,10 +11,10 @@ use crate::{
 
 #[test_log::test]
 fn test_parser_keywords() -> anyhow::Result<()> {
-    let parser = &mut Parser::new("superfluous SUPERFLUOUS superfluous SUPERFLUOUS", 10);
+    let parser = &mut Parser::new("Superfluous SUPERFLUOUS SuPeRfLuOuS SUPERFLUOUS", 10);
     let result_a = parser.parse_kw("SUPERFLUOUS")?;
-    let result_b = parser.parse_kw("superfluous")?;
-    let result_c = parser.parse_kw("superfluous")?;
+    let result_b = parser.parse_kw("sUpErFlUoUs")?;
+    let result_c = parser.parse_kw("Superfluous")?;
     let result_d = parser.parse_kw("SUPERFLUOUS")?;
     info!(
         r#"input = {:?} | parse_kw("SUPERFLUOUS") parse_kw("superfluous") parse_kw("superfluous") parse_kw("SUPERFLUOUS") = {:?} {:?} {:?} {:?}"#,
@@ -583,6 +583,18 @@ fn test_parser_keywords() -> anyhow::Result<()> {
 
     //----------------------------------------------------------------------------------------------
 
+    let parser = &mut Parser::new("while WHILE", 10);
+    let result_a = parser.parse_kw_while()?;
+    let result_b = parser.parse_kw_while()?;
+    info!(
+        "input = {:?} | parse_kw_while parse_kw_while = {:?} {:?}",
+        parser.lexer.string, result_a, result_b
+    );
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
+
+    //----------------------------------------------------------------------------------------------
+
     let parser = &mut Parser::new("then THEN", 10);
     let result_a = parser.parse_kw_then()?;
     let result_b = parser.parse_kw_then()?;
@@ -823,19 +835,6 @@ fn test_parser_keywords() -> anyhow::Result<()> {
     );
     assert_eq!(result_a, Some(Ast::new(0..2, AstKind::Temp(None))));
     assert_eq!(result_b, Some(Ast::new(3..5, AstKind::Temp(None))));
-
-    //----------------------------------------------------------------------------------------------
-
-    // Fail Case
-    let parser = &mut Parser::new("superFLUOUS", 10);
-    let result_a = parser.parse_kw("SUPERFLUOUS")?;
-    let result_b = parser.parse_kw("superfluous")?;
-    info!(
-        r#"input = {:?} | parse_kw("SUPERFLUOUS") parse_kw("superfluous") = {:?} {:?}"#,
-        parser.lexer.string, result_a, result_b
-    );
-    assert_eq!(result_a, None);
-    assert_eq!(result_b, None);
 
     Ok(())
 }

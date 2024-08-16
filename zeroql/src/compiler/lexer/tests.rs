@@ -636,7 +636,7 @@ fn test_lexer_operator() {
     );
 
     // Assignment
-    let mut lexer = Lexer::from(r"+= -= *= ×= /= ÷= %= **= <<= >>= &= |= ^= ~= ??=");
+    let mut lexer = Lexer::from(r"+= -= *= ×= /= ÷= %= **= <<= >>= &= |= ^= ~=");
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
@@ -708,11 +708,6 @@ fn test_lexer_operator() {
         Token::new(44..46, TokenKind::OpAssignBitNot)
     );
 
-    assert_eq!(
-        lexer.next().unwrap().unwrap(),
-        Token::new(47..50, TokenKind::OpAssignNullCoalesce)
-    );
-
     // Arrows
     let mut lexer = Lexer::from(r"->> <<- -> <-");
 
@@ -775,7 +770,7 @@ fn test_lexer_operator() {
     );
 
     // Conditionals
-    let mut lexer = Lexer::from(r"~ !~ <> && || == = != ! <= >= < > ∋ ∌ ⊅ ⊇ ⊃ ??. ??");
+    let mut lexer = Lexer::from(r"~ !~ <> && || == = != ! <= >= < > ∋ ∌ ⊅ ⊇ ⊃ ?. ?:");
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
@@ -869,12 +864,12 @@ fn test_lexer_operator() {
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(54..57, TokenKind::OpSafeNav)
+        Token::new(54..56, TokenKind::OpSafeNav)
     );
 
     assert_eq!(
         lexer.next().unwrap().unwrap(),
-        Token::new(58..60, TokenKind::OpNullCoalesce)
+        Token::new(57..59, TokenKind::OpNullCoalesce)
     );
 
     assert!(lexer.next().is_none());
@@ -931,6 +926,14 @@ fn test_lexer_operator() {
     assert_eq!(
         lexer.next().unwrap().unwrap(),
         Token::new(2..3, TokenKind::OpDot)
+    );
+
+    // Optional
+    let mut lexer = Lexer::from(r"?");
+
+    assert_eq!(
+        lexer.next().unwrap().unwrap(),
+        Token::new(0..1, TokenKind::OpOptional)
     );
 }
 

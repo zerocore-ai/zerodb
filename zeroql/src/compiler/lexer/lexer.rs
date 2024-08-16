@@ -266,9 +266,6 @@ impl<'a> Lexer<'a> {
         } else if let Some(m) = OP_ASSIGN_BIT_NOT_REGEX.find(remainder) {
             self.state.continuation_precedent = true;
             Token::new(self.advance_by_match(m), TokenKind::OpAssignBitNot)
-        } else if let Some(m) = OP_ASSIGN_NULL_COALESCE_REGEX.find(remainder) {
-            self.state.continuation_precedent = true;
-            Token::new(self.advance_by_match(m), TokenKind::OpAssignNullCoalesce)
         } else if let Some(m) = OP_MULTI_ARROW_RIGHT_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpMultiArrowRight)
         } else if let Some(m) = OP_MULTI_ARROW_LEFT_REGEX.find(remainder) {
@@ -346,6 +343,8 @@ impl<'a> Lexer<'a> {
             Token::new(self.advance_by_match(m), TokenKind::OpRange)
         } else if let Some(m) = OP_STAR_REGEX.find(remainder) {
             Token::new(self.advance_by_match(m), TokenKind::OpStar)
+        } else if let Some(m) = OP_OPTIONAL_REGEX.find(remainder) {
+            Token::new(self.advance_by_match(m), TokenKind::OpOptional)
         } else if let Some(m) = HEX_INTEGER_LITERAL_REGEX.find(remainder) {
             // Remove marker characters (`0x`).
             let trimmed_str = &m.as_str()[2..];
@@ -562,7 +561,6 @@ lazy_static! {
     static ref OP_ASSIGN_BIT_OR_REGEX: Regex = Regex::new(r"^\|=").unwrap();
     static ref OP_ASSIGN_BIT_XOR_REGEX: Regex = Regex::new(r"^\^=").unwrap();
     static ref OP_ASSIGN_BIT_NOT_REGEX: Regex = Regex::new(r"^~=").unwrap();
-    static ref OP_ASSIGN_NULL_COALESCE_REGEX: Regex = Regex::new(r"^\?\?=").unwrap();
 
     static ref OP_MULTI_ARROW_RIGHT_REGEX: Regex = Regex::new(r"^->>").unwrap();
     static ref OP_MULTI_ARROW_LEFT_REGEX: Regex = Regex::new(r"^<<-").unwrap();
@@ -598,8 +596,8 @@ lazy_static! {
     static ref OP_CONTAINS_ALL_LEXER_REGEX: Regex = Regex::new(r"^⊇").unwrap();
     static ref OP_CONTAINS_ANY_LEXER_REGEX: Regex = Regex::new(r"^⊃").unwrap();
 
-    static ref OP_SAFE_NAV_REGEX: Regex = Regex::new(r"^\?\?\.").unwrap();
-    static ref OP_NULL_COALESCE_REGEX: Regex = Regex::new(r"^\?\?").unwrap();
+    static ref OP_SAFE_NAV_REGEX: Regex = Regex::new(r"^\?\.").unwrap();
+    static ref OP_NULL_COALESCE_REGEX: Regex = Regex::new(r"^\?:").unwrap();
 
     static ref OP_SHL_REGEX: Regex = Regex::new(r"^<<").unwrap();
     static ref OP_SHR_REGEX: Regex = Regex::new(r"^>>").unwrap();
@@ -612,6 +610,7 @@ lazy_static! {
 
     static ref OP_STAR_REGEX: Regex = Regex::new(r"^\*").unwrap();
     static ref OP_DOT_REGEX: Regex = Regex::new(r"^\.").unwrap();
+    static ref OP_OPTIONAL_REGEX: Regex = Regex::new(r"^\?").unwrap();
 
     static ref DEC_INTEGER_LITERAL_REGEX: Regex = Regex::new(r"^\d(_?\d)*").unwrap();
     static ref FLOAT_LITERAL_REGEX: Regex = Regex::new(r"^(\.\d(_?\d)*([eE][+-]?\d(_?\d)*)?|\d(_?\d)*\.(\d(_?\d)*([eE][+-]?\d(_?\d)*)?)?|\d(_?\d)*([eE][+-]?\d(_?\d)*))").unwrap();

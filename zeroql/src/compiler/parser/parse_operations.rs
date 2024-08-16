@@ -1054,7 +1054,7 @@ impl<'a> Parser<'a> {
     ///     | op_null_coalesce
     ///
     /// or_null_coalesce_op = (* Left Associative *)
-    ///     | and_op op_or_null_coalesce and_op
+    ///     | and_op (op_or_null_coalesce and_op)+
     ///     | and_op
     /// ```
     #[memoize]

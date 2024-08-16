@@ -19,6 +19,43 @@ use super::{Choice, Parser, ParserError, ParserResult};
 #[memoize(cache = self.cache, state = self.lexer.state)]
 #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
 impl<'a> Parser<'a> {
+    /// Parses an integral literal.
+    ///
+    /// ```txt
+    /// integer_lit =
+    ///     | dec_integer_lit
+    ///     | hex_integer_lit
+    ///     | bin_integer_lit
+    ///     | oct_integer_lit
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_integer_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        if let Some(Token { span, kind }) = self.eat_token()? {
+            match kind {
+                TokenKind::DecIntegerLiteral(lit) => {
+                    let int = convert_string_to_int(lit, 10)?;
+                    return Ok(Some(Ast::new(span, AstKind::IntegerLiteral(int))));
+                }
+                TokenKind::HexIntegerLiteral(lit) => {
+                    let int = convert_string_to_int(lit, 16)?;
+                    return Ok(Some(Ast::new(span, AstKind::IntegerLiteral(int))));
+                }
+                TokenKind::BinIntegerLiteral(lit) => {
+                    let int = convert_string_to_int(lit, 2)?;
+                    return Ok(Some(Ast::new(span, AstKind::IntegerLiteral(int))));
+                }
+                TokenKind::OctIntegerLiteral(lit) => {
+                    let int = convert_string_to_int(lit, 8)?;
+                    return Ok(Some(Ast::new(span, AstKind::IntegerLiteral(int))));
+                }
+                _ => {}
+            }
+        }
+
+        Ok(None)
+    }
+
     /// Parses an identifier.
     ///
     /// ```txt
@@ -68,8 +105,8 @@ impl<'a> Parser<'a> {
     ///
     /// ```txt
     /// boolean_lit =
-    ///     | (plain_identifier["true"] | plain_identifier["TRUE"])
-    ///     | (plain_identifier["false"] | plain_identifier["FALSE"])
+    ///     | plain_identifier["true"]
+    ///     | plain_identifier["false"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -93,7 +130,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// none_lit =
     ///     | plain_identifier["none"]
-    ///     | plain_identifier["NONE"]
     /// ```
     #[memoize]
     #[backtrack]

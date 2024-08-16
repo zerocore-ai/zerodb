@@ -84,12 +84,6 @@ oct_integer_lit =
 hex_integer_lit =
     | "0x" hex_digit+ ("_"? hex_digit)*
 
-integer_lit =
-    | dec_integer_lit
-    | hex_integer_lit
-    | bin_integer_lit
-    | oct_integer_lit
-
 float_lit =
     | point_float
     | exponent_float
@@ -208,9 +202,6 @@ op_assign_bit_xor =
 op_assign_bit_not =
     | "~="
 
-op_assign_null_coalesce =
-    | "??="
-
 op_multi_arrow_right =
     | "->>"
 
@@ -297,10 +288,10 @@ op_contains_any_lexer =
     | "⊃"
 
 op_safe_nav =
-    | "??."
+    | "?."
 
 op_null_coalesce =
-    | "??"
+    | "?:"
 
 op_shl =
     | "<<"
@@ -331,3 +322,6 @@ op_range_incl =
 
 op_range =
     | ".."
+
+op_optional =
+    | "?"

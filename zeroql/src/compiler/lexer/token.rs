@@ -123,9 +123,6 @@ pub enum TokenKind<'a> {
     /// "~=" operator.
     OpAssignBitNot,
 
-    /// "??=" operator.
-    OpAssignNullCoalesce,
-
     /// "->>" operator.
     OpMultiArrowRight,
 
@@ -242,6 +239,9 @@ pub enum TokenKind<'a> {
 
     /// "." operator.
     OpDot,
+
+    /// "?" operator.
+    OpOptional,
 }
 
 bitflags! {
@@ -332,7 +332,6 @@ impl<'a> Display for TokenKind<'a> {
             TokenKind::OpAssignBitOr => write!(f, "|="),
             TokenKind::OpAssignBitXor => write!(f, "^="),
             TokenKind::OpAssignBitNot => write!(f, "~="),
-            TokenKind::OpAssignNullCoalesce => write!(f, "??="),
             TokenKind::OpMultiArrowRight => write!(f, "->>"),
             TokenKind::OpMultiArrowLeft => write!(f, "<<-"),
             TokenKind::OpArrowRight => write!(f, "->"),
@@ -361,8 +360,8 @@ impl<'a> Display for TokenKind<'a> {
             TokenKind::OpContainsNoneLexer => write!(f, "⊅"),
             TokenKind::OpContainsAllLexer => write!(f, "⊇"),
             TokenKind::OpContainsAnyLexer => write!(f, "⊃"),
-            TokenKind::OpSafeNav => write!(f, "??."),
-            TokenKind::OpNullCoalesce => write!(f, "??"),
+            TokenKind::OpSafeNav => write!(f, "?."),
+            TokenKind::OpNullCoalesce => write!(f, "?:"),
             TokenKind::OpShl => write!(f, "<<"),
             TokenKind::OpShr => write!(f, ">>"),
             TokenKind::OpBitAnd => write!(f, "&"),
@@ -372,6 +371,7 @@ impl<'a> Display for TokenKind<'a> {
             TokenKind::OpRange => write!(f, ".."),
             TokenKind::OpStar => write!(f, "*"),
             TokenKind::OpDot => write!(f, "."),
+            TokenKind::OpOptional => write!(f, "?"),
         }
     }
 }

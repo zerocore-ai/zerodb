@@ -62,7 +62,7 @@ impl<'a> Parser<'a> {
     #[memoize(cache = self.cache, state = self.lexer.state)]
     #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
     pub fn parse_program(&mut self) -> ParserResult<Option<Ast<'a>>> {
-        Ok(None) // TODO: Implement
+        self.parse_op()
     }
 }
 

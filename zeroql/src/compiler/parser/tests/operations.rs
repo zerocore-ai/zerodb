@@ -619,7 +619,7 @@ fn test_parser_sign_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_access_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"$var.TEST??.Now person[5].names.surname -0o5_00??.max $var.test.* +0x1234"#,
+        r#"$var.TEST?.Now person[5].names.surname -0o5_00?.max $var.test.* +0x1234"#,
         100,
     );
     let result_a = parser.parse_access_op()?;
@@ -636,59 +636,59 @@ fn test_parser_access_op() -> anyhow::Result<()> {
     assert_eq!(
         result_a,
         Some(Ast {
-            span: 0..15,
+            span: 0..14,
             kind: SafeNavigationAccessOp {
                 subject: Box::new(Ast {
                     span: 0..9,
                     kind: DotAccessOp {
                         subject: Box::new(Ast {
                             span: 0..4,
-                            kind: Variable("var"),
+                            kind: Variable("var",),
                         }),
                         field: Box::new(Ast {
                             span: 5..9,
-                            kind: Identifier("TEST"),
+                            kind: Identifier("TEST",),
                         }),
                     },
                 }),
                 field: Box::new(Ast {
-                    span: 12..15,
-                    kind: Identifier("Now"),
+                    span: 11..14,
+                    kind: Identifier("Now",),
                 }),
             },
-        })
+        },)
     );
 
     assert_eq!(
         result_b,
         Some(Ast {
-            span: 16..39,
+            span: 15..38,
             kind: DotAccessOp {
                 subject: Box::new(Ast {
-                    span: 16..31,
+                    span: 15..30,
                     kind: DotAccessOp {
                         subject: Box::new(Ast {
-                            span: 16..25,
+                            span: 15..24,
                             kind: Index {
                                 subject: Box::new(Ast {
-                                    span: 16..22,
-                                    kind: Identifier("person"),
+                                    span: 15..21,
+                                    kind: Identifier("person",),
                                 }),
                                 index: Box::new(Ast {
-                                    span: 23..24,
+                                    span: 22..23,
                                     kind: IntegerLiteral(5),
                                 }),
                             },
                         }),
                         field: Box::new(Ast {
-                            span: 26..31,
-                            kind: Identifier("names"),
+                            span: 25..30,
+                            kind: Identifier("names",),
                         }),
                     },
                 }),
                 field: Box::new(Ast {
-                    span: 32..39,
-                    kind: Identifier("surname"),
+                    span: 31..38,
+                    kind: Identifier("surname",),
                 }),
             },
         })
@@ -697,52 +697,52 @@ fn test_parser_access_op() -> anyhow::Result<()> {
     assert_eq!(
         result_c,
         Some(Ast {
-            span: 40..53,
+            span: 39..51,
             kind: SafeNavigationAccessOp {
                 subject: Box::new(Ast {
-                    span: 40..47,
+                    span: 39..46,
                     kind: MinusSignOp(Box::new(Ast {
-                        span: 41..47,
-                        kind: IntegerLiteral(0o5_00),
+                        span: 40..46,
+                        kind: IntegerLiteral(0o500),
                     })),
                 }),
                 field: Box::new(Ast {
-                    span: 50..53,
-                    kind: Identifier("max"),
+                    span: 48..51,
+                    kind: Identifier("max",),
+                }),
+            },
+        },)
+    );
+
+    assert_eq!(
+        result_d,
+        Some(Ast {
+            span: 52..63,
+            kind: DotAccessWildcardOp {
+                subject: Box::new(Ast {
+                    span: 52..61,
+                    kind: DotAccessOp {
+                        subject: Box::new(Ast {
+                            span: 52..56,
+                            kind: Variable("var",),
+                        }),
+                        field: Box::new(Ast {
+                            span: 57..61,
+                            kind: Identifier("test",),
+                        }),
+                    },
                 }),
             },
         })
     );
 
     assert_eq!(
-        result_d,
-        Some(Ast {
-            span: 54..65,
-            kind: DotAccessWildcardOp {
-                subject: Box::new(Ast {
-                    span: 54..63,
-                    kind: DotAccessOp {
-                        subject: Box::new(Ast {
-                            span: 54..58,
-                            kind: Variable("var",),
-                        }),
-                        field: Box::new(Ast {
-                            span: 59..63,
-                            kind: Identifier("test",),
-                        })
-                    },
-                })
-            },
-        },)
-    );
-
-    assert_eq!(
         result_e,
         Some(Ast {
-            span: 66..73,
+            span: 64..71,
             kind: PlusSignOp(Box::new(Ast {
-                span: 67..73,
-                kind: IntegerLiteral(4660,),
+                span: 65..71,
+                kind: IntegerLiteral(0x1234),
             })),
         })
     );
@@ -753,7 +753,7 @@ fn test_parser_access_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_pow_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"two ** 3 ** 0b1010 ** $var b"test".hello ** 5 parse()??.name"#,
+        r#"two ** 3 ** 0b1010 ** $var b"test".hello ** 5 parse()?.name"#,
         100,
     );
     let result_a = parser.parse_pow_op()?;
@@ -829,21 +829,21 @@ fn test_parser_pow_op() -> anyhow::Result<()> {
     assert_eq!(
         result_c,
         Some(Ast {
-            span: 46..60,
+            span: 46..59,
             kind: SafeNavigationAccessOp {
                 subject: Box::new(Ast {
                     span: 46..53,
                     kind: FunctionCall {
                         subject: Box::new(Ast {
                             span: 46..51,
-                            kind: Identifier("parse"),
+                            kind: Identifier("parse",),
                         }),
                         args: vec![],
                     },
                 }),
                 field: Box::new(Ast {
-                    span: 56..60,
-                    kind: Identifier("name"),
+                    span: 55..59,
+                    kind: Identifier("name",),
                 }),
             },
         })
@@ -2225,7 +2225,7 @@ fn test_parser_and_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_or_null_coalesce_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"two || 3 OR 6 0b1010 and $var b"test".hello && 5 ?? 2 and 0x1234 100 && `hello`"#,
+        r#"two || 3 OR 6 0b1010 and $var b"test".hello && 5 ?: 2 and 0x1234 100 && `hello`"#,
         100,
     );
     let result_a = parser.parse_or_null_coalesce_op()?;
@@ -2348,7 +2348,7 @@ fn test_parser_or_null_coalesce_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_range_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"two..3 0b1010..=$var b"test".hello ?? 5..2 or 0x1234 100 || `hello`"#,
+        r#"two..3 0b1010..=$var b"test".hello ?: 5..2 or 0x1234 100 || `hello`"#,
         100,
     );
     let result_a = parser.parse_range_op()?;

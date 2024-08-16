@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
             kind: TokenKind::PlainIdentifier(ident),
         }) = self.eat_token()?
         {
-            if ident == string.to_uppercase() || ident == string.to_lowercase() {
+            if ident.to_uppercase() == string.to_uppercase() {
                 return Ok(Some(Ast::new(span, AstKind::Temp(None))));
             }
         }
@@ -56,7 +56,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_create =
     ///     | plain_identifier["create"]
-    ///     | plain_identifier["CREATE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -68,7 +67,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_relate =
     ///     | plain_identifier["relate"]
-    ///     | plain_identifier["RELATE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -81,7 +79,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_delete =
     ///     | plain_identifier["delete"]
-    ///     | plain_identifier["DELETE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -94,7 +91,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_update =
     ///     | plain_identifier["update"]
-    ///     | plain_identifier["UPDATE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -107,7 +103,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_select =
     ///     | plain_identifier["select"]
-    ///     | plain_identifier["SELECT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -120,7 +115,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_fold =
     ///     | plain_identifier["fold"]
-    ///     | plain_identifier["FOLD"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -133,7 +127,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_omit =
     ///     | plain_identifier["omit"]
-    ///     | plain_identifier["OMIT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -146,7 +139,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_from =
     ///     | plain_identifier["from"]
-    ///     | plain_identifier["FROM"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -159,7 +151,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_break =
     ///     | plain_identifier["break"]
-    ///     | plain_identifier["BREAK"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -172,7 +163,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_continue =
     ///     | plain_identifier["continue"]
-    ///     | plain_identifier["CONTINUE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -185,7 +175,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_set =
     ///     | plain_identifier["set"]
-    ///     | plain_identifier["SET"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -198,7 +187,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_begin =
     ///     | plain_identifier["begin"]
-    ///     | plain_identifier["BEGIN"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -211,7 +199,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_transaction =
     ///     | plain_identifier["transaction"]
-    ///     | plain_identifier["TRANSACTION"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -224,7 +211,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_commit =
     ///     | plain_identifier["commit"]
-    ///     | plain_identifier["COMMIT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -237,7 +223,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_cancel =
     ///     | plain_identifier["cancel"]
-    ///     | plain_identifier["CANCEL"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -250,7 +235,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_define =
     ///     | plain_identifier["define"]
-    ///     | plain_identifier["DEFINE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -263,7 +247,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_redefine =
     ///     | plain_identifier["redefine"]
-    ///     | plain_identifier["REDEFINE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -276,7 +259,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_remove =
     ///     | plain_identifier["remove"]
-    ///     | plain_identifier["REMOVE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -289,7 +271,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_describe =
     ///     | plain_identifier["describe"]
-    ///     | plain_identifier["DESCRIBE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -302,7 +283,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_namespace =
     ///     | plain_identifier["namespace"]
-    ///     | plain_identifier["NAMESPACE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -315,7 +295,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_ns =
     ///     | plain_identifier["ns"]
-    ///     | plain_identifier["NS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -328,7 +307,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_database =
     ///     | plain_identifier["database"]
-    ///     | plain_identifier["DATABASE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -341,7 +319,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_db =
     ///     | plain_identifier["db"]
-    ///     | plain_identifier["DB"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -354,7 +331,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_table =
     ///     | plain_identifier["table"]
-    ///     | plain_identifier["TABLE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -367,7 +343,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_fields =
     ///     | plain_identifier["fields"]
-    ///     | plain_identifier["FIELDS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -380,7 +355,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_index =
     ///     | plain_identifier["index"]
-    ///     | plain_identifier["INDEX"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -393,7 +367,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_indices =
     ///     | plain_identifier["indices"]
-    ///     | plain_identifier["INDICES"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -406,7 +379,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_indexes =
     ///     | plain_identifier["indexes"]
-    ///     | plain_identifier["INDEXES"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -419,7 +391,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_type =
     ///     | plain_identifier["type"]
-    ///     | plain_identifier["TYPE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -432,7 +403,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_enum =
     ///     | plain_identifier["enum"]
-    ///     | plain_identifier["ENUM"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -445,7 +415,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_edge =
     ///     | plain_identifier["edge"]
-    ///     | plain_identifier["EDGE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -458,7 +427,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_module =
     ///     | plain_identifier["module"]
-    ///     | plain_identifier["MODULE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -471,7 +439,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_param =
     ///     | plain_identifier["param"]
-    ///     | plain_identifier["PARAM"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -484,7 +451,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_mod =
     ///     | plain_identifier["mod"]
-    ///     | plain_identifier["MOD"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -510,7 +476,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_values =
     ///     | plain_identifier["values"]
-    ///     | plain_identifier["VALUES"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -523,7 +488,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_variant =
     ///     | plain_identifier["variant"]
-    ///     | plain_identifier["VARIANT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -536,7 +500,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_variants =
     ///     | plain_identifier["variants"]
-    ///     | plain_identifier["VARIANTS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -549,7 +512,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_assert =
     ///     | plain_identifier["assert"]
-    ///     | plain_identifier["ASSERT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -562,7 +524,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_readonly =
     ///     | plain_identifier["readonly"]
-    ///     | plain_identifier["READONLY"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -575,7 +536,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_unique =
     ///     | plain_identifier["unique"]
-    ///     | plain_identifier["UNIQUE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -588,7 +548,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_use =
     ///     | plain_identifier["use"]
-    ///     | plain_identifier["USE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -601,7 +560,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_if =
     ///     | plain_identifier["if"]
-    ///     | plain_identifier["IF"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -614,7 +572,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_else =
     ///     | plain_identifier["else"]
-    ///     | plain_identifier["ELSE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -627,7 +584,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_for =
     ///     | plain_identifier["for"]
-    ///     | plain_identifier["FOR"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -635,12 +591,23 @@ impl<'a> Parser<'a> {
         self.parse_kw("for")
     }
 
+    /// Parses the `kw_while` rule.
+    ///
+    /// ```txt
+    /// kw_while =
+    ///     | plain_identifier["while"]
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_kw_while(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        self.parse_kw("while")
+    }
+
     /// Parses the `kw_then` rule.
     ///
     /// ```txt
     /// kw_then =
     ///     | plain_identifier["then"]
-    ///     | plain_identifier["THEN"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -653,7 +620,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_do =
     ///     | plain_identifier["do"]
-    ///     | plain_identifier["DO"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -666,7 +632,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_end =
     ///     | plain_identifier["end"]
-    ///     | plain_identifier["END"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -679,7 +644,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_not =
     ///     | plain_identifier["not"]
-    ///     | plain_identifier["NOT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -692,7 +656,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_exists =
     ///     | plain_identifier["exists"]
-    ///     | plain_identifier["EXISTS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -705,7 +668,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_with =
     ///     | plain_identifier["with"]
-    ///     | plain_identifier["WITH"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -718,7 +680,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_on =
     ///     | plain_identifier["on"]
-    ///     | plain_identifier["ON"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -731,7 +692,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_let =
     ///     | plain_identifier["let"]
-    ///     | plain_identifier["LET"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -744,7 +704,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_where =
     ///     | plain_identifier["where"]
-    ///     | plain_identifier["WHERE"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -757,7 +716,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_group =
     ///     | plain_identifier["group"]
-    ///     | plain_identifier["GROUP"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -770,7 +728,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_limit =
     ///     | plain_identifier["limit"]
-    ///     | plain_identifier["LIMIT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -783,7 +740,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_start =
     ///     | plain_identifier["start"]
-    ///     | plain_identifier["START"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -796,7 +752,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_order =
     ///     | plain_identifier["order"]
-    ///     | plain_identifier["ORDER"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -809,7 +764,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_by =
     ///     | plain_identifier["by"]
-    ///     | plain_identifier["BY"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -822,7 +776,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_at =
     ///     | plain_identifier["at"]
-    ///     | plain_identifier["AT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -835,7 +788,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_to =
     ///     | plain_identifier["to"]
-    ///     | plain_identifier["TO"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -848,7 +800,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_no =
     ///     | plain_identifier["no"]
-    ///     | plain_identifier["NO"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -861,7 +812,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_asc =
     ///     | plain_identifier["asc"]
-    ///     | plain_identifier
     pub fn parse_kw_asc(&mut self) -> ParserResult<Option<Ast<'a>>> {
         self.parse_kw("asc")
     }
@@ -871,7 +821,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_desc =
     ///     | plain_identifier["desc"]
-    ///     | plain_identifier["DESC"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -884,7 +833,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// kw_as =
     ///     | plain_identifier["as"]
-    ///     | plain_identifier["AS"]
     /// ```
     #[memoize]
     #[backtrack]

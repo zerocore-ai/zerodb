@@ -61,7 +61,6 @@ impl<'a> Parser<'a> {
     /// op_and =
     ///     | op_and_lexer
     ///     | plain_identifier["and"]
-    ///     | plain_identifier["AND"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -86,7 +85,6 @@ impl<'a> Parser<'a> {
     /// op_or =
     ///     | op_or_lexer
     ///     | plain_identifier["or"]
-    ///     | plain_identifier["OR"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -111,7 +109,6 @@ impl<'a> Parser<'a> {
     /// op_is =
     ///     | op_is_lexer
     ///     | plain_identifier["is"]
-    ///     | plain_identifier["IS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -136,7 +133,6 @@ impl<'a> Parser<'a> {
     /// op_is_not =
     ///     | op_is_not_lexer
     ///     | plain_identifier["is"]
-    ///     | plain_identifier["IS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -160,7 +156,6 @@ impl<'a> Parser<'a> {
     /// op_not =
     ///     | op_not_lexer
     ///     | plain_identifier["not"]
-    ///     | plain_identifier["NOT"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -184,7 +179,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// op_in =
     ///     | plain_identifier["in"]
-    ///     | plain_identifier["IN"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -197,9 +191,6 @@ impl<'a> Parser<'a> {
     /// ```txt
     /// op_not_in =
     ///     | plain_identifier["not"] plain_identifier["in"]
-    ///     | plain_identifier["not"] plain_identifier["IN"]
-    ///     | plain_identifier["NOT"] plain_identifier["IN"]
-    ///     | plain_identifier["NOT"] plain_identifier["in"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -213,7 +204,6 @@ impl<'a> Parser<'a> {
     /// op_contains =
     ///     | op_contains_lexer
     ///     | plain_identifier["contains"]
-    ///     | plain_identifier["CONTAINS"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -238,9 +228,6 @@ impl<'a> Parser<'a> {
     /// op_not_contains =
     ///     | op_not_contains_lexer
     ///     | plain_identifier["not"] plain_identifier["contains"]
-    ///     | plain_identifier["not"] plain_identifier["CONTAINS"]
-    ///     | plain_identifier["NOT"] plain_identifier["CONTAINS"]
-    ///     | plain_identifier["NOT"] plain_identifier["contains"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -265,9 +252,6 @@ impl<'a> Parser<'a> {
     /// op_contains_none =
     ///     | op_contains_none_lexer
     ///     | plain_identifier["contains"] plain_identifier["none"]
-    ///     | plain_identifier["contains"] plain_identifier["NONE"]
-    ///     | plain_identifier["CONTAINS"] plain_identifier["NONE"]
-    ///     | plain_identifier["CONTAINS"] plain_identifier["none"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -292,9 +276,6 @@ impl<'a> Parser<'a> {
     /// op_contains_all =
     ///     | op_contains_all_lexer
     ///     | plain_identifier["contains"] plain_identifier["all"]
-    ///     | plain_identifier["contains"] plain_identifier["ALL"]
-    ///     | plain_identifier["CONTAINS"] plain_identifier["ALL"]
-    ///     | plain_identifier["CONTAINS"] plain_identifier["all"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -319,9 +300,6 @@ impl<'a> Parser<'a> {
     /// op_contains_any =
     ///     | op_contains_any_lexer
     ///     | plain_identifier["contains"] plain_identifier["any"]
-    ///     | plain_identifier["contains"] plain_identifier["ANY"]
-    ///     | plain_identifier["CONTAINS"] plain_identifier["ANY"]
-    ///     | plain_identifier["CONTAINS"] plain_identifier["any"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -346,7 +324,6 @@ impl<'a> Parser<'a> {
     /// op_match =
     ///     | op_match_lexer
     ///     | plain_identifier["match"]
-    ///     | plain_identifier["MATCH"]
     /// ```
     #[memoize]
     #[backtrack]
@@ -371,9 +348,6 @@ impl<'a> Parser<'a> {
     /// op_not_match =
     ///     | op_not_match_lexer
     ///     | plain_identifier["not"] plain_identifier["match"]
-    ///     | plain_identifier["not"] plain_identifier["MATCH"]
-    ///     | plain_identifier["NOT"] plain_identifier["MATCH"]
-    ///     | plain_identifier["NOT"] plain_identifier["match"]
     /// ```
     #[memoize]
     #[backtrack]

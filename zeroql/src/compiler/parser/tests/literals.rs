@@ -102,6 +102,54 @@ fn test_parser_none_lit() -> anyhow::Result<()> {
 }
 
 #[test_log::test]
+fn test_parser_integer_lit() -> anyhow::Result<()> {
+    let parser = &mut Parser::new(
+        r#"\
+        0b0_111 \
+        0o01234567 \
+        0x01_23_45_67_89_ab_cd_ef \
+        0_123_456_789 \
+        "#,
+        10,
+    );
+
+    let result_a = parser.parse_raw_lit()?;
+    let result_b = parser.parse_raw_lit()?;
+    let result_c = parser.parse_raw_lit()?;
+    let result_d = parser.parse_raw_lit()?;
+
+    info!(
+        "input = {:?} | {:?} {:?} {:?} {:?}",
+        parser.lexer.string, result_a, result_b, result_c, result_d,
+    );
+
+    assert_eq!(
+        result_a,
+        Some(Ast::new(10..17, AstKind::IntegerLiteral(0b0_111)))
+    );
+
+    assert_eq!(
+        result_b,
+        Some(Ast::new(28..38, AstKind::IntegerLiteral(0o01234567)))
+    );
+
+    assert_eq!(
+        result_c,
+        Some(Ast::new(
+            49..74,
+            AstKind::IntegerLiteral(0x01_23_45_67_89_ab_cd_ef)
+        ))
+    );
+
+    assert_eq!(
+        result_d,
+        Some(Ast::new(85..98, AstKind::IntegerLiteral(0_123_456_789)))
+    );
+
+    Ok(())
+}
+
+#[test_log::test]
 fn test_parser_raw_lit() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
         r#"\

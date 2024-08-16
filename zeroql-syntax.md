@@ -67,7 +67,7 @@ UPDATE person:alice SET age = $age
 ```
 
 ```surql
-LET $token TYPE [u8; 10] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09"
+LET $token TYPE [u8 10] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09"
 UPDATE person:alice SET token = $token
 ```
 
@@ -116,7 +116,7 @@ LET $name TYPE string = "alice"
 #### BYTE STRING
 
 ```surql
-LET $token TYPE [u8; 10] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09"
+LET $token TYPE [u8 10] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09"
 ```
 
 #### TUPLE
@@ -143,7 +143,7 @@ LET $alice TYPE person = {
 #### ARRAY
 
 ```surql
-LET $ids TYPE [u8; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+LET $ids TYPE [u8 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 #### LIST

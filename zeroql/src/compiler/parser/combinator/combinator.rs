@@ -10,11 +10,19 @@ pub enum Combinator<T> {
     /// A single `T` value.
     Single(T),
 
-    /// A choice between two combinators.
+    /// A choice between multiple values.
     Choice(Choice<T>),
 
     /// A vector of repeated `T` values.
     Many(Vec<Combinator<T>>),
+
+    /// A combinator value with an index.
+    Indexed(
+        /// The position in a rule in a perm passed.
+        usize,
+        /// The combinator value.
+        Box<Combinator<T>>,
+    ),
 
     /// A sequence of two `T` values.
     Seq2(Box<Combinator<T>>, Box<Combinator<T>>),
@@ -111,14 +119,12 @@ pub enum Choice<T> {
 }
 
 /// A vector of parser functions and their rule positions.
-pub type ParserFuncs<T, U, E> = Vec<(
-    usize,
-    Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>,
-)>;
+pub type ParserFuncs<T, U, E> =
+    std::collections::BTreeMap<usize, Box<dyn Fn(&mut T) -> Result<Option<Combinator<U>>, E>>>;
 
-/// The result of a permutation operation.
-pub type PermutationResult<U> = (
-    std::collections::BTreeMap<usize, Combinator<U>>,
+/// The `Ok` result of the permutation operation.
+pub type PermutationOk<U> = (
+    std::collections::BTreeMap<usize, Box<Combinator<U>>>,
     std::collections::HashSet<usize>,
 );
 
@@ -149,6 +155,14 @@ impl<T> Combinator<T> {
         match self {
             Combinator::Many(x) => x,
             _ => panic!("Combinator::unwrap_many: combinator is not a vector of repeated values"),
+        }
+    }
+
+    /// Unwraps the combinator of an indexed value.
+    pub fn unwrap_indexed(self) -> (usize, Box<Combinator<T>>) {
+        match self {
+            Combinator::Indexed(i, x) => (i, x),
+            _ => panic!("Combinator::unwrap_indexed: combinator is not an indexed value"),
         }
     }
 
@@ -258,58 +272,43 @@ impl<T> Combinator<T> {
 // Functions
 //--------------------------------------------------------------------------------------------------
 
-/// Calls provided parser functions in different permutation sequences.
-pub fn permute<T, U, E>(
-    parser: &mut T,
-    mut parser_funcs: ParserFuncs<T, U, E>,
-) -> std::collections::HashMap<usize, Combinator<U>>
-where
-    T: Reversible,
-{
-    let mut result_map = std::collections::HashMap::<usize, Combinator<U>>::new();
-    let mut prev_len = std::usize::MAX;
-
-    // Keep looping until the parser functions vector is exhausted.
-    while parser_funcs.len() < prev_len {
-        prev_len = parser_funcs.len();
-
-        // Remove parser functions that succeed and insert the result into the map.
-        parser_funcs.retain(|(index, f)| {
-            if let Ok(Some(result)) = f(parser) {
-                result_map.insert(*index, result);
-                return false;
-            }
-
-            true
-        });
-    }
-
-    result_map
-}
-
 /// Permutes parser functions with proper optional combinator support.
-pub fn permute_opt<T, U, E>(
+pub fn permute<T, U, E>(
     index: usize,
     parser: &mut T,
-    parser_funcs: ParserFuncs<T, U, E>,
-) -> Result<PermutationResult<U>, E>
+    mut parser_funcs: ParserFuncs<T, U, E>,
+) -> Result<PermutationOk<U>, E>
 where
     T: Reversible,
     U: Clone,
 {
     let mut map = std::collections::BTreeMap::new();
 
-    // For each rule position, find the first parser function that succeeds and insert it into the map.
-    for _ in 0..index {
+    // For each possible position, find the first parser function that succeeds and insert it into the map.
+    for i in 0..index {
+        // We need the success index to know which parser function passed, if any.
+        let mut success_index = None;
+
+        // Iterate over the parser functions and find the first one that succeeds.
         for (index, f) in parser_funcs.iter() {
             if let Some(combinator) = f(parser)? {
-                map.insert(*index, combinator);
+                map.insert(
+                    *index,
+                    Box::new(Combinator::Indexed(i, Box::new(combinator))),
+                );
+                success_index = Some(*index);
                 break;
             }
         }
+
+        // Remove the parser function from the list of parser functions to try.
+        match success_index {
+            Some(index) => parser_funcs.remove(&index),
+            None => break,
+        };
     }
 
-    // Collect map indices before further processing.
+    // Collect map indices before further processing. This is used later to check if all non-optional rules passed.
     let map_indices = map
         .keys()
         .cloned()
@@ -318,7 +317,7 @@ where
     // Fill unoccupied indices with void combinators.
     for i in 0..index {
         if map.get(&i).is_none() {
-            map.insert(i, Combinator::Void);
+            map.insert(i, Box::new(Combinator::Void));
         }
     }
 
@@ -389,47 +388,15 @@ macro_rules! parse {
             None
         }
     }};
-    // (perm a b c) => << a b c >> // Permutation parser
+    // (perm (opt a) b (opt c)) => << a? b c? >> // Permutation parser with top-level `opt` support.
     ($parser:expr $(, $path:ident)? => (perm $( $parse:tt )+)) => {{
-        let mut index = 0;
-        let mut parser_funcs = std::vec::Vec::<(
-            usize,
-            Box<dyn Fn(&mut _) -> std::result::Result<std::option::Option<Combinator<_>>, _>>,
-        )>::new();
-
-        $(
-            let parser_func = |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
-                Ok(parse!(parser, Parser => $parse))
-            };
-
-            parser_funcs.push((index, Box::new(parser_func)));
-
-            index += 1;
-        )+
-
-        let mut result = $crate::compiler::parser::combinator::permute($parser, parser_funcs);
-        tracing::trace!("result = {:?}", result);
-
-        if result.len() == index {
-            Some($crate::compiler::parser::combinator::inner::perm_result!(result, $( $parse )+))
-        } else {
-            None
-        }
-    }};
-    // (perm_opt (opt a) b (opt c)) => << a? b c? >> // Permutation parser with optional support.
-    // This macro supports optional combinators at the top-level for convenience.
-    // However, it comes at the cost of performance.
-    ($parser:expr $(, $path:ident)? => (perm_opt $( $parse:tt )+)) => {{
         let mut index = 0;
         #[allow(unused_mut)]
         let mut non_optionals = std::collections::HashSet::<usize>::new();
-        let mut parser_funcs = std::vec::Vec::<(
-            usize,
-            Box<dyn Fn(&mut _) -> std::result::Result<std::option::Option<Combinator<_>>, _>>,
-        )>::new();
+        let mut parser_funcs = $crate::compiler::parser::combinator::ParserFuncs::new();
 
-        $crate::compiler::parser::combinator::inner::perm_opt_args!(index, parser_funcs, non_optionals, $parser $(, $path)? => $( $parse )+);
-        let (mut map, map_indices) = $crate::compiler::parser::combinator::permute_opt(index, $parser, parser_funcs)?;
+        $crate::compiler::parser::combinator::inner::perm_args!(index, parser_funcs, non_optionals, $parser $(, $path)? => $( $parse )+);
+        let (mut map, map_indices) = $crate::compiler::parser::combinator::permute(index, $parser, parser_funcs)?;
 
         if map_indices.is_superset(&non_optionals) {
             Some($crate::compiler::parser::combinator::inner::perm_result!(map, $( $parse )+))
@@ -625,82 +592,81 @@ pub(crate) mod inner {
     /// Permutation combinator macro result.
     macro_rules! perm_result {
         ($result:expr, $parse_a:tt $parse_b:tt) => {{
-            Combinator::Seq2(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-            )
+            Combinator::Seq2($result.remove(&0).unwrap(), $result.remove(&1).unwrap())
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt) => {{
             Combinator::Seq3(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-                Box::new($result.remove(&2).unwrap()),
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+                $result.remove(&2).unwrap(),
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
             Combinator::Seq4(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-                Box::new($result.remove(&2).unwrap()),
-                Box::new($result.remove(&3).unwrap()),
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+                $result.remove(&2).unwrap(),
+                $result.remove(&3).unwrap(),
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
             Combinator::Seq5(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-                Box::new($result.remove(&2).unwrap()),
-                Box::new($result.remove(&3).unwrap()),
-                Box::new($result.remove(&4).unwrap()),
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+                $result.remove(&2).unwrap(),
+                $result.remove(&3).unwrap(),
+                $result.remove(&4).unwrap(),
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
             Combinator::Seq6(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-                Box::new($result.remove(&2).unwrap()),
-                Box::new($result.remove(&3).unwrap()),
-                Box::new($result.remove(&4).unwrap()),
-                Box::new($result.remove(&5).unwrap()),
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+                $result.remove(&2).unwrap(),
+                $result.remove(&3).unwrap(),
+                $result.remove(&4).unwrap(),
+                $result.remove(&5).unwrap(),
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
             Combinator::Seq7(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-                Box::new($result.remove(&2).unwrap()),
-                Box::new($result.remove(&3).unwrap()),
-                Box::new($result.remove(&4).unwrap()),
-                Box::new($result.remove(&5).unwrap()),
-                Box::new($result.remove(&6).unwrap()),
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+                $result.remove(&2).unwrap(),
+                $result.remove(&3).unwrap(),
+                $result.remove(&4).unwrap(),
+                $result.remove(&5).unwrap(),
+                $result.remove(&6).unwrap(),
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
             Combinator::Seq8(
-                Box::new($result.remove(&0).unwrap()),
-                Box::new($result.remove(&1).unwrap()),
-                Box::new($result.remove(&2).unwrap()),
-                Box::new($result.remove(&3).unwrap()),
-                Box::new($result.remove(&4).unwrap()),
-                Box::new($result.remove(&5).unwrap()),
-                Box::new($result.remove(&6).unwrap()),
-                Box::new($result.remove(&7).unwrap()),
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+                $result.remove(&2).unwrap(),
+                $result.remove(&3).unwrap(),
+                $result.remove(&4).unwrap(),
+                $result.remove(&5).unwrap(),
+                $result.remove(&6).unwrap(),
+                $result.remove(&7).unwrap(),
             )
         }};
     }
 
     /// Permutation combinator macro.
-    macro_rules! perm_opt_args {
+    macro_rules! perm_args {
+        // Entry with path
         ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr, $path:ident => $parse_0:tt $( $parse_rest:tt )+) => {{
-            $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser, $path => $parse_0);
+            $crate::compiler::parser::combinator::inner::perm_args!($index, $parser_funcs, $non_optionals, $parser, $path => $parse_0);
             $(
-                $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser, $path => $parse_rest);
+                $crate::compiler::parser::combinator::inner::perm_args!($index, $parser_funcs, $non_optionals, $parser, $path => $parse_rest);
             )+
         }};
+        // Entry without path
         ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr => $parse_0:tt $( $parse_rest:tt )+) => {{
-            $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser => $parse_0);
+            $crate::compiler::parser::combinator::inner::perm_args!($index, $parser_funcs, $non_optionals, $parser => $parse_0);
             $(
-                $crate::compiler::parser::combinator::inner::perm_opt_args!($index, $parser_funcs, $non_optionals, $parser => $parse_rest);
+                $crate::compiler::parser::combinator::inner::perm_args!($index, $parser_funcs, $non_optionals, $parser => $parse_rest);
             )+
         }};
         ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr $(, $path:ident)? => (opt $parse:tt)) => {{
@@ -709,7 +675,7 @@ pub(crate) mod inner {
                     |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
                         Ok(parse!(parser $(, $path)? => $parse))
                     };
-                $parser_funcs.push(($index, Box::new(parser_func)));
+                $parser_funcs.insert($index, Box::new(parser_func));
                 $index += 1;
             }
         }};
@@ -719,7 +685,7 @@ pub(crate) mod inner {
                     |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
                         Ok(parse!(parser $(, $path)? => $parse))
                     };
-                $parser_funcs.push(($index, Box::new(parser_func)));
+                $parser_funcs.insert($index, Box::new(parser_func));
                 $non_optionals.insert($index);
                 $index += 1;
             }
@@ -727,7 +693,7 @@ pub(crate) mod inner {
     }
 
     pub(crate) use alt;
-    pub(crate) use perm_opt_args;
+    pub(crate) use perm_args;
     pub(crate) use perm_result;
     pub(crate) use seq;
 }

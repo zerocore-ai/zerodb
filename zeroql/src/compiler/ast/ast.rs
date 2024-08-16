@@ -341,6 +341,335 @@ pub enum AstKind<'a> {
         /// The transforms of the select operation.
         transforms: Vec<SelectTransform<'a>>,
     },
+
+    /// A `REMOVE NAMESPACE` expression.
+    RemoveNamespace {
+        /// The subject of the remove namespace operation.
+        subject: Box<Ast<'a>>,
+
+        /// The namespace existing flag.
+        if_exists: bool,
+    },
+
+    /// A `REMOVE DATABASE` expression.
+    RemoveDatabase {
+        /// The subject of the remove database operation.
+        subject: Box<Ast<'a>>,
+
+        /// The database existing flag.
+        if_exists: bool,
+
+        /// The namespace the database belongs to.
+        namespace: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE TABLE` expression.
+    RemoveTable {
+        /// The subject of the remove table operation.
+        subject: Box<Ast<'a>>,
+
+        /// The table existing flag.
+        if_exists: bool,
+
+        /// The database the table belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE EDGE` expression.
+    RemoveEdge {
+        /// The subject of the remove edge operation.
+        subject: Box<Ast<'a>>,
+
+        /// The edge existing flag.
+        if_exists: bool,
+
+        /// The database the edge belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE TYPE` expression.
+    RemoveType {
+        /// The subject of the remove type operation.
+        subject: Box<Ast<'a>>,
+
+        /// The type existing flag.
+        if_exists: bool,
+
+        /// The database the type belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE ENUM` expression.
+    RemoveEnum {
+        /// The subject of the remove enum operation.
+        subject: Box<Ast<'a>>,
+
+        /// The enum existing flag.
+        if_exists: bool,
+
+        /// The database the enum belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE INDEX` expression.
+    RemoveIndex {
+        /// The subject of the remove index operation.
+        subject: Box<Ast<'a>>,
+
+        /// The index existing flag.
+        if_exists: bool,
+
+        /// The table the index belongs to.
+        table: Box<Ast<'a>>,
+
+        /// The database the index belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE MODULE` expression.
+    RemoveModule {
+        /// The subject of the remove module operation.
+        subject: Box<Ast<'a>>,
+
+        /// The module existing flag.
+        if_exists: bool,
+
+        /// The database the module belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE PARAM` expression.
+    RemoveParam {
+        /// The subject of the remove parameter operation.
+        subject: Box<Ast<'a>>,
+
+        /// The parameter existing flag.
+        if_exists: bool,
+
+        /// The database the parameter belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE NAMESPACE` expression.
+    DescribeNamespace {
+        /// The subject of the describe namespace operation.
+        subject: Box<Ast<'a>>,
+
+        /// The namespace existing flag.
+        if_exists: bool,
+    },
+
+    /// A `DESCRIBE DATABASE` expression.
+    DescribeDatabase {
+        /// The subject of the describe database operation.
+        subject: Box<Ast<'a>>,
+
+        /// The database existing flag.
+        if_exists: bool,
+
+        /// The namespace the database belongs to.
+        namespace: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE TABLE` expression.
+    DescribeTable {
+        /// The subject of the describe table operation.
+        subject: Box<Ast<'a>>,
+
+        /// The table existing flag.
+        if_exists: bool,
+
+        /// The database the table belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE EDGE` expression.
+    DescribeEdge {
+        /// The subject of the describe edge operation.
+        subject: Box<Ast<'a>>,
+
+        /// The edge existing flag.
+        if_exists: bool,
+
+        /// The database the edge belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE TYPE` expression.
+    DescribeType {
+        /// The subject of the describe type operation.
+        subject: Box<Ast<'a>>,
+
+        /// The type existing flag.
+        if_exists: bool,
+
+        /// The database the type belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE ENUM` expression.
+    DescribeEnum {
+        /// The subject of the describe enum operation.
+        subject: Box<Ast<'a>>,
+
+        /// The enum existing flag.
+        if_exists: bool,
+
+        /// The database the enum belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `REMOVE INDEX` expression.
+    DescribeIndex {
+        /// The subject of the describe index operation.
+        subject: Box<Ast<'a>>,
+
+        /// The index existing flag.
+        if_exists: bool,
+
+        /// The table the index belongs to.
+        table: Box<Ast<'a>>,
+
+        /// The database the index belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE MODULE` expression.
+    DescribeModule {
+        /// The subject of the describe module operation.
+        subject: Box<Ast<'a>>,
+
+        /// The module existing flag.
+        if_exists: bool,
+
+        /// The database the module belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DESCRIBE PARAM` expression.
+    DescribeParam {
+        /// The subject of the describe parameter operation.
+        subject: Box<Ast<'a>>,
+
+        /// The parameter existing flag.
+        if_exists: bool,
+
+        /// The database the parameter belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `BEGIN TRANSACTION` expression.
+    BeginTransaction,
+
+    /// A `COMMIT TRANSACTION` expression.
+    CommitTransaction,
+
+    /// A `CANCEL TRANSACTION` expression.
+    CancelTransaction,
+
+    /// A `FOR` expression.
+    For {
+        /// The variable of the for expression.
+        variable: Box<Ast<'a>>,
+
+        /// The iterator of the for expression.
+        iterator: Box<Ast<'a>>,
+
+        /// The body of the for expression.
+        body: Box<Ast<'a>>,
+    },
+
+    /// A `WHILE` expression.
+    While {
+        /// The condition of the while expression.
+        condition: Box<Ast<'a>>,
+
+        /// The body of the while expression.
+        body: Box<Ast<'a>>,
+    },
+
+    /// An `IF` expression.
+    If {
+        /// The condition of the if expression.
+        condition: Box<Ast<'a>>,
+
+        /// The then branch of the if expression.
+        then: Box<Ast<'a>>,
+
+        /// The else if parts of the if expression.
+        else_ifs: Vec<ElseIfPart<'a>>,
+
+        /// The else branch of the if expression.
+        r#else: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `LET` expression.
+    Let {
+        /// The name of the let expression.
+        name: Box<Ast<'a>>,
+
+        /// The type of the let expression.
+        r#type: Option<Box<TypeSig<'a>>>,
+
+        /// The value of the let expression.
+        value: Box<Ast<'a>>,
+    },
+
+    /// A `SET` expression.
+    Set {
+        /// The variable of the set expression.
+        variable: Box<Ast<'a>>,
+
+        /// The assignment operator of the set expression.
+        op: UpdateAssign,
+
+        /// The value of the set expression.
+        value: Box<Ast<'a>>,
+    },
+}
+
+/// A type signature.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TypeSig<'a> {
+    /// An array type, e.g. `[i32: 10]`.
+    Array {
+        /// The type of the array type.
+        r#type: Box<TypeSig<'a>>,
+
+        /// The length of the array type.
+        length: Box<Ast<'a>>,
+    },
+
+    /// A list type, e.g. `[i32]`.
+    List(Box<TypeSig<'a>>),
+
+    /// A tuple type, e.g. `(i32, bool)`.
+    Tuple(Vec<TypeSig<'a>>),
+
+    /// An option type, e.g. `person?`.
+    Option(Box<TypeSig<'a>>),
+
+    /// A generic type, e.g. `map<k, v>`.
+    Generic {
+        /// The name of the generic type.
+        name: Box<Ast<'a>>,
+
+        /// The parameters of the generic type.
+        parameters: Vec<TypeSig<'a>>,
+    },
+
+    /// A basic type, e.g. `i32`.
+    Basic(Box<Ast<'a>>),
+}
+
+/// A partial else if part of an if expression.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ElseIfPart<'a> {
+    /// The condition of the else if part.
+    pub condition: Box<Ast<'a>>,
+
+    /// The body of the else if part.
+    pub body: Box<Ast<'a>>,
 }
 
 /// A column or fold column of a `SELECT` expression.
@@ -457,9 +786,6 @@ pub enum UpdateAssign {
 
     /// A `>>=` assignment.
     Shr,
-
-    /// A `??=` assignment.
-    NullCoalesce,
 }
 
 //--------------------------------------------------------------------------------------------------
