@@ -655,6 +655,18 @@ fn test_parser_keywords() -> anyhow::Result<()> {
 
     //----------------------------------------------------------------------------------------------
 
+    let parser = &mut Parser::new("exist EXIST", 10);
+    let result_a = parser.parse_kw_exist()?;
+    let result_b = parser.parse_kw_exist()?;
+    info!(
+        "input = {:?} | parse_kw_exist parse_kw_exist = {:?} {:?}",
+        parser.lexer.string, result_a, result_b
+    );
+    assert_eq!(result_a, Some(Ast::new(0..5, AstKind::Temp(None))));
+    assert_eq!(result_b, Some(Ast::new(6..11, AstKind::Temp(None))));
+
+    //----------------------------------------------------------------------------------------------
+
     let parser = &mut Parser::new("with WITH", 10);
     let result_a = parser.parse_kw_with()?;
     let result_b = parser.parse_kw_with()?;

@@ -927,36 +927,18 @@ impl<'a> Parser<'a> {
         Ok(ast)
     }
 
-    /// Parses partial `partial_if_not_exists` syntax.
-    ///
-    /// ```txt
-    /// partial_if_not_exists =
-    ///     | kw_if kw_not kw_exists
-    /// ```
-    #[memoize]
-    #[backtrack]
-    pub fn parse_partial_if_not_exists(&mut self) -> ParserResult<Option<Ast<'a>>> {
-        let result = parse!(self, Self => (seq
-            parse_kw_if
-            parse_kw_not
-            parse_kw_exists
-        ));
-        let ast = result.map(|x| Ast::new(0..0, Temp(Some(Box::new(x)))));
-        Ok(ast)
-    }
-
     /// Parses partial `partial_if_exists` syntax.
     ///
     /// ```txt
     /// partial_if_exists =
-    ///     | kw_if kw_exists
+    ///     | kw_if (kw_exists | kw_exist)
     /// ```
     #[memoize]
     #[backtrack]
     pub fn parse_partial_if_exists(&mut self) -> ParserResult<Option<Ast<'a>>> {
         let result = parse!(self, Self => (seq
             parse_kw_if
-            parse_kw_exists
+            (alt parse_kw_exists parse_kw_exist)
         ));
         let ast = result.map(|x| Ast::new(0..0, Temp(Some(Box::new(x)))));
         Ok(ast)
@@ -3310,7 +3292,7 @@ impl<'a> Parser<'a> {
             let r#type = match *opt_type_sig {
                 Combinator::Void => None,
                 Combinator::Seq2(_, partial_type_sig) => {
-                    Some(Box::new(extract_partial_type_sig(*partial_type_sig)))
+                    Some(Box::new(extract_partial_type_sig(*partial_type_sig).0))
                 }
                 _ => unreachable!(),
             };
@@ -3388,7 +3370,7 @@ impl<'a> Parser<'a> {
 
     /// Parses any expression.
     ///
-    /// ```
+    /// ```txt
     /// exp =
     ///     | relate_exp
     ///     | create_exp
@@ -3743,11 +3725,19 @@ pub(crate) fn extract_opt_partial_if_exists(comb: Combinator<Ast<'_>>) -> Option
                 .unwrap_temp()
                 .unwrap_seq2();
 
-            Some(kw_exists.unwrap_single().span.end)
+            match kw_exists.unwrap_choice() {
+                Choice::A(kw_exists) => Some(kw_exists.unwrap_single().span.end),
+                Choice::B(kw_exist) => Some(kw_exist.unwrap_single().span.end),
+                _ => unreachable!(),
+            }
         }
         Combinator::Single(partial_if_exists) => {
             let (_, kw_exists) = partial_if_exists.unwrap_temp().unwrap_seq2();
-            Some(kw_exists.unwrap_single().span.end)
+            match kw_exists.unwrap_choice() {
+                Choice::A(kw_exists) => Some(kw_exists.unwrap_single().span.end),
+                Choice::B(kw_exist) => Some(kw_exist.unwrap_single().span.end),
+                _ => unreachable!(),
+            }
         }
         _ => unreachable!(),
     }
@@ -3805,61 +3795,74 @@ pub(crate) fn extract_partial_on_table(comb: Combinator<Ast<'_>>) -> Ast<'_> {
     }
 }
 
-pub(crate) fn extract_partial_type_sig(comb: Combinator<Ast<'_>>) -> TypeSig<'_> {
+pub(crate) fn extract_partial_type_sig(comb: Combinator<Ast<'_>>) -> (TypeSig<'_>, usize) {
     match comb.unwrap_single().unwrap_temp().unwrap_choice() {
         Choice::A(type_sig) => {
-            let (_, partial_type_sig, integer_lit, _, options) = type_sig.unwrap_seq5();
-            let partial_type_sig = extract_partial_type_sig(*partial_type_sig);
+            let (_, partial_type_sig, integer_lit, close, options) = type_sig.unwrap_seq5();
+            let (partial_type_sig, _) = extract_partial_type_sig(*partial_type_sig);
             let integer_lit = integer_lit.unwrap_single();
+            let close = close.unwrap_single();
 
             let mut sig = TypeSig::Array {
                 r#type: Box::new(partial_type_sig),
                 length: Box::new(integer_lit),
             };
 
-            for _ in options.unwrap_many() {
+            let mut span_end = close.span.end;
+            for option in options.unwrap_many() {
                 sig = TypeSig::Option(Box::new(sig));
+                span_end = option.unwrap_single().span.end;
             }
 
-            sig
+            (sig, span_end)
         }
         Choice::B(type_sig) => {
-            let (_, partial_type_sig, _, options) = type_sig.unwrap_seq4();
-            let partial_type_sig = extract_partial_type_sig(*partial_type_sig);
+            let (_, partial_type_sig, close, options) = type_sig.unwrap_seq4();
+            let (partial_type_sig, _) = extract_partial_type_sig(*partial_type_sig);
+            let close = close.unwrap_single();
 
             let mut sig = TypeSig::List(Box::new(partial_type_sig));
 
-            for _ in options.unwrap_many() {
+            let mut span_end = close.span.end;
+            for option in options.unwrap_many() {
                 sig = TypeSig::Option(Box::new(sig));
+                span_end = option.unwrap_single().span.end;
             }
 
-            sig
+            (sig, span_end)
         }
         Choice::C(type_sig) => {
-            let (_, partial_type_sig, type_sigs, _, _, options) = type_sig.unwrap_seq6();
+            let (_, partial_type_sig, type_sigs, _, close, options) = type_sig.unwrap_seq6();
+            let close = close.unwrap_single();
+            let (partial_type_sig, _) = extract_partial_type_sig(*partial_type_sig);
+            let mut sigs = vec![partial_type_sig];
 
-            let mut sigs = vec![extract_partial_type_sig(*partial_type_sig)];
             for type_sig in type_sigs.unwrap_many() {
                 let (_, partial_type_sig) = type_sig.unwrap_seq2();
-                let partial_type_sig = extract_partial_type_sig(*partial_type_sig);
+                let (partial_type_sig, _) = extract_partial_type_sig(*partial_type_sig);
                 sigs.push(partial_type_sig);
             }
 
+            let mut span_end = close.span.end;
             let mut sig = TypeSig::Tuple(sigs);
-            for _ in options.unwrap_many() {
+            for option in options.unwrap_many() {
                 sig = TypeSig::Option(Box::new(sig));
+                span_end = option.unwrap_single().span.end;
             }
 
-            sig
+            (sig, span_end)
         }
         Choice::D(type_sig) => {
-            let (ident, _, partial_type_sig, type_sigs, _, _, options) = type_sig.unwrap_seq7();
+            let (ident, _, partial_type_sig, type_sigs, _, close, options) = type_sig.unwrap_seq7();
 
             let ident = ident.unwrap_single();
-            let mut sigs = vec![extract_partial_type_sig(*partial_type_sig)];
+            let close = close.unwrap_single();
+            let (partial_type_sig, _) = extract_partial_type_sig(*partial_type_sig);
+            let mut sigs = vec![partial_type_sig];
+
             for type_sig in type_sigs.unwrap_many() {
                 let (_, partial_type_sig) = type_sig.unwrap_seq2();
-                let partial_type_sig = extract_partial_type_sig(*partial_type_sig);
+                let (partial_type_sig, _) = extract_partial_type_sig(*partial_type_sig);
                 sigs.push(partial_type_sig);
             }
 
@@ -3868,23 +3871,27 @@ pub(crate) fn extract_partial_type_sig(comb: Combinator<Ast<'_>>) -> TypeSig<'_>
                 parameters: sigs,
             };
 
-            for _ in options.unwrap_many() {
+            let mut span_end = close.span.end;
+            for option in options.unwrap_many() {
                 sig = TypeSig::Option(Box::new(sig));
+                span_end = option.unwrap_single().span.end;
             }
 
-            sig
+            (sig, span_end)
         }
         Choice::E(type_sig) => {
             let (ident, options) = type_sig.unwrap_seq2();
 
             let ident = ident.unwrap_single();
-            let mut sig = TypeSig::Basic(Box::new(ident));
 
-            for _ in options.unwrap_many() {
+            let mut span_end = ident.span.end;
+            let mut sig = TypeSig::Basic(Box::new(ident));
+            for option in options.unwrap_many() {
                 sig = TypeSig::Option(Box::new(sig));
+                span_end = option.unwrap_single().span.end;
             }
 
-            sig
+            (sig, span_end)
         }
         _ => unreachable!(),
     }

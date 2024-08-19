@@ -5,8 +5,7 @@
  * The lexer supports special tokens like `eof` and `cont`.
  * It relies on context-sensitive rules to handle special cases like code blocks.
  *
- * `zeroql` does not have reserved keywords. Keywords and certain letter-based operators are
- * supported as identifiers and handled by the parser.
+ * Keywords and certain letter-based operators are supported as identifiers and handled by the parser.
  *)
 
 (* COMMENTS *)

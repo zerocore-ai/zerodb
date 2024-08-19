@@ -169,6 +169,9 @@ kw_not =
 kw_exists =
     | plain_identifier["exists"]
 
+kw_exist =
+    | plain_identifier["exist"]
+
 kw_with =
     | plain_identifier["with"]
 
@@ -598,11 +601,8 @@ partial_select_limit_to =
 select_exp =
     | kw_select partial_select_fields partial_select_from << partial_where_guard? partial_select_with_indices? partial_select_group_by? partial_select_order_by? partial_select_start_at? partial_select_limit_to? >>
 
-partial_if_not_exists =
-    | kw_if kw_not kw_exists
-
 partial_if_exists =
-    | kw_if kw_exists
+    | kw_if (kw_exists | kw_exist)
 
 partial_on_namespace =
     | kw_on (kw_namespace | kw_ns) identifier
@@ -727,7 +727,7 @@ if_else_exp =
     | kw_if range_op kw_then program partial_else_if_part* (kw_else program)? kw_end
 
 partial_type_sig =
-    | "[" partial_type_sig "/" integer_lit "]" "?"*
+    | "[" partial_type_sig integer_lit "]" "?"*
     | "[" partial_type_sig "]" "?"*
     | "(" partial_type_sig ("," partial_type_sig)* ","? ")" "?"*
     | identifier_scope_op "[" partial_type_sig ("," partial_type_sig)* ","? "]" "?"*
@@ -759,77 +759,75 @@ exp =
 
 (* STATEMENTS *)
 
+partial_if_not_exists =
+    | kw_if kw_not (kw_exists | kw_exist`)
+
 define_namespace_stmt =
-    | kw_define (kw_namespace | kw_ns) partial_if_not_exists? identifier
-    | kw_define (kw_namespace | kw_ns) identifier partial_if_not_exists?
+    | kw_define (kw_namespace | kw_ns) << partial_if_not_exists? identifier >>
 
 define_database_stmt =
-    | kw_define (kw_database | kw_db) partial_if_not_exists? identifier partial_on_namespace?
+    | kw_define (kw_database | kw_db) partial_if_not_exists identifier partial_on_namespace?
     | kw_define (kw_database | kw_db) identifier << partial_if_not_exists? partial_on_namespace? >>
 
 partial_field_type =
     | kw_type partial_type_sig
 
 partial_field_value =
-    | kw_value op
+    | kw_value range_op
 
 partial_table_field_assert =
-    | kw_assert op
+    | kw_assert range_op
 
-define_table_field =
+partial_table_field =
     | identifier << partial_field_type partial_field_value? partial_table_field_assert* kw_readonly? kw_unique? >>
 
-define_table_fields =
-    | kw_fields define_table_field ("," define_table_field)*
+partial_table_fields =
+    | kw_fields partial_table_field ("," partial_table_field)*
 
 define_table_stmt =
-    | kw_define kw_table partial_if_not_exists? identifier partial_on_database? define_table_fields?
-    | kw_define kw_table identifier << partial_if_not_exists? partial_on_database? define_table_fields? >>
+    | kw_define kw_table partial_if_not_exists identifier << partial_on_database? partial_table_fields? >>
+    | kw_define kw_table identifier << partial_if_not_exists? partial_on_database? partial_table_fields? >>
 
 define_edge_stmt =
-    | kw_define kw_edge partial_if_not_exists? identifier partial_on_database? define_table_fields?
-    | kw_define kw_edge identifier << partial_if_not_exists? partial_on_database? define_table_fields? >>
+    | kw_define kw_edge partial_if_not_exists identifier << partial_on_database? partial_table_fields? >>
+    | kw_define kw_edge identifier << partial_if_not_exists? partial_on_database? partial_table_fields? >>
 
-define_type_field =
+partial_type_field =
     | identifier partial_field_type
 
-define_type_fields =
-    | kw_fields define_type_field ("," define_type_field)*
+partial_type_fields =
+    | kw_fields partial_type_field ("," partial_type_field)*
 
 define_type_stmt =
-    | kw_define kw_type partial_if_not_exists? identifier partial_on_database? define_type_fields?
-    | kw_define kw_type identifier << partial_if_not_exists? partial_on_database? define_type_fields? >>
+    | kw_define kw_type partial_if_not_exists identifier << partial_on_database? partial_type_fields? >>
+    | kw_define kw_type identifier << partial_if_not_exists? partial_on_database? partial_type_fields? >>
 
-define_enum_variants =
+partial_enum_variants =
     | kw_variants identifier ("," identifier)*
 
 define_enum_stmt =
-    | kw_define kw_enum partial_if_not_exists? identifier partial_on_database? define_enum_variants?
-    | kw_define kw_enum identifier << partial_if_not_exists? partial_on_database? define_enum_variants? >>
+    | kw_define kw_enum partial_if_not_exists identifier << partial_on_database? partial_enum_variants? >>
+    | kw_define kw_enum identifier << partial_if_not_exists? partial_on_database? partial_enum_variants? >>
 
-define_type_stmt =
-    | kw_define kw_type partial_if_not_exists? identifier partial_on_database? define_table_fields?
-    | kw_define kw_type identifier << partial_if_not_exists? partial_on_database? define_table_fields? >>
-
-define_index_fields =
+partial_index_fields =
     | kw_fields identifier ("," identifier)*
 
-define_index_with =
+partial_index_with =
     | kw_with function_call_op
 
 define_index_stmt =
-    | kw_define kw_index partial_if_not_exists? identifier << partial_on_database? partial_on_table? define_index_fields define_index_with? >>
-    | kw_define kw_index identifier << partial_if_not_exists? partial_on_database? partial_on_table? define_index_fields define_index_with? >>
+    | kw_define kw_index partial_if_not_exists identifier << partial_on_database? partial_on_table partial_index_fields partial_index_with? >>
+    | kw_define kw_index identifier << partial_if_not_exists? partial_on_database? partial_on_table partial_index_fields partial_index_with? >>
 
-define_module_block =
+partial_module_block =
     | kw_with module_block kw_end
 
 define_module_stmt =
-    | kw_define (kw_module | kw_mod) partial_if_not_exists? identifier << define_module_block partial_on_database? >>
-    | kw_define (kw_module | kw_mod) identifier << partial_if_not_exists? define_module_block partial_on_database? >>
+    | kw_define (kw_module | kw_mod) partial_if_not_exists identifier << partial_module_block partial_on_database? >>
+    | kw_define (kw_module | kw_mod) identifier << partial_if_not_exists? partial_module_block partial_on_database? >>
 
 define_param_stmt =
-    | kw_define kw_param partial_if_not_exists? identifier << partial_on_database? partial_field_type? partial_field_value >>
+    | kw_define kw_param partial_if_not_exists identifier << partial_on_database? partial_field_type? partial_field_value >>
     | kw_define kw_param identifier << partial_if_not_exists? partial_on_database? partial_field_type? partial_field_value >>
 
 define_stmt =
@@ -844,9 +842,9 @@ define_stmt =
     | define_param_stmt
 
 use_stmt =
-    | kw_use (kw_namespace | kw_ns) identifier (kw_database | kw_db) identifier
+    | kw_use << ((kw_namespace | kw_ns) identifier) ((kw_database | kw_db) identifier) >>
+    | kw_use (kw_namespace | kw_ns) identifier
     | kw_use (kw_database | kw_db) identifier
-    | kw_use kw_table identifier
 
 stmt =
     | define_stmt

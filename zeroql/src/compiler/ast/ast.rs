@@ -63,6 +63,9 @@ pub enum AstKind<'a> {
     /// A none literal.
     NoneLiteral,
 
+    /// A module block.
+    ModuleBlock(&'a str),
+
     /// A list literal.
     ListLiteral(Vec<Ast<'a>>),
 
@@ -626,6 +629,181 @@ pub enum AstKind<'a> {
         /// The value of the set expression.
         value: Box<Ast<'a>>,
     },
+
+    /// A `DEFINE NAMESPACE` statement.
+    DefineNamespace {
+        /// The name of the namespace.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+    },
+
+    /// A `DEFINE DATABASE` statement.
+    DefineDatabase {
+        /// The name of the database.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The namespace the database belongs to.
+        namespace: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DEFINE TABLE` statement.
+    DefineTable {
+        /// The name of the table.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the table belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The fields of the table.
+        fields: Vec<Field<'a>>,
+    },
+
+    /// A `DEFINE EDGE` statement.
+    DefineEdge {
+        /// The name of the edge.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the edge belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The fields of the edge.
+        fields: Vec<Field<'a>>,
+    },
+
+    /// A `DEFINE TYPE` statement.
+    DefineType {
+        /// The name of the type.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the type belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The fields of the type.
+        fields: Vec<(Ast<'a>, TypeSig<'a>)>,
+    },
+
+    /// A `DEFINE ENUM` statement.
+    DefineEnum {
+        /// The name of the enum.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the enum belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The variants of the enum.
+        variants: Vec<Ast<'a>>,
+    },
+
+    /// A `DEFINE INDEX` statement.
+    DefineIndex {
+        /// The name of the index.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the index belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The table the index belongs to.
+        table: Box<Ast<'a>>,
+
+        /// The columns of the index.
+        columns: Vec<Ast<'a>>,
+
+        /// The function to call when the index is created.
+        function: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `DEFINE MODULE` statement.
+    DefineModule {
+        /// The name of the module.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the module belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The code block of the module.
+        block: Box<Ast<'a>>,
+    },
+
+    /// A `DEFINE PARAM` statement.
+    DefineParam {
+        /// The name of the parameter.
+        name: Box<Ast<'a>>,
+
+        /// The if not exists flag.
+        if_not_exists: bool,
+
+        /// The database the parameter belongs to.
+        database: Option<Box<Ast<'a>>>,
+
+        /// The type of the parameter.
+        r#type: Option<TypeSig<'a>>,
+
+        /// The value of the parameter.
+        value: Box<Ast<'a>>,
+    },
+
+    /// A `USE` statement.
+    Use {
+        /// The namespace the parameter belongs to.
+        namespace: Option<Box<Ast<'a>>>,
+
+        /// The database the parameter belongs to.
+        database: Option<Box<Ast<'a>>>,
+    },
+
+    /// A `BREAK` statement.
+    Break,
+
+    /// A `CONTINUE` statement.
+    Continue,
+
+    /// A program.
+    Program(Vec<Ast<'a>>),
+}
+
+/// A field of a table or edge.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Field<'a> {
+    /// The name of the field.
+    pub name: Box<Ast<'a>>,
+
+    /// The type of the field.
+    pub r#type: TypeSig<'a>,
+
+    /// The default value of the field.
+    pub default: Option<Box<Ast<'a>>>,
+
+    /// The assertions of the field.
+    pub assertions: Vec<Ast<'a>>,
+
+    /// Whether the field is readonly.
+    pub readonly: bool,
+
+    /// Whether the field is unique.
+    pub unique: bool,
 }
 
 /// A type signature.

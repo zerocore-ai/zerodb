@@ -202,7 +202,7 @@ fn test_parser_create_exp() -> anyhow::Result<()> {
 fn test_parser_relate_exp() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
         r#"relate p:john -> likes -> p:alice SET a = 10, b = 'Hello'\
-        RELATE a -> to -> b\
+        RELATE a -> of -> b\
         relate x -> y -> z SET { a: 10,
         b: 'Hello' }"#,
         20,
@@ -314,7 +314,7 @@ fn test_parser_relate_exp() -> anyhow::Result<()> {
                             kind: SingleRelateId {
                                 subject: Box::new(Ast {
                                     span: 74..75,
-                                    kind: Identifier("a",),
+                                    kind: Identifier("a"),
                                 }),
                                 alias: None,
                             },
@@ -325,7 +325,7 @@ fn test_parser_relate_exp() -> anyhow::Result<()> {
                             kind: RelateEdgeId {
                                 subject: Box::new(Ast {
                                     span: 79..81,
-                                    kind: Identifier("to",),
+                                    kind: Identifier("of"),
                                 }),
                                 depth: None,
                                 alias: None,
@@ -337,7 +337,7 @@ fn test_parser_relate_exp() -> anyhow::Result<()> {
                             kind: SingleRelateId {
                                 subject: Box::new(Ast {
                                     span: 85..86,
-                                    kind: Identifier("b",),
+                                    kind: Identifier("b"),
                                 }),
                                 alias: None,
                             },
@@ -422,7 +422,7 @@ fn test_parser_relate_exp() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_partial_target() -> anyhow::Result<()> {
-    let parser = &mut Parser::new("identifier id:op relate -> op <- relate", 20);
+    let parser = &mut Parser::new("identifier id:op person -> op <- person", 20);
     let result_a = parser.parse_partial_target()?;
     let result_b = parser.parse_partial_target()?;
     let result_c = parser.parse_partial_target()?;
@@ -807,7 +807,7 @@ fn test_parser_update_exp() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_partial_select_field_fold() -> anyhow::Result<()> {
-    let parser = &mut Parser::new("FOLD avg([1, 2, 3]) fold mod::avg(age) as avg", 20);
+    let parser = &mut Parser::new("FOLD avg([1, 2, 3]) fold std::avg(age) as avg", 20);
     let result_a = parser.parse_partial_select_field_fold()?;
     let result_b = parser.parse_partial_select_field_fold()?;
 
@@ -1272,23 +1272,6 @@ fn test_parser_select_exp() -> anyhow::Result<()> {
             },
         },)
     );
-
-    Ok(())
-}
-
-#[test_log::test]
-fn test_parser_partial_if_not_exists() -> anyhow::Result<()> {
-    let parser = &mut Parser::new("if not exists IF NOT EXISTS", 20);
-    let result_a = parser.parse_partial_if_not_exists()?;
-    let result_b = parser.parse_partial_if_not_exists()?;
-
-    info!(
-        r#"input = {:?} | parse_partial_if_not_exists parse_partial_if_not_exists = {:#?} {:#?}"#,
-        parser.lexer.string, result_a, result_b,
-    );
-
-    assert!(result_a.is_some());
-    assert!(result_b.is_some());
 
     Ok(())
 }
@@ -3232,7 +3215,7 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_partial_type_sig() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"mod::type[i32, option[i32]?]\
+        r#"std::comb[i32, option[i32]?]\
         ([i32]?, i32)\
         [[i32 10]?? 10]\
         [i32]\
@@ -3634,7 +3617,7 @@ fn test_parser_set_exp() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_exp() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"RELATE x -> to -> y SET { a: 1, b: 2 }\
+        r#"RELATE x -> of -> y SET { a: 1, b: 2 }\
         5 + 10..=20
         "#,
         20,
@@ -3671,7 +3654,7 @@ fn test_parser_exp() -> anyhow::Result<()> {
                             kind: RelateEdgeId {
                                 subject: Box::new(Ast {
                                     span: 12..14,
-                                    kind: Identifier("to",),
+                                    kind: Identifier("of"),
                                 }),
                                 depth: None,
                                 alias: None,
@@ -3742,21 +3725,3 @@ fn test_parser_exp() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-// #[test_log::test]
-// fn test_parser_set_object() -> anyhow::Result<()> {
-//     let parser = &mut Parser::new("set {} SET { a: person[5], }", 20);
-//     let result_a = parser.parse_set_object()?;
-//     let result_b = parser.parse_set_object()?;
-
-//     info!(
-//         r#"input = {:?} | parse_set_object parse_set_object = {:#?} {:#?}"#,
-//         parser.lexer.string, result_a, result_b,
-//     );
-
-//     assert_eq!(result_a, None);
-
-//     assert_eq!(result_b, None);
-
-//     Ok(())
-// }

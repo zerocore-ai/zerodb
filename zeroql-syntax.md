@@ -795,6 +795,18 @@ END
 
 <!-- --- -->
 
+## WHILE
+
+```surql
+LET $i = 40
+WHILE $i > 0 DO
+    UPDATE person:alice SET age += 1
+    SET $i -= 1
+END
+```
+
+<!-- --- -->
+
 ## IF
 
 ```surql

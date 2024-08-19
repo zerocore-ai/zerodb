@@ -4,11 +4,14 @@ use lru::LruCache;
 use zeroql_macros::{anykey::AnyKey, backtrack, memoize};
 
 use crate::{
-    ast::Ast,
+    ast::{Ast, AstKind},
     compiler::reversible::Reversible,
     lexer::{Lexer, LexerState, Token},
+    parse,
     parser::ParserResult,
 };
+
+use super::Choice;
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -57,12 +60,53 @@ impl<'a> Parser<'a> {
         Ok(self.lexer.next_token()?)
     }
 
-    /// Parse program.
-    /// TODO
+    /// Parses a program.
+    ///
+    /// ```txt
+    /// program =
+    ///     | terminator* (stmt | exp) (terminator+ (stmt | exp))* terminator*
+    /// ```
     #[memoize(cache = self.cache, state = self.lexer.state)]
     #[backtrack(state = self.lexer.state, condition = |r| matches!(r, Ok(None)))]
     pub fn parse_program(&mut self) -> ParserResult<Option<Ast<'a>>> {
-        self.parse_op()
+        let result = parse!(self, Self => (seq
+            (many_0 parse_terminator)
+            (alt parse_stmt parse_exp)
+            (many_0 (seq
+                (many_1 parse_terminator)
+                (alt parse_stmt parse_exp)
+            ))
+            (many_0 parse_terminator)
+        ));
+
+        let ast = result.map(|x| {
+            let (_, stmt_or_exp, rest, _) = x.unwrap_seq4();
+
+            let ast = match stmt_or_exp.unwrap_choice() {
+                Choice::A(x) => x.unwrap_single(),
+                Choice::B(x) => x.unwrap_single(),
+                _ => unreachable!(),
+            };
+
+            let span_start = ast.span.start;
+            let mut span_end = ast.span.end;
+
+            let mut asts = vec![ast];
+            for x in rest.unwrap_many() {
+                let (_, stmt_or_exp) = x.unwrap_seq2();
+                let ast = match stmt_or_exp.unwrap_choice() {
+                    Choice::A(x) => x.unwrap_single(),
+                    Choice::B(x) => x.unwrap_single(),
+                    _ => unreachable!(),
+                };
+                span_end = ast.span.end;
+                asts.push(ast);
+            }
+
+            Ast::new(span_start..span_end, AstKind::Program(asts))
+        });
+
+        Ok(ast)
     }
 }
 
@@ -79,5 +123,48 @@ impl<'a> Reversible for Parser<'a> {
 
     fn set_state(&mut self, state: Self::State) {
         self.lexer.set_state(state);
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Tests
+//--------------------------------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use tracing::info;
+
+    use super::*;
+
+    #[test_log::test]
+    fn test_parser_program() -> anyhow::Result<()> {
+        let parser = &mut Parser::new(
+            r#"\
+            LET $age =
+            10
+
+            IF $age > 18 THEN
+               print("You are an adult")
+            ELSE
+               print("You are a minor")
+            END
+
+            DEFINE TABLE person FIELDS\
+                name TYPE string,
+                age TYPE u8
+
+            2 + (0x100 * 3)
+            "#,
+            20,
+        );
+
+        let result = parser.parse_program()?;
+
+        info!(
+            r#"input = {:?} | parse_program = {:#?}"#,
+            parser.lexer.string, result,
+        );
+
+        Ok(())
     }
 }

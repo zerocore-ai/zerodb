@@ -69,7 +69,9 @@ impl<'a> Parser<'a> {
         if let Some(Token { span, kind }) = self.eat_token()? {
             match kind {
                 TokenKind::PlainIdentifier(ident) => {
-                    return Ok(Some(Ast::new(span, AstKind::Identifier(ident))));
+                    if !is_keyword(ident) {
+                        return Ok(Some(Ast::new(span, AstKind::Identifier(ident))));
+                    }
                 }
                 TokenKind::EscapedIdentifier(ident) => {
                     return Ok(Some(Ast::new(span, AstKind::Identifier(ident))));
@@ -136,6 +138,26 @@ impl<'a> Parser<'a> {
     pub fn parse_none_lit(&mut self) -> ParserResult<Option<Ast<'a>>> {
         if let Some(ast) = self.parse_kw("none")? {
             return Ok(Some(Ast::new(ast.span, AstKind::NoneLiteral)));
+        }
+
+        Ok(None)
+    }
+
+    /// Parses a code block.
+    ///
+    /// ```txt
+    /// code_block =
+    ///     | code_block
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_module_block(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        if let Some(Token {
+            span,
+            kind: TokenKind::ModuleBlock(code),
+        }) = self.eat_token()?
+        {
+            return Ok(Some(Ast::new(span, AstKind::ModuleBlock(code))));
         }
 
         Ok(None)
@@ -416,4 +438,92 @@ fn convert_string_to_float(str: &str) -> Result<f64, ParserError> {
         .parse::<f64>()
         .map_err(|e| ParserError::InvalidFloatLiteral(e, cleaned))?;
     Ok(float)
+}
+
+//--------------------------------------------------------------------------------------------------
+// Functions
+//--------------------------------------------------------------------------------------------------
+
+pub(crate) fn is_keyword(str: &str) -> bool {
+    matches!(
+        str.to_uppercase().as_str(),
+        "CREATE"
+            | "RELATE"
+            | "DELETE"
+            | "UPDATE"
+            | "SELECT"
+            | "FOLD"
+            | "OMIT"
+            | "FROM"
+            | "BREAK"
+            | "CONTINUE"
+            | "SET"
+            | "BEGIN"
+            | "TRANSACTION"
+            | "COMMIT"
+            | "CANCEL"
+            | "DEFINE"
+            | "REDEFINE"
+            | "REMOVE"
+            | "DESCRIBE"
+            | "NAMESPACE"
+            | "NS"
+            | "DATABASE"
+            | "DB"
+            | "TABLE"
+            | "FIELDS"
+            | "INDEX"
+            | "INDICES"
+            | "INDEXES"
+            | "TYPE"
+            | "ENUM"
+            | "EDGE"
+            | "MODULE"
+            | "PARAM"
+            | "MOD"
+            | "VALUE"
+            | "VALUES"
+            | "VARIANT"
+            | "VARIANTS"
+            | "ASSERT"
+            | "READONLY"
+            | "UNIQUE"
+            | "USE"
+            | "IF"
+            | "ELSE"
+            | "FOR"
+            | "WHILE"
+            | "THEN"
+            | "DO"
+            | "END"
+            | "NOT"
+            | "EXISTS"
+            | "EXIST"
+            | "WITH"
+            | "ON"
+            | "LET"
+            | "WHERE"
+            | "GROUP"
+            | "LIMIT"
+            | "START"
+            | "ORDER"
+            | "BY"
+            | "AT"
+            | "TO"
+            | "NO"
+            | "ASC"
+            | "DESC"
+            | "AS"
+            | "AND"
+            | "OR"
+            | "IS"
+            | "IN"
+            | "CONTAINS"
+            | "NONE"
+            | "ALL"
+            | "ANY"
+            | "MATCH"
+            | "TRUE"
+            | "FALSE"
+    )
 }

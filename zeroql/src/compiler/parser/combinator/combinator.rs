@@ -592,17 +592,20 @@ pub(crate) mod inner {
     /// Permutation combinator macro result.
     macro_rules! perm_result {
         ($result:expr, $parse_a:tt $parse_b:tt) => {{
-            Combinator::Seq2($result.remove(&0).unwrap(), $result.remove(&1).unwrap())
+            $crate::compiler::parser::Combinator::Seq2(
+                $result.remove(&0).unwrap(),
+                $result.remove(&1).unwrap(),
+            )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt) => {{
-            Combinator::Seq3(
+            $crate::compiler::parser::Combinator::Seq3(
                 $result.remove(&0).unwrap(),
                 $result.remove(&1).unwrap(),
                 $result.remove(&2).unwrap(),
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt) => {{
-            Combinator::Seq4(
+            $crate::compiler::parser::Combinator::Seq4(
                 $result.remove(&0).unwrap(),
                 $result.remove(&1).unwrap(),
                 $result.remove(&2).unwrap(),
@@ -610,7 +613,7 @@ pub(crate) mod inner {
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt) => {{
-            Combinator::Seq5(
+            $crate::compiler::parser::Combinator::Seq5(
                 $result.remove(&0).unwrap(),
                 $result.remove(&1).unwrap(),
                 $result.remove(&2).unwrap(),
@@ -619,7 +622,7 @@ pub(crate) mod inner {
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt) => {{
-            Combinator::Seq6(
+            $crate::compiler::parser::Combinator::Seq6(
                 $result.remove(&0).unwrap(),
                 $result.remove(&1).unwrap(),
                 $result.remove(&2).unwrap(),
@@ -629,7 +632,7 @@ pub(crate) mod inner {
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt) => {{
-            Combinator::Seq7(
+            $crate::compiler::parser::Combinator::Seq7(
                 $result.remove(&0).unwrap(),
                 $result.remove(&1).unwrap(),
                 $result.remove(&2).unwrap(),
@@ -640,7 +643,7 @@ pub(crate) mod inner {
             )
         }};
         ($result:expr, $parse_a:tt $parse_b:tt $parse_c:tt $parse_d:tt $parse_e:tt $parse_f:tt $parse_g:tt $parse_h:tt) => {{
-            Combinator::Seq8(
+            $crate::compiler::parser::Combinator::Seq8(
                 $result.remove(&0).unwrap(),
                 $result.remove(&1).unwrap(),
                 $result.remove(&2).unwrap(),
@@ -672,7 +675,7 @@ pub(crate) mod inner {
         ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr $(, $path:ident)? => (opt $parse:tt)) => {{
             {
                 let parser_func =
-                    |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                    |parser: &mut _| -> std::result::Result<std::option::Option<$crate::compiler::parser::Combinator<_>>, _> {
                         Ok(parse!(parser $(, $path)? => $parse))
                     };
                 $parser_funcs.insert($index, Box::new(parser_func));
@@ -682,7 +685,7 @@ pub(crate) mod inner {
         ($index:expr, $parser_funcs:expr, $non_optionals:expr, $parser:expr $(, $path:ident)? => $parse:tt) => {{
             {
                 let parser_func =
-                    |parser: &mut _| -> std::result::Result<std::option::Option<Combinator<_>>, _> {
+                    |parser: &mut _| -> std::result::Result<std::option::Option<$crate::compiler::parser::Combinator<_>>, _> {
                         Ok(parse!(parser $(, $path)? => $parse))
                     };
                 $parser_funcs.insert($index, Box::new(parser_func));

@@ -15,7 +15,7 @@ fn main() {
         std::io::stdin().read_line(&mut input).unwrap();
 
         let mut parser = Parser::new(&input, 100);
-        let ast = parser.parse_op().unwrap();
+        let ast = parser.parse_program().unwrap();
 
         println!("ast: {:#?}", ast);
     }

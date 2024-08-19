@@ -274,7 +274,7 @@ fn test_parser_index_op() -> anyhow::Result<()> {
 #[test_log::test]
 fn test_parser_function_call_op() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
-        r#"([1, 2])(1, 3,) mod::function(a = 12, b = //[^\s]+//im) $var(5, test = true) true[0]"#,
+        r#"([1, 2])(1, 3,) std::function(a = 12, b = //[^\s]+//im) $var(5, test = true) true[0]"#,
         100,
     );
     let result_a = parser.parse_function_call_op()?;
@@ -341,7 +341,7 @@ fn test_parser_function_call_op() -> anyhow::Result<()> {
                     kind: ScopedIdentifier(vec![
                         Ast {
                             span: 16..19,
-                            kind: Identifier("mod"),
+                            kind: Identifier("std"),
                         },
                         Ast {
                             span: 21..29,

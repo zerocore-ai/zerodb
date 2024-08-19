@@ -663,6 +663,18 @@ impl<'a> Parser<'a> {
         self.parse_kw("exists")
     }
 
+    /// Parses the `kw_exist` rule.
+    ///
+    /// ```txt
+    /// kw_exist =
+    ///     | plain_identifier["exist"]
+    /// ```
+    #[memoize]
+    #[backtrack]
+    pub fn parse_kw_exist(&mut self) -> ParserResult<Option<Ast<'a>>> {
+        self.parse_kw("exist")
+    }
+
     /// Parses the `kw_with` rule.
     ///
     /// ```txt

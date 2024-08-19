@@ -102,6 +102,33 @@ fn test_parser_none_lit() -> anyhow::Result<()> {
 }
 
 #[test_log::test]
+fn test_parser_module_lit() -> anyhow::Result<()> {
+    let parser = &mut Parser::new("DEFINE MODULE m IF NOT EXISTS WITH foo(a + 5) END", 10);
+
+    parser.parse_kw("define")?;
+    parser.parse_kw("module")?;
+    parser.parse_identifier()?;
+    parser.parse_kw("if")?;
+    parser.parse_kw("not")?;
+    parser.parse_kw("exists")?;
+    parser.parse_kw("with")?;
+
+    let result = parser.parse_module_block()?;
+
+    info!(
+        "input = {:?} | parse_module_block = {:?}",
+        parser.lexer.string, result
+    );
+
+    assert_eq!(
+        result,
+        Some(Ast::new(34..46, AstKind::ModuleBlock(" foo(a + 5) ")))
+    );
+
+    Ok(())
+}
+
+#[test_log::test]
 fn test_parser_integer_lit() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
         r#"\
