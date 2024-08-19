@@ -29,9 +29,12 @@ use super::Choice;
 ///
 /// Due to its recursive descent nature, this parser is not tail-recursive and may cause stack overflows
 /// with large inputs. This limitation is known and there are no immediate plans to address it. To mitigate
-/// this risk, it is recommended to run the parser in a separate thread to isolate potential faults.
+/// this risk, it is recommended to run the parser in a separate thread to isolate potential faults and/or
+/// use the [stacker][stacker] crate to dynamically increase the stack size when it is needed.
+/// when it is needed.
 ///
 /// [packrat]: https://en.wikipedia.org/wiki/Packrat_parser
+/// [stacker]: https://docs.rs/stacker/latest/stacker/
 pub struct Parser<'a> {
     /// This caches results of parsing subexpressions.
     pub(crate) cache: LruCache<Box<dyn AnyKey>, CacheValue<'a>>,
@@ -134,6 +137,8 @@ impl<'a> Reversible for Parser<'a> {
 mod tests {
     use tracing::info;
 
+    use crate::ast::{AstKind::*, Field, TypeSig::*};
+
     use super::*;
 
     #[test_log::test]
@@ -163,6 +168,155 @@ mod tests {
         info!(
             r#"input = {:?} | parse_program = {:#?}"#,
             parser.lexer.string, result,
+        );
+
+        assert_eq!(
+            result,
+            Some(Ast {
+                span: 14..315,
+                kind: Program(vec![
+                    Ast {
+                        span: 14..39,
+                        kind: Let {
+                            name: Box::new(Ast {
+                                span: 18..22,
+                                kind: Variable("age"),
+                            }),
+                            r#type: None,
+                            value: Box::new(Ast {
+                                span: 37..39,
+                                kind: IntegerLiteral(10),
+                            }),
+                        },
+                    },
+                    Ast {
+                        span: 53..184,
+                        kind: If {
+                            condition: Box::new(Ast {
+                                span: 56..65,
+                                kind: GreaterThanOp(
+                                    Box::new(Ast {
+                                        span: 56..60,
+                                        kind: Variable("age"),
+                                    }),
+                                    Box::new(Ast {
+                                        span: 63..65,
+                                        kind: IntegerLiteral(18),
+                                    }),
+                                ),
+                            }),
+                            then: Box::new(Ast {
+                                span: 86..111,
+                                kind: Program(vec![Ast {
+                                    span: 86..111,
+                                    kind: FunctionCall {
+                                        subject: Box::new(Ast {
+                                            span: 86..91,
+                                            kind: Identifier("print"),
+                                        }),
+                                        args: vec![Ast {
+                                            span: 92..110,
+                                            kind: FunctionArg {
+                                                name: None,
+                                                value: Box::new(Ast {
+                                                    span: 92..110,
+                                                    kind: StringLiteral("You are an adult"),
+                                                }),
+                                            },
+                                        }],
+                                    },
+                                }]),
+                            }),
+                            else_ifs: vec![],
+                            r#else: Some(Box::new(Ast {
+                                span: 144..168,
+                                kind: Program(vec![Ast {
+                                    span: 144..168,
+                                    kind: FunctionCall {
+                                        subject: Box::new(Ast {
+                                            span: 144..149,
+                                            kind: Identifier("print"),
+                                        }),
+                                        args: vec![Ast {
+                                            span: 150..167,
+                                            kind: FunctionArg {
+                                                name: None,
+                                                value: Box::new(Ast {
+                                                    span: 150..167,
+                                                    kind: StringLiteral("You are a minor"),
+                                                }),
+                                            },
+                                        }],
+                                    },
+                                }]),
+                            })),
+                        },
+                    },
+                    Ast {
+                        span: 198..287,
+                        kind: DefineTable {
+                            name: Box::new(Ast {
+                                span: 211..217,
+                                kind: Identifier("person"),
+                            }),
+                            if_not_exists: false,
+                            database: None,
+                            fields: vec![
+                                Field {
+                                    name: Box::new(Ast {
+                                        span: 242..246,
+                                        kind: Identifier("name"),
+                                    }),
+                                    r#type: Basic(Box::new(Ast {
+                                        span: 252..258,
+                                        kind: Identifier("string"),
+                                    })),
+                                    default: None,
+                                    assertions: vec![],
+                                    readonly: false,
+                                    unique: false,
+                                },
+                                Field {
+                                    name: Box::new(Ast {
+                                        span: 276..279,
+                                        kind: Identifier("age"),
+                                    }),
+                                    r#type: Basic(Box::new(Ast {
+                                        span: 285..287,
+                                        kind: Identifier("u8"),
+                                    })),
+                                    default: None,
+                                    assertions: vec![],
+                                    readonly: false,
+                                    unique: false,
+                                },
+                            ],
+                        },
+                    },
+                    Ast {
+                        span: 301..315,
+                        kind: AdditionOp(
+                            Box::new(Ast {
+                                span: 301..302,
+                                kind: IntegerLiteral(2),
+                            }),
+                            Box::new(Ast {
+                                span: 306..315,
+                                kind: MultiplicationOp(
+                                    Box::new(Ast {
+                                        span: 306..311,
+                                        kind: IntegerLiteral(0x100),
+                                    }),
+                                    Box::new(Ast {
+                                        span: 314..315,
+                                        kind: IntegerLiteral(3),
+                                    }),
+                                ),
+                            }),
+                        ),
+                    },
+                ]),
+            })
         );
 
         Ok(())

@@ -2818,22 +2818,25 @@ fn test_parser_for_exp() -> anyhow::Result<()> {
                 }),
                 body: Box::new(Ast {
                     span: 19..28,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 19..24,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 25..27,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 25..27,
-                                    kind: Variable("i"),
-                                }),
-                            },
-                        }],
-                    },
+                    kind: Program(vec![Ast {
+                        span: 19..28,
+                        kind: FunctionCall {
+                            subject: Box::new(Ast {
+                                span: 19..24,
+                                kind: Identifier("print"),
+                            }),
+                            args: vec![Ast {
+                                span: 25..27,
+                                kind: FunctionArg {
+                                    name: None,
+                                    value: Box::new(Ast {
+                                        span: 25..27,
+                                        kind: Variable("i"),
+                                    }),
+                                },
+                            }],
+                        },
+                    }]),
                 }),
             },
         })
@@ -2874,25 +2877,28 @@ fn test_parser_while_exp() -> anyhow::Result<()> {
                 }),
                 body: Box::new(Ast {
                     span: 16..25,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 16..21,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 22..24,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 22..24,
-                                    kind: Variable("i"),
-                                }),
-                            },
-                        }],
-                    },
+                    kind: Program(vec![Ast {
+                        span: 16..25,
+                        kind: FunctionCall {
+                            subject: Box::new(Ast {
+                                span: 16..21,
+                                kind: Identifier("print"),
+                            }),
+                            args: vec![Ast {
+                                span: 22..24,
+                                kind: FunctionArg {
+                                    name: None,
+                                    value: Box::new(Ast {
+                                        span: 22..24,
+                                        kind: Variable("i"),
+                                    }),
+                                },
+                            }],
+                        },
+                    }]),
                 }),
             },
-        })
+        },)
     );
 
     Ok(())
@@ -2920,7 +2926,13 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
     let parser: &mut Parser = &mut Parser::new(
         r#"if $a > 10 then print($a) else print($a) end\
         IF $a > 10 THEN print($a) ELSE IF $a > 10 THEN print($a) ELSE print($a) END\
-        IF $a > 10 THEN print($a) ELSE IF $a > 10 THEN print($a) END\
+        IF $a > 10 THEN
+            print($a)
+            $a + 100
+        ELSE IF $a > 10 THEN
+            print($a)
+            $a * 100
+        END\
         IF $a > 10 THEN print($a) END
         "#,
         20,
@@ -2955,42 +2967,48 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
                 }),
                 then: Box::new(Ast {
                     span: 16..25,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 16..21,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 22..24,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 22..24,
-                                    kind: Variable("a"),
-                                }),
-                            },
-                        }],
-                    },
+                    kind: Program(vec![Ast {
+                        span: 16..25,
+                        kind: FunctionCall {
+                            subject: Box::new(Ast {
+                                span: 16..21,
+                                kind: Identifier("print"),
+                            }),
+                            args: vec![Ast {
+                                span: 22..24,
+                                kind: FunctionArg {
+                                    name: None,
+                                    value: Box::new(Ast {
+                                        span: 22..24,
+                                        kind: Variable("a"),
+                                    }),
+                                },
+                            }],
+                        },
+                    }]),
                 }),
                 else_ifs: vec![],
                 r#else: Some(Box::new(Ast {
                     span: 31..40,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 31..36,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 37..39,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 37..39,
-                                    kind: Variable("a"),
-                                }),
-                            },
-                        }],
-                    },
+                    kind: Program(vec![Ast {
+                        span: 31..40,
+                        kind: FunctionCall {
+                            subject: Box::new(Ast {
+                                span: 31..36,
+                                kind: Identifier("print"),
+                            }),
+                            args: vec![Ast {
+                                span: 37..39,
+                                kind: FunctionArg {
+                                    name: None,
+                                    value: Box::new(Ast {
+                                        span: 37..39,
+                                        kind: Variable("a"),
+                                    }),
+                                },
+                            }],
+                        },
+                    }]),
                 })),
             },
         })
@@ -3016,22 +3034,25 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
                 }),
                 then: Box::new(Ast {
                     span: 70..79,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 70..75,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 76..78,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 76..78,
-                                    kind: Variable("a"),
-                                }),
-                            },
-                        }],
-                    }
+                    kind: Program(vec![Ast {
+                        span: 70..79,
+                        kind: FunctionCall {
+                            subject: Box::new(Ast {
+                                span: 70..75,
+                                kind: Identifier("print"),
+                            }),
+                            args: vec![Ast {
+                                span: 76..78,
+                                kind: FunctionArg {
+                                    name: None,
+                                    value: Box::new(Ast {
+                                        span: 76..78,
+                                        kind: Variable("a"),
+                                    }),
+                                },
+                            }],
+                        },
+                    }]),
                 }),
                 else_ifs: vec![ElseIfPart {
                     condition: Box::new(Ast {
@@ -3049,42 +3070,48 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
                     }),
                     body: Box::new(Ast {
                         span: 101..110,
+                        kind: Program(vec![Ast {
+                            span: 101..110,
+                            kind: FunctionCall {
+                                subject: Box::new(Ast {
+                                    span: 101..106,
+                                    kind: Identifier("print"),
+                                }),
+                                args: vec![Ast {
+                                    span: 107..109,
+                                    kind: FunctionArg {
+                                        name: None,
+                                        value: Box::new(Ast {
+                                            span: 107..109,
+                                            kind: Variable("a"),
+                                        }),
+                                    },
+                                }],
+                            },
+                        }]),
+                    }),
+                }],
+                r#else: Some(Box::new(Ast {
+                    span: 116..125,
+                    kind: Program(vec![Ast {
+                        span: 116..125,
                         kind: FunctionCall {
                             subject: Box::new(Ast {
-                                span: 101..106,
+                                span: 116..121,
                                 kind: Identifier("print"),
                             }),
                             args: vec![Ast {
-                                span: 107..109,
+                                span: 122..124,
                                 kind: FunctionArg {
                                     name: None,
                                     value: Box::new(Ast {
-                                        span: 107..109,
+                                        span: 122..124,
                                         kind: Variable("a"),
                                     }),
                                 },
                             }],
                         },
-                    }),
-                }],
-                r#else: Some(Box::new(Ast {
-                    span: 116..125,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 116..121,
-                            kind: Identifier("print",),
-                        }),
-                        args: vec![Ast {
-                            span: 122..124,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 122..124,
-                                    kind: Variable("a",),
-                                }),
-                            },
-                        }],
-                    },
+                    }]),
                 })),
             },
         })
@@ -3093,72 +3120,108 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
     assert_eq!(
         result_c,
         Some(Ast {
-            span: 139..199,
+            span: 139..281,
             kind: If {
                 condition: Box::new(Ast {
                     span: 142..149,
                     kind: GreaterThanOp(
                         Box::new(Ast {
                             span: 142..144,
-                            kind: Variable("a",),
+                            kind: Variable("a"),
                         }),
                         Box::new(Ast {
                             span: 147..149,
-                            kind: IntegerLiteral(10,),
+                            kind: IntegerLiteral(10),
                         }),
                     ),
                 }),
                 then: Box::new(Ast {
-                    span: 155..164,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 155..160,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 161..163,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 161..163,
-                                    kind: Variable("a"),
+                    span: 167..197,
+                    kind: Program(vec![
+                        Ast {
+                            span: 167..176,
+                            kind: FunctionCall {
+                                subject: Box::new(Ast {
+                                    span: 167..172,
+                                    kind: Identifier("print"),
                                 }),
+                                args: vec![Ast {
+                                    span: 173..175,
+                                    kind: FunctionArg {
+                                        name: None,
+                                        value: Box::new(Ast {
+                                            span: 173..175,
+                                            kind: Variable("a"),
+                                        }),
+                                    },
+                                },],
                             },
-                        }],
-                    },
+                        },
+                        Ast {
+                            span: 189..197,
+                            kind: AdditionOp(
+                                Box::new(Ast {
+                                    span: 189..191,
+                                    kind: Variable("a",),
+                                }),
+                                Box::new(Ast {
+                                    span: 194..197,
+                                    kind: IntegerLiteral(100),
+                                }),
+                            ),
+                        },
+                    ]),
                 }),
                 else_ifs: vec![ElseIfPart {
                     condition: Box::new(Ast {
-                        span: 173..180,
+                        span: 214..221,
                         kind: GreaterThanOp(
                             Box::new(Ast {
-                                span: 173..175,
-                                kind: Variable("a"),
+                                span: 214..216,
+                                kind: Variable("a",),
                             }),
                             Box::new(Ast {
-                                span: 178..180,
-                                kind: IntegerLiteral(10),
+                                span: 219..221,
+                                kind: IntegerLiteral(10,),
                             }),
                         ),
                     }),
                     body: Box::new(Ast {
-                        span: 186..195,
-                        kind: FunctionCall {
-                            subject: Box::new(Ast {
-                                span: 186..191,
-                                kind: Identifier("print"),
-                            }),
-                            args: vec![Ast {
-                                span: 192..194,
-                                kind: FunctionArg {
-                                    name: None,
-                                    value: Box::new(Ast {
-                                        span: 192..194,
+                        span: 239..269,
+                        kind: Program(vec![
+                            Ast {
+                                span: 239..248,
+                                kind: FunctionCall {
+                                    subject: Box::new(Ast {
+                                        span: 239..244,
+                                        kind: Identifier("print"),
+                                    }),
+                                    args: vec![Ast {
+                                        span: 245..247,
+                                        kind: FunctionArg {
+                                            name: None,
+                                            value: Box::new(Ast {
+                                                span: 245..247,
+                                                kind: Variable("a"),
+                                            }),
+                                        },
+                                    }],
+                                },
+                            },
+                            Ast {
+                                span: 261..269,
+                                kind: MultiplicationOp(
+                                    Box::new(Ast {
+                                        span: 261..263,
                                         kind: Variable("a"),
                                     }),
-                                },
-                            }],
-                        },
+                                    Box::new(Ast {
+                                        span: 266..269,
+                                        kind: IntegerLiteral(100),
+                                    }),
+                                ),
+                            },
+                        ]),
                     }),
                 }],
                 r#else: None,
@@ -3169,44 +3232,47 @@ fn test_parser_if_else_exp() -> anyhow::Result<()> {
     assert_eq!(
         result_d,
         Some(Ast {
-            span: 209..238,
+            span: 291..320,
             kind: If {
                 condition: Box::new(Ast {
-                    span: 212..219,
+                    span: 294..301,
                     kind: GreaterThanOp(
                         Box::new(Ast {
-                            span: 212..214,
+                            span: 294..296,
                             kind: Variable("a"),
                         }),
                         Box::new(Ast {
-                            span: 217..219,
+                            span: 299..301,
                             kind: IntegerLiteral(10),
                         }),
                     ),
                 }),
                 then: Box::new(Ast {
-                    span: 225..234,
-                    kind: FunctionCall {
-                        subject: Box::new(Ast {
-                            span: 225..230,
-                            kind: Identifier("print"),
-                        }),
-                        args: vec![Ast {
-                            span: 231..233,
-                            kind: FunctionArg {
-                                name: None,
-                                value: Box::new(Ast {
-                                    span: 231..233,
-                                    kind: Variable("a"),
-                                }),
-                            },
-                        },],
-                    },
+                    span: 307..316,
+                    kind: Program(vec![Ast {
+                        span: 307..316,
+                        kind: FunctionCall {
+                            subject: Box::new(Ast {
+                                span: 307..312,
+                                kind: Identifier("print"),
+                            }),
+                            args: vec![Ast {
+                                span: 313..315,
+                                kind: FunctionArg {
+                                    name: None,
+                                    value: Box::new(Ast {
+                                        span: 313..315,
+                                        kind: Variable("a"),
+                                    }),
+                                },
+                            }],
+                        },
+                    }]),
                 }),
                 else_ifs: vec![],
                 r#else: None,
             },
-        })
+        },)
     );
 
     Ok(())
