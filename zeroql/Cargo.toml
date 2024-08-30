@@ -19,12 +19,15 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 anyhow.workspace = true
 zeroql-macros.workspace = true
+zeroutils-path.workspace = true
 lru = "0.12.3"
 regex.workspace = true
 lazy_static = "1.4.0"
 bitflags = "2.6.0"
 itertools.workspace = true
 concat-with = "0.2.9"
+parking_lot.workspace = true
+
 [dev-dependencies]
 test-log.workspace = true
 tracing-subscriber.workspace = true

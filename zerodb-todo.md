@@ -34,45 +34,70 @@
       - [x] Support use as impl attribute.
       - [x] Add tests
       - [x] Add example in doc. Borrow from tests.
-    - [ ] Combinator macros
+    - [x] Combinator macros
       - [x] Single
       - [x] Alt
       - [x] Many0
       - [x] Many1
       - [x] Optional
       - [x] Sequence
-      - [ ] Permutation
-    - [ ] Complete Parser
+      - [x] Permutation
+    - [x] Complete Parser
       - [x] Operations
-      - [ ] Expressions
-      - [ ] Statements
-      - [ ] Program
-    - [ ] Support any case keyword and operators
+      - [x] Expressions
+      - [x] Statements
+      - [x] Program
+    - [x] Support any case keyword and operators
     - [ ] Need strategy for preventing malicious code that lead to stack overflows
       - [ ] stacker::maybe_grow - grows the stack as needed or spills to heap - used by rustc https://docs.rs/stacker/latest/stacker/
       - [ ] thread isolation - running in a separate thread with set stack size and is the least intrusive
       - [ ] reblessive crate - problematic because it complicates the interface for backtrack and memoize macros
       - [ ] active prevention - setting nested expression limit, unary/binary op limit or recursion depth limit
     - [x] Implement `perm_ord` combinator for SELECT to preserve order of transforms perhaps as returned indexes, `SeqIndexX`?.
-    - [x] Remove `permute` and make `permute_op` the new `permute`
-    - [ ] Specify `DEFINE EVENT` grammar
-      - [ ] `DEFINE EVENT ON TABLE user WHEN age > 18 THEN foo::bar()`
-      - [ ] Add `REMOVE EVENT`, `DESCRIBE EVENT`, `DELETE EVENT` etc.
+    - [x] Remove `perm` and make `perm_opt` the new `perm`
+    - [ ] Rewrite combinator so that what needs to be extracted can be specified directly
+      - [ ] For example
+      ```
+      (seq
+        (arg parse_tok OpOpenParen)
+        ident:parse_identifier
+        idents:(many_0
+          (seq (arg parse_tok OpComma) ident:parse_identifier)
+        )
+        (arg parse_tok OpCloseParen)
+      )
+      ```
+      - [ ] extracted items should return as a flat tuple
+      - [ ] supporting indexed and non-indexed perm macro versions
+    - [ ] Move `REMOVE` expressions under statement because we don't want them in certain contexts like list constructor.
+    - [ ] Introduce `REDEFINE` statements to modify schema and rename
+      ```
+      REDEFINE TABLE IF EXISTS table_name AS table_name_new FIELDS \
+        field_name AS field_name_new,
+        field_name2 TYPE int
+      ```
+    - [ ] Introduce `DEFINE FUNCTION` and `RETURN` statements
+    - [ ] Remove `NAMESPACE`. `DATABASE` is now the new `NAMESPACE`.
+    - [ ] Support `IN DATABASE` for `DEFINE DATABASE`, `DESCRIBE DATABASE`, ...
+    - [ ] Change `USE` SYNTAX to `CHANGE`. Also support `CD` SYNTAX
+    - [ ] Scoped Identifiers should allow `/` and `.` for database and table names.
+    - [ ] Support both `ON DATABASE` and `IN DATABASE`
+    - [ ] `DEFINE/DESCRIBE/REMOVE INDEX` should use just `ON TABLE` and `IN TABLE`
 
-  - [ ] zeroql: Reimplement AST
   - [ ] zeroql: Semantic Analysis
     - [ ] Symbol Table
     - [ ] Type checking
     - [ ] Type inference
     - [ ] Signature checking
     - [ ] ...
+  - [x] zeroql: Reimplement AST
   - [ ] zerodb: Use libp2p for comms
 
-- [ ] Query Language
+- [x] Query Language
 
   - [x] Grammar
   - [x] Lexer
-  - [ ] Parser
+  - [x] Parser
   - [ ] AST
   - [ ] Semantic Analysis
   - [ ] Optimizer

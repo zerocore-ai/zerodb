@@ -47,23 +47,28 @@ fn test_parser_continuation_brackets() -> anyhow::Result<()> {
                     Ast {
                         span: 2..3,
                         kind: Identifier("a"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 5..7,
                         kind: IntegerLiteral(10),
+                        tag: Default::default(),
                     },
                 ),
                 (
                     Ast {
                         span: 18..19,
                         kind: Identifier("b"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 21..23,
                         kind: IntegerLiteral(20),
+                        tag: Default::default(),
                     },
                 ),
             ]),
+            tag: Default::default(),
         })
     );
 
@@ -72,6 +77,7 @@ fn test_parser_continuation_brackets() -> anyhow::Result<()> {
         Some(Ast {
             span: 33..43,
             kind: Temp(None),
+            tag: Default::default(),
         })
     );
 
@@ -83,16 +89,20 @@ fn test_parser_continuation_brackets() -> anyhow::Result<()> {
                 Ast {
                     span: 44..45,
                     kind: IntegerLiteral(1,),
+                    tag: Default::default(),
                 },
                 Ast {
                     span: 47..48,
                     kind: IntegerLiteral(2,),
+                    tag: Default::default(),
                 },
                 Ast {
                     span: 59..60,
                     kind: IntegerLiteral(3,),
+                    tag: Default::default(),
                 },
             ]),
+            tag: Default::default(),
         })
     );
 
@@ -101,6 +111,7 @@ fn test_parser_continuation_brackets() -> anyhow::Result<()> {
         Some(Ast {
             span: 61..73,
             kind: Temp(None),
+            tag: Default::default(),
         })
     );
 
@@ -111,7 +122,9 @@ fn test_parser_continuation_brackets() -> anyhow::Result<()> {
             kind: TupleLiteral(vec![Ast {
                 span: 74..75,
                 kind: IntegerLiteral(1),
+                tag: Default::default(),
             }]),
+            tag: Default::default(),
         })
     );
 
@@ -152,28 +165,34 @@ fn test_parser_continuation_comma_assignment() -> anyhow::Result<()> {
                 subject: Box::new(Ast {
                     span: 7..13,
                     kind: Identifier("person"),
+                    tag: Default::default(),
                 }),
                 columns: vec![
                     Ast {
                         span: 18..22,
                         kind: Identifier("name"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 45..48,
                         kind: Identifier("age",),
+                        tag: Default::default(),
                     },
                 ],
                 values: vec![vec![
                     Ast {
                         span: 25..35,
                         kind: StringLiteral("John Doe"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 51..53,
                         kind: IntegerLiteral(30),
+                        tag: Default::default(),
                     },
                 ]],
             },
+            tag: Default::default(),
         })
     );
 
@@ -182,6 +201,7 @@ fn test_parser_continuation_comma_assignment() -> anyhow::Result<()> {
         Some(Ast {
             span: 53..63,
             kind: Temp(None),
+            tag: Default::default(),
         })
     );
 
@@ -193,6 +213,7 @@ fn test_parser_continuation_comma_assignment() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 67..76,
                     kind: Variable("variable"),
+                    tag: Default::default(),
                 }),
                 r#type: None,
                 value: Box::new(Ast {
@@ -201,18 +222,23 @@ fn test_parser_continuation_comma_assignment() -> anyhow::Result<()> {
                         Ast {
                             span: 88..89,
                             kind: IntegerLiteral(1),
+                            tag: Default::default(),
                         },
                         Ast {
                             span: 91..92,
                             kind: IntegerLiteral(2),
+                            tag: Default::default(),
                         },
                         Ast {
                             span: 94..95,
                             kind: IntegerLiteral(3),
+                            tag: Default::default(),
                         },
                     ]),
+                    tag: Default::default(),
                 }),
             },
+            tag: Default::default(),
         })
     );
 
@@ -221,6 +247,7 @@ fn test_parser_continuation_comma_assignment() -> anyhow::Result<()> {
         Some(Ast {
             span: 96..106,
             kind: Temp(None),
+            tag: Default::default(),
         })
     );
 
@@ -232,20 +259,24 @@ fn test_parser_continuation_comma_assignment() -> anyhow::Result<()> {
                 target: Box::new(Ast {
                     span: 113..119,
                     kind: Identifier("person"),
+                    tag: Default::default(),
                 }),
                 where_guard: None,
                 column_ops: vec![(
                     Ast {
                         span: 124..127,
                         kind: Identifier("age"),
+                        tag: Default::default(),
                     },
                     Plus,
                     Ast {
                         span: 139..143,
                         kind: IntegerLiteral(0x01),
+                        tag: Default::default(),
                     },
                 )],
             },
+            tag: Default::default(),
         })
     );
 

@@ -1,9 +1,9 @@
-use super::error::SemaResult;
+//! - contextual validity
+//! - type checking
 
 //--------------------------------------------------------------------------------------------------
-// Traits
+// Types
 //--------------------------------------------------------------------------------------------------
 
-pub trait Analyzer {
-    fn analyze(&mut self) -> SemaResult<()>;
-}
+/// TODO: implement
+pub struct TypeChecker {}

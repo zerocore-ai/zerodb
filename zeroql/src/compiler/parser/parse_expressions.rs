@@ -188,6 +188,7 @@ impl<'a> Parser<'a> {
                     Ast {
                         kind: TupleLiteral(value_tuple),
                         span,
+                        ..
                     } => (value_tuple, span.end),
                     _ => unreachable!(),
                 };
@@ -199,6 +200,7 @@ impl<'a> Parser<'a> {
                         Ast {
                             kind: TupleLiteral(value_tuple),
                             span,
+                            ..
                         } => {
                             span_end = span.end;
                             value_tuple
@@ -3383,6 +3385,7 @@ impl<'a> Parser<'a> {
     ///     | commit_exp
     ///     | cancel_exp
     ///     | for_exp
+    ///     | while_exp
     ///     | if_else_exp
     ///     | let_exp
     ///     | set_exp
@@ -3404,6 +3407,7 @@ impl<'a> Parser<'a> {
             (alt
                 parse_cancel_exp
                 parse_for_exp
+                parse_while_exp
                 parse_if_else_exp
                 parse_let_exp
                 parse_set_exp
@@ -3428,6 +3432,7 @@ impl<'a> Parser<'a> {
                 Choice::D(x) => x.unwrap_single(),
                 Choice::E(x) => x.unwrap_single(),
                 Choice::F(x) => x.unwrap_single(),
+                Choice::G(x) => x.unwrap_single(),
                 _ => unreachable!(),
             },
         });
@@ -3906,6 +3911,7 @@ macro_rules! ast_as {
         if let Ast {
             span,
             kind: $name ($($param),*),
+            ..
         } = $ast
         {
             (($($param),*), span.end)

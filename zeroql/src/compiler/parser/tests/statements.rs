@@ -49,9 +49,11 @@ fn test_parser_define_namespace_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 30..34,
                     kind: Identifier("ns"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
             },
+            tag: Default::default(),
         })
     );
 
@@ -63,9 +65,11 @@ fn test_parser_define_namespace_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 45..50,
                     kind: Identifier("my_ns"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
             },
+            tag: Default::default(),
         })
     );
 
@@ -77,9 +81,11 @@ fn test_parser_define_namespace_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 82..87,
                     kind: Identifier("my_ns"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
             },
+            tag: Default::default(),
         })
     );
 
@@ -109,13 +115,16 @@ fn test_parser_define_database_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 29..33,
                     kind: Identifier("db",),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 namespace: Some(Box::new(Ast {
                     span: 47..51,
                     kind: Identifier("ns",),
+                    tag: Default::default(),
                 })),
             },
+            tag: Default::default(),
         })
     );
 
@@ -127,10 +136,12 @@ fn test_parser_define_database_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 62..67,
                     kind: Identifier("my_db",),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 namespace: None,
             },
+            tag: Default::default(),
         })
     );
 
@@ -142,10 +153,12 @@ fn test_parser_define_database_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 98..103,
                     kind: Identifier("my_db",),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 namespace: None,
             },
+            tag: Default::default(),
         })
     );
 
@@ -274,21 +287,25 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 13..20,
                     kind: Identifier("table"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: Some(Box::new(Ast {
                     span: 33..37,
                     kind: Identifier("db"),
+                    tag: Default::default(),
                 })),
                 fields: vec![
                     Field {
                         name: Box::new(Ast {
                             span: 45..49,
                             kind: Identifier("name"),
+                            tag: Default::default(),
                         }),
                         r#type: Option(Box::new(Basic(Box::new(Ast {
                             span: 55..61,
                             kind: Identifier("string"),
+                            tag: Default::default(),
                         })))),
                         default: None,
                         assertions: vec![],
@@ -299,10 +316,12 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                         name: Box::new(Ast {
                             span: 64..67,
                             kind: Identifier("age",),
+                            tag: Default::default(),
                         }),
                         r#type: Option(Box::new(Basic(Box::new(Ast {
                             span: 112..114,
                             kind: Identifier("u8"),
+                            tag: Default::default(),
                         })))),
                         default: None,
                         assertions: vec![
@@ -312,12 +331,15 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                                     Box::new(Ast {
                                         span: 75..81,
                                         kind: Variable("value"),
+                                        tag: Default::default(),
                                     }),
                                     Box::new(Ast {
                                         span: 84..86,
                                         kind: IntegerLiteral(10),
+                                        tag: Default::default(),
                                     }),
                                 ),
+                                tag: Default::default(),
                             },
                             Ast {
                                 span: 94..106,
@@ -325,12 +347,15 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                                     Box::new(Ast {
                                         span: 94..100,
                                         kind: Variable("value"),
+                                        tag: Default::default(),
                                     }),
                                     Box::new(Ast {
                                         span: 103..106,
                                         kind: IntegerLiteral(100),
+                                        tag: Default::default(),
                                     }),
                                 ),
+                                tag: Default::default(),
                             },
                         ],
                         readonly: true,
@@ -338,6 +363,7 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                     },
                 ],
             },
+            tag: Default::default(),
         })
     );
 
@@ -349,11 +375,13 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 168..176,
                     kind: Identifier("my_table"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
                 fields: vec![],
             },
+            tag: Default::default(),
         })
     );
 
@@ -365,14 +393,17 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 213..220,
                     kind: Identifier("table"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: Some(Box::new(Ast {
                     span: 233..237,
                     kind: Identifier("db"),
+                    tag: Default::default(),
                 })),
                 fields: vec![],
             },
+            tag: Default::default(),
         })
     );
 
@@ -383,28 +414,33 @@ fn test_parser_define_table_stmt() -> anyhow::Result<()> {
             kind: DefineTable {
                 name: Box::new(Ast {
                     span: 260..267,
-                    kind: Identifier("table")
+                    kind: Identifier("table"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: Some(Box::new(Ast {
                     span: 280..284,
                     kind: Identifier("db"),
+                    tag: Default::default(),
                 }),),
                 fields: vec![Field {
                     name: Box::new(Ast {
                         span: 292..296,
                         kind: Identifier("name"),
+                        tag: Default::default(),
                     }),
                     r#type: Option(Box::new(Basic(Box::new(Ast {
                         span: 302..308,
                         kind: Identifier("string"),
-                    }),)),),
+                        tag: Default::default(),
+                    })))),
                     default: None,
                     assertions: vec![],
                     readonly: false,
                     unique: false,
                 }],
             },
+            tag: Default::default(),
         })
     );
 
@@ -439,21 +475,25 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 12..18,
                     kind: Identifier("edge"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: Some(Box::new(Ast {
                     span: 31..35,
                     kind: Identifier("db"),
+                    tag: Default::default(),
                 })),
                 fields: vec![
                     Field {
                         name: Box::new(Ast {
                             span: 43..47,
                             kind: Identifier("name"),
+                            tag: Default::default(),
                         }),
                         r#type: Option(Box::new(Basic(Box::new(Ast {
                             span: 53..59,
-                            kind: Identifier("string")
+                            kind: Identifier("string"),
+                            tag: Default::default(),
                         })))),
                         default: None,
                         assertions: vec![],
@@ -464,10 +504,12 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                         name: Box::new(Ast {
                             span: 62..65,
                             kind: Identifier("age"),
+                            tag: Default::default(),
                         }),
                         r#type: Option(Box::new(Basic(Box::new(Ast {
                             span: 110..112,
-                            kind: Identifier("u8")
+                            kind: Identifier("u8"),
+                            tag: Default::default(),
                         })))),
                         default: None,
                         assertions: vec![
@@ -477,12 +519,15 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                                     Box::new(Ast {
                                         span: 73..79,
                                         kind: Variable("value"),
+                                        tag: Default::default(),
                                     }),
                                     Box::new(Ast {
                                         span: 82..84,
                                         kind: IntegerLiteral(10),
+                                        tag: Default::default(),
                                     }),
                                 ),
+                                tag: Default::default(),
                             },
                             Ast {
                                 span: 92..104,
@@ -490,12 +535,15 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                                     Box::new(Ast {
                                         span: 92..98,
                                         kind: Variable("value"),
+                                        tag: Default::default(),
                                     }),
                                     Box::new(Ast {
                                         span: 101..104,
                                         kind: IntegerLiteral(100),
+                                        tag: Default::default(),
                                     }),
                                 ),
+                                tag: Default::default(),
                             },
                         ],
                         readonly: true,
@@ -503,6 +551,7 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                     },
                 ],
             },
+            tag: Default::default(),
         },)
     );
 
@@ -514,12 +563,14 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 165..172,
                     kind: Identifier("my_edge"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
                 fields: vec![],
             },
-        },)
+            tag: Default::default(),
+        })
     );
 
     assert_eq!(
@@ -530,15 +581,18 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 208..214,
                     kind: Identifier("edge"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: Some(Box::new(Ast {
                     span: 227..231,
                     kind: Identifier("db"),
+                    tag: Default::default(),
                 })),
                 fields: vec![],
             },
-        },)
+            tag: Default::default(),
+        })
     );
 
     assert_eq!(
@@ -549,28 +603,33 @@ fn test_parser_define_edge_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 253..259,
                     kind: Identifier("edge"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: Some(Box::new(Ast {
                     span: 272..276,
                     kind: Identifier("db"),
+                    tag: Default::default(),
                 })),
                 fields: vec![Field {
                     name: Box::new(Ast {
                         span: 284..288,
                         kind: Identifier("name",),
+                        tag: Default::default(),
                     }),
                     r#type: Option(Box::new(Basic(Box::new(Ast {
                         span: 294..300,
                         kind: Identifier("string"),
+                        tag: Default::default(),
                     })))),
                     default: None,
                     assertions: vec![],
                     readonly: false,
                     unique: false,
-                },],
+                }],
             },
-        },)
+            tag: Default::default(),
+        })
     );
 
     Ok(())
@@ -641,6 +700,7 @@ fn test_parser_define_type_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 12..18,
                     kind: Identifier("type"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: None,
@@ -649,30 +709,36 @@ fn test_parser_define_type_stmt() -> anyhow::Result<()> {
                         Ast {
                             span: 26..30,
                             kind: Identifier("name"),
+                            tag: Default::default(),
                         },
                         Option(Box::new(Basic(Box::new(Ast {
                             span: 36..42,
-                            kind: Identifier("string")
+                            kind: Identifier("string"),
+                            tag: Default::default(),
                         })))),
                     ),
                     (
                         Ast {
                             span: 45..48,
-                            kind: Identifier("age",),
+                            kind: Identifier("age"),
+                            tag: Default::default(),
                         },
                         Generic {
                             name: Box::new(Ast {
                                 span: 54..60,
-                                kind: Identifier("option")
+                                kind: Identifier("option"),
+                                tag: Default::default(),
                             }),
                             parameters: vec![Basic(Box::new(Ast {
                                 span: 61..63,
-                                kind: Identifier("u8")
+                                kind: Identifier("u8"),
+                                tag: Default::default(),
                             }))],
                         },
                     ),
                 ],
             },
+            tag: Default::default(),
         })
     );
 
@@ -684,11 +750,13 @@ fn test_parser_define_type_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 100..107,
                     kind: Identifier("my_type"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
                 fields: vec![],
             },
+            tag: Default::default(),
         })
     );
 
@@ -700,11 +768,13 @@ fn test_parser_define_type_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 143..149,
                     kind: Identifier("type"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: None,
                 fields: vec![],
             },
+            tag: Default::default(),
         })
     );
 
@@ -716,6 +786,7 @@ fn test_parser_define_type_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 171..177,
                     kind: Identifier("type"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
@@ -723,13 +794,16 @@ fn test_parser_define_type_stmt() -> anyhow::Result<()> {
                     Ast {
                         span: 185..189,
                         kind: Identifier("name"),
+                        tag: Default::default(),
                     },
                     Option(Box::new(Basic(Box::new(Ast {
                         span: 195..201,
-                        kind: Identifier("string",),
+                        kind: Identifier("string"),
+                        tag: Default::default(),
                     })))),
                 )],
             },
+            tag: Default::default(),
         })
     );
 
@@ -781,24 +855,29 @@ fn test_parser_define_enum_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 12..18,
                     kind: Identifier("enum"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: None,
                 variants: vec![
                     Ast {
                         span: 28..29,
-                        kind: Identifier("a",),
+                        kind: Identifier("a"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 31..32,
-                        kind: Identifier("b",),
+                        kind: Identifier("b"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 34..35,
-                        kind: Identifier("c",),
+                        kind: Identifier("c"),
+                        tag: Default::default(),
                     },
                 ],
             },
+            tag: Default::default(),
         })
     );
 
@@ -810,11 +889,13 @@ fn test_parser_define_enum_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 71..78,
                     kind: Identifier("my_enum"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
                 variants: vec![],
             },
+            tag: Default::default(),
         })
     );
 
@@ -826,11 +907,13 @@ fn test_parser_define_enum_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 114..120,
                     kind: Identifier("enum"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: None,
                 variants: vec![],
             },
+            tag: Default::default(),
         })
     );
 
@@ -842,6 +925,7 @@ fn test_parser_define_enum_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 142..148,
                     kind: Identifier("enum"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
@@ -849,17 +933,21 @@ fn test_parser_define_enum_stmt() -> anyhow::Result<()> {
                     Ast {
                         span: 158..159,
                         kind: Identifier("a"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 161..162,
                         kind: Identifier("b"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 164..165,
                         kind: Identifier("c"),
+                        tag: Default::default(),
                     },
                 ],
             },
+            tag: Default::default(),
         })
     );
 
@@ -924,24 +1012,29 @@ fn test_parser_define_index_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 13..20,
                     kind: Identifier("index"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: Some(Box::new(Ast {
                     span: 93..103,
                     kind: Identifier("database"),
+                    tag: Default::default(),
                 })),
                 table: Box::new(Ast {
                     span: 73..80,
                     kind: Identifier("table"),
+                    tag: Default::default(),
                 }),
                 columns: vec![
                     Ast {
                         span: 28..32,
                         kind: Identifier("name"),
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 34..37,
                         kind: Identifier("age"),
+                        tag: Default::default(),
                     },
                 ],
                 function: Some(Box::new(Ast {
@@ -953,12 +1046,15 @@ fn test_parser_define_index_stmt() -> anyhow::Result<()> {
                                 Ast {
                                     span: 43..46,
                                     kind: Identifier("std"),
+                                    tag: Default::default(),
                                 },
                                 Ast {
                                     span: 48..51,
                                     kind: Identifier("foo"),
+                                    tag: Default::default(),
                                 },
                             ]),
+                            tag: Default::default(),
                         }),
                         args: vec![Ast {
                             span: 52..62,
@@ -966,16 +1062,21 @@ fn test_parser_define_index_stmt() -> anyhow::Result<()> {
                                 name: Some(Box::new(Ast {
                                     span: 52..53,
                                     kind: Identifier("a"),
+                                    tag: Default::default(),
                                 })),
                                 value: Box::new(Ast {
                                     span: 56..62,
                                     kind: Variable("value"),
+                                    tag: Default::default(),
                                 }),
                             },
+                            tag: Default::default(),
                         }],
                     },
+                    tag: Default::default(),
                 })),
             },
+            tag: Default::default(),
         })
     );
 
@@ -987,19 +1088,23 @@ fn test_parser_define_index_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 141..148,
                     kind: Identifier("index"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: None,
                 table: Box::new(Ast {
                     span: 158..165,
                     kind: Identifier("table"),
+                    tag: Default::default(),
                 }),
                 columns: vec![Ast {
                     span: 173..177,
                     kind: Identifier("name"),
+                    tag: Default::default(),
                 }],
                 function: None,
             },
+            tag: Default::default(),
         },)
     );
 
@@ -1030,11 +1135,20 @@ fn test_parser_define_module_stmt() -> anyhow::Result<()> {
         Ast {
             span: 0..112,
             kind: DefineModule {
-                name: Box::new(Ast{span:14..15,kind:Identifier("m")}),
+                name: Box::new(Ast {
+                    span: 14..15,
+                    kind: Identifier("m"),
+                    tag: Default::default(),
+                }),
                 if_not_exists: true,
                 database: None,
-                block: Box::new(Ast{span:20..95,kind:ModuleBlock("\\\n        function add(a, b) {\n            return a + b;\n        }\n        ",),}),
+                block: Box::new(Ast{
+                    span: 20..95,
+                    kind: ModuleBlock("\\\n        function add(a, b) {\n            return a + b;\n        }\n        ",),
+                    tag: Default::default(),
+                }),
             },
+            tag: Default::default(),
         },
     ));
 
@@ -1046,14 +1160,17 @@ fn test_parser_define_module_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 136..137,
                     kind: Identifier("m"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
                 block: Box::new(Ast {
                     span: 142..173,
                     kind: ModuleBlock(" function foo() { return 20; } "),
+                    tag: Default::default(),
                 }),
             },
+            tag: Default::default(),
         },)
     );
 
@@ -1084,21 +1201,26 @@ fn test_parser_define_param_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 13..14,
                     kind: Identifier("p"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
                 database: Some(Box::new(Ast {
                     span: 54..59,
                     kind: Identifier("my_db"),
+                    tag: Default::default(),
                 })),
                 r#type: Some(Option(Box::new(Basic(Box::new(Ast {
                     span: 20..26,
                     kind: Identifier("string"),
+                    tag: Default::default(),
                 }))))),
                 value: Box::new(Ast {
                     span: 34..41,
                     kind: StringLiteral("hello"),
+                    tag: Default::default(),
                 }),
             },
+            tag: Default::default(),
         })
     );
 
@@ -1110,6 +1232,7 @@ fn test_parser_define_param_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 96..97,
                     kind: Identifier("p"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: false,
                 database: None,
@@ -1117,8 +1240,10 @@ fn test_parser_define_param_stmt() -> anyhow::Result<()> {
                 value: Box::new(Ast {
                     span: 104..111,
                     kind: StringLiteral("world"),
+                    tag: Default::default(),
                 }),
             },
+            tag: Default::default(),
         })
     );
 
@@ -1179,59 +1304,43 @@ fn test_parser_define_stmt() -> anyhow::Result<()> {
 
 #[test_log::test]
 fn test_parser_use_stmt() -> anyhow::Result<()> {
-    let parser = &mut Parser::new("USE NAMESPACE `ns` DATABASE `db` use db d use ns n", 20);
+    let parser = &mut Parser::new("USE DATABASE `db` use db my_db", 20);
     let result_a = parser.parse_use_stmt()?;
     let result_b = parser.parse_use_stmt()?;
-    let result_c = parser.parse_use_stmt()?;
 
     info!(
-        r#"input = {:?} | parse_use_stmt parse_use_stmt parse_use_stmt = {:#?} {:#?} {:#?}"#,
-        parser.lexer.string, result_a, result_b, result_c,
+        r#"input = {:?} | parse_use_stmt parse_use_stmt  = {:#?} {:#?}"#,
+        parser.lexer.string, result_a, result_b
     );
 
     assert_eq!(
         result_a,
         Some(Ast {
-            span: 0..32,
+            span: 0..17,
             kind: Use {
-                namespace: Some(Box::new(Ast {
-                    span: 14..18,
-                    kind: Identifier("ns"),
-                })),
-                database: Some(Box::new(Ast {
-                    span: 28..32,
+                database: Box::new(Ast {
+                    span: 13..17,
                     kind: Identifier("db"),
-                })),
+                    tag: Default::default(),
+                }),
             },
+            tag: Default::default(),
         },)
     );
 
     assert_eq!(
         result_b,
         Some(Ast {
-            span: 33..41,
+            span: 18..30,
             kind: Use {
-                namespace: None,
-                database: Some(Box::new(Ast {
-                    span: 40..41,
-                    kind: Identifier("d"),
-                })),
+                database: Box::new(Ast {
+                    span: 25..30,
+                    kind: Identifier("my_db"),
+                    tag: Default::default(),
+                }),
             },
-        },)
-    );
-
-    assert_eq!(
-        result_c,
-        Some(Ast {
-            span: 42..50,
-            kind: Use {
-                namespace: Some(Box::new(Ast {
-                    span: 49..50,
-                    kind: Identifier("n"),
-                })),
-                database: None,
-            },
-        },)
+            tag: Default::default(),
+        })
     );
 
     Ok(())
@@ -1241,7 +1350,7 @@ fn test_parser_use_stmt() -> anyhow::Result<()> {
 fn test_parser_stmt() -> anyhow::Result<()> {
     let parser = &mut Parser::new(
         r#"DEFINE NAMESPACE `ns` IF NOT EXISTS\
-        use db d ns n\
+        use db d\
         break\
         continue\
         "#,
@@ -1265,43 +1374,45 @@ fn test_parser_stmt() -> anyhow::Result<()> {
                 name: Box::new(Ast {
                     span: 17..21,
                     kind: Identifier("ns"),
+                    tag: Default::default(),
                 }),
                 if_not_exists: true,
             },
+            tag: Default::default(),
         })
     );
 
     assert_eq!(
         result_b,
         Some(Ast {
-            span: 45..58,
+            span: 45..53,
             kind: Use {
-                namespace: Some(Box::new(Ast {
-                    span: 57..58,
-                    kind: Identifier("n"),
-                })),
-                database: Some(Box::new(Ast {
+                database: Box::new(Ast {
                     span: 52..53,
-                    kind: Identifier("d"),
-                })),
+                    kind: Identifier("d",),
+                    tag: Default::default(),
+                }),
             },
-        })
+            tag: Default::default(),
+        },)
     );
 
     assert_eq!(
         result_c,
         Some(Ast {
-            span: 68..73,
+            span: 63..68,
             kind: Break,
-        })
+            tag: Default::default(),
+        },)
     );
 
     assert_eq!(
         result_d,
         Some(Ast {
-            span: 83..91,
+            span: 78..86,
             kind: Continue,
-        })
+            tag: Default::default(),
+        },)
     );
 
     Ok(())

@@ -842,8 +842,6 @@ define_stmt =
     | define_param_stmt
 
 use_stmt =
-    | kw_use << ((kw_namespace | kw_ns) identifier) ((kw_database | kw_db) identifier) >>
-    | kw_use (kw_namespace | kw_ns) identifier
     | kw_use (kw_database | kw_db) identifier
 
 stmt =

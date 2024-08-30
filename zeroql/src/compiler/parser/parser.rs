@@ -181,13 +181,16 @@ mod tests {
                             name: Box::new(Ast {
                                 span: 18..22,
                                 kind: Variable("age"),
+                                tag: Default::default(),
                             }),
                             r#type: None,
                             value: Box::new(Ast {
                                 span: 37..39,
                                 kind: IntegerLiteral(10),
+                                tag: Default::default(),
                             }),
                         },
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 53..184,
@@ -198,12 +201,15 @@ mod tests {
                                     Box::new(Ast {
                                         span: 56..60,
                                         kind: Variable("age"),
+                                        tag: Default::default(),
                                     }),
                                     Box::new(Ast {
                                         span: 63..65,
                                         kind: IntegerLiteral(18),
+                                        tag: Default::default(),
                                     }),
                                 ),
+                                tag: Default::default(),
                             }),
                             then: Box::new(Ast {
                                 span: 86..111,
@@ -213,6 +219,7 @@ mod tests {
                                         subject: Box::new(Ast {
                                             span: 86..91,
                                             kind: Identifier("print"),
+                                            tag: Default::default(),
                                         }),
                                         args: vec![Ast {
                                             span: 92..110,
@@ -221,11 +228,15 @@ mod tests {
                                                 value: Box::new(Ast {
                                                     span: 92..110,
                                                     kind: StringLiteral("You are an adult"),
+                                                    tag: Default::default(),
                                                 }),
                                             },
+                                            tag: Default::default(),
                                         }],
                                     },
+                                    tag: Default::default(),
                                 }]),
+                                tag: Default::default(),
                             }),
                             else_ifs: vec![],
                             r#else: Some(Box::new(Ast {
@@ -236,6 +247,7 @@ mod tests {
                                         subject: Box::new(Ast {
                                             span: 144..149,
                                             kind: Identifier("print"),
+                                            tag: Default::default(),
                                         }),
                                         args: vec![Ast {
                                             span: 150..167,
@@ -244,13 +256,18 @@ mod tests {
                                                 value: Box::new(Ast {
                                                     span: 150..167,
                                                     kind: StringLiteral("You are a minor"),
+                                                    tag: Default::default(),
                                                 }),
                                             },
+                                            tag: Default::default(),
                                         }],
                                     },
+                                    tag: Default::default(),
                                 }]),
+                                tag: Default::default(),
                             })),
                         },
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 198..287,
@@ -258,6 +275,7 @@ mod tests {
                             name: Box::new(Ast {
                                 span: 211..217,
                                 kind: Identifier("person"),
+                                tag: Default::default(),
                             }),
                             if_not_exists: false,
                             database: None,
@@ -266,10 +284,12 @@ mod tests {
                                     name: Box::new(Ast {
                                         span: 242..246,
                                         kind: Identifier("name"),
+                                        tag: Default::default(),
                                     }),
                                     r#type: Basic(Box::new(Ast {
                                         span: 252..258,
                                         kind: Identifier("string"),
+                                        tag: Default::default(),
                                     })),
                                     default: None,
                                     assertions: vec![],
@@ -280,10 +300,12 @@ mod tests {
                                     name: Box::new(Ast {
                                         span: 276..279,
                                         kind: Identifier("age"),
+                                        tag: Default::default(),
                                     }),
                                     r#type: Basic(Box::new(Ast {
                                         span: 285..287,
                                         kind: Identifier("u8"),
+                                        tag: Default::default(),
                                     })),
                                     default: None,
                                     assertions: vec![],
@@ -292,6 +314,7 @@ mod tests {
                                 },
                             ],
                         },
+                        tag: Default::default(),
                     },
                     Ast {
                         span: 301..315,
@@ -299,6 +322,7 @@ mod tests {
                             Box::new(Ast {
                                 span: 301..302,
                                 kind: IntegerLiteral(2),
+                                tag: Default::default(),
                             }),
                             Box::new(Ast {
                                 span: 306..315,
@@ -306,16 +330,21 @@ mod tests {
                                     Box::new(Ast {
                                         span: 306..311,
                                         kind: IntegerLiteral(0x100),
+                                        tag: Default::default(),
                                     }),
                                     Box::new(Ast {
                                         span: 314..315,
                                         kind: IntegerLiteral(3),
+                                        tag: Default::default(),
                                     }),
                                 ),
+                                tag: Default::default(),
                             }),
                         ),
+                        tag: Default::default(),
                     },
                 ]),
+                tag: Default::default(),
             })
         );
 

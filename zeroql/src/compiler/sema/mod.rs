@@ -9,8 +9,19 @@
 //! - Dead code elimination
 //! - ...and more
 
+mod error;
+mod pass;
+mod schema;
+mod sema;
+mod symbols;
 mod traits;
 
 //--------------------------------------------------------------------------------------------------
 // Exports
 //--------------------------------------------------------------------------------------------------
+
+pub use error::*;
+pub use pass::*;
+pub use schema::*;
+pub use sema::*;
+pub use symbols::*;

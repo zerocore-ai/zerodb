@@ -1,9 +1,8 @@
-use super::error::SemaResult;
+//! - type member resolution
 
 //--------------------------------------------------------------------------------------------------
-// Traits
+// Types
 //--------------------------------------------------------------------------------------------------
 
-pub trait Analyzer {
-    fn analyze(&mut self) -> SemaResult<()>;
-}
+/// TODO: implement
+pub struct MemberResolver {}

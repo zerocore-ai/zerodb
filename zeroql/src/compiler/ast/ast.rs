@@ -1,4 +1,13 @@
-use crate::{lexer::RegexFlags, parser::Combinator, Span};
+use std::fmt::Display;
+
+use crate::{
+    lexer::RegexFlags,
+    parser::Combinator,
+    sema::{Symbols, VersionedSchema},
+    Span,
+};
+
+use super::AnalysisTag;
 
 //--------------------------------------------------------------------------------------------------
 // Types
@@ -12,6 +21,9 @@ pub struct Ast<'a> {
 
     /// The kind of the AST node.
     pub kind: AstKind<'a>,
+
+    /// The tag of the AST node.
+    pub tag: Option<AnalysisTag>,
 }
 
 /// The kind of an AST node.
@@ -767,11 +779,8 @@ pub enum AstKind<'a> {
 
     /// A `USE` statement.
     Use {
-        /// The namespace the parameter belongs to.
-        namespace: Option<Box<Ast<'a>>>,
-
         /// The database the parameter belongs to.
-        database: Option<Box<Ast<'a>>>,
+        database: Box<Ast<'a>>,
     },
 
     /// A `BREAK` statement.
@@ -973,7 +982,11 @@ pub enum UpdateAssign {
 impl<'a> Ast<'a> {
     /// Creates a new AST node.
     pub fn new(span: Span, kind: AstKind<'a>) -> Self {
-        Self { span, kind }
+        Self {
+            span,
+            kind,
+            tag: Default::default(),
+        }
     }
 
     /// Gets the span of the AST node.
@@ -987,5 +1000,48 @@ impl<'a> Ast<'a> {
             AstKind::Temp(x) => *x.unwrap(),
             _ => panic!("AstKind::Temp expected"),
         }
+    }
+
+    /// Sets the symbols of the AST node.
+    pub fn set_tag_symbols(&mut self, symbols: Symbols) {
+        if let Some(tag) = self.tag.as_mut() {
+            tag.set_symbols(symbols);
+        } else {
+            let mut tag = AnalysisTag::default();
+            tag.set_symbols(symbols);
+            self.tag = Some(tag);
+        }
+    }
+
+    /// Sets the schema of the AST node.
+    pub fn set_tag_schema(&mut self, schema: VersionedSchema) {
+        if let Some(tag) = self.tag.as_mut() {
+            tag.set_schema(schema);
+        } else {
+            let mut tag = AnalysisTag::default();
+            tag.set_schema(schema);
+            self.tag = Some(tag);
+        }
+    }
+
+    /// Gets the tag of the AST node.
+    pub fn get_tag(&self) -> Option<&AnalysisTag> {
+        self.tag.as_ref()
+    }
+}
+
+impl<'a> AstKind<'a> {
+    /// Unwraps the AST node from the program kind.
+    pub fn unwrap_program(self) -> Vec<Ast<'a>> {
+        match self {
+            AstKind::Program(statements) => statements,
+            _ => panic!("AstKind::Program expected"),
+        }
+    }
+}
+
+impl<'a> Display for AstKind<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

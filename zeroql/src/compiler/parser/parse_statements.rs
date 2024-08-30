@@ -1394,87 +1394,29 @@ impl<'a> Parser<'a> {
     ///
     /// ```txt
     /// use_stmt =
-    ///     | kw_use << ((kw_namespace | kw_ns) identifier) ((kw_database | kw_db) identifier) >>
-    ///     | kw_use (kw_namespace | kw_ns) identifier
     ///     | kw_use (kw_database | kw_db) identifier
     /// ```
     #[memoize]
     #[backtrack]
     pub fn parse_use_stmt(&mut self) -> ParserResult<Option<Ast<'a>>> {
-        let result = parse!(self, Self => (alt
-            (seq
-                parse_kw_use
-                (perm
-                    (seq (alt parse_kw_namespace parse_kw_ns) parse_identifier)
-                    (seq (alt parse_kw_database parse_kw_db) parse_identifier)
-                )
-            )
-            (seq
-                parse_kw_use
-                (alt parse_kw_namespace parse_kw_ns)
-                parse_identifier
-            )
-            (seq
-                parse_kw_use
-                (alt parse_kw_database parse_kw_db)
-                parse_identifier
-            )
+        let result = parse!(self, Self => (seq
+            parse_kw_use
+            (alt parse_kw_database parse_kw_db)
+            parse_identifier
         ));
 
-        let ast = result.map(|x| match x.unwrap_choice() {
-            Choice::A(x) => {
-                let (kw_use, perm) = x.unwrap_seq2();
+        let ast = result.map(|x| {
+            let (kw_use, _, ident) = x.unwrap_seq3();
 
-                let kw_use = kw_use.unwrap_single();
-                let start = kw_use.span.start;
+            let kw_use = kw_use.unwrap_single();
+            let ident = ident.unwrap_single();
 
-                let (namespace, database) = perm.unwrap_seq2();
-                let (_, ns_ident) = namespace.unwrap_indexed().1.unwrap_seq2();
-                let (_, db_ident) = database.unwrap_indexed().1.unwrap_seq2();
-
-                let ns_ident = ns_ident.unwrap_single();
-                let mut span_end = ns_ident.span.end;
-
-                let db_ident = db_ident.unwrap_single();
-                span_end = usize::max(span_end, db_ident.span.end);
-
-                Ast::new(
-                    start..span_end,
-                    Use {
-                        database: Some(Box::new(db_ident)),
-                        namespace: Some(Box::new(ns_ident)),
-                    },
-                )
-            }
-            Choice::B(x) => {
-                let (kw_use, _, ident) = x.unwrap_seq3();
-
-                let kw_use = kw_use.unwrap_single();
-                let ident = ident.unwrap_single();
-
-                Ast::new(
-                    kw_use.span.start..ident.span.end,
-                    Use {
-                        namespace: Some(Box::new(ident)),
-                        database: None,
-                    },
-                )
-            }
-            Choice::C(x) => {
-                let (kw_use, _, ident) = x.unwrap_seq3();
-
-                let kw_use = kw_use.unwrap_single();
-                let ident = ident.unwrap_single();
-
-                Ast::new(
-                    kw_use.span.start..ident.span.end,
-                    Use {
-                        database: Some(Box::new(ident)),
-                        namespace: None,
-                    },
-                )
-            }
-            _ => unreachable!(),
+            Ast::new(
+                kw_use.span.start..ident.span.end,
+                Use {
+                    database: Box::new(ident),
+                },
+            )
         });
 
         Ok(ast)

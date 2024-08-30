@@ -30,4 +30,6 @@ zerodb = { path = "zerodb" }
 zeroraft = { path = "../zeroraft/zeroraft" }
 zeroutils-did = { path = "../zeroutils/zeroutils-did" }
 zeroutils-config = { path = "../zeroutils/zeroutils-config" }
+zeroutils-path = { path = "../zeroutils/zeroutils-path" }
 zeroql-macros = { path = "zeroql-macros" }
+parking_lot = "0.12.3"
